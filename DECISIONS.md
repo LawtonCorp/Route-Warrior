@@ -101,3 +101,17 @@ UI frameworks in the Store. **Rejected**: deferring the widget target and
 entitlements to M4 — capabilities added later through Xcode's UI die on
 regeneration, and wiring them now proves them in CI while the surface is
 tiny.
+
+## D-012 — M2 app-layer choices (2026-09-01)
+
+**Chosen**: a `RecordingPipeline` object as the single kit/app boundary
+(samples in, persisted records out) so wiring is testable without
+CoreLocation; power tiering in `LocationService` (significant-change +
+motion while idle, full-rate GPS only while armed/recording, background
+updates only with Always authorization); container fallback chain
+CloudKit → local-only → in-memory so launch never blocks on iCloud
+(NFR-5); trips that fail to persist surface the error in the UI rather
+than dying silently; the template's Greeting placeholder replaced by real
+wiring tests. **Rejected**: continuous GPS while idle (battery, NFR-3);
+crashing on persistence failure; a combined location+persistence object
+(untestable without a device).

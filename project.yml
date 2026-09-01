@@ -61,6 +61,19 @@ targets:
           - UIInterfaceOrientationPortrait
         ITSAppUsesNonExemptEncryption: false
         NSSupportsLiveActivities: true
+        NSLocationWhenInUseUsageDescription: >-
+          Route Warrior records the routes you drive so you can compare them
+          against Google's plan. Location is used only for recording your
+          drives.
+        NSLocationAlwaysAndWhenInUseUsageDescription: >-
+          Always-on access lets Route Warrior start recording automatically
+          when you begin driving — no taps needed. Your location history
+          stays on your device and in your private iCloud.
+        NSMotionUsageDescription: >-
+          Motion activity tells Route Warrior when a drive starts and ends,
+          so recording is hands-free.
+        UIBackgroundModes:
+          - location
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lawtoncorp.routewarrior
