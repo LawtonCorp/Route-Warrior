@@ -9,7 +9,7 @@ import UserNotifications
 /// notification just means "no comparison", never a blocked recording.
 @MainActor
 final class DestinationPromptService: NSObject, UNUserNotificationCenterDelegate {
-    static let categoryID = "DESTINATION_PICK"
+    nonisolated static let categoryID = "DESTINATION_PICK"
     private let onPick: @MainActor (UUID) -> Void
 
     init(onPick: @escaping @MainActor (UUID) -> Void) {
