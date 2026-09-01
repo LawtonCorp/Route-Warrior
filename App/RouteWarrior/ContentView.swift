@@ -1,19 +1,17 @@
-import RouteWarriorKit
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "car.fill")
-                .font(.system(size: 44))
-                .foregroundStyle(.tint)
-            Text(Greeting.message(for: "world"))
-                .font(.title2)
-            Text("If you can read this on a phone, the pipeline works.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+        TabView {
+            HomeView()
+                .tabItem { Label("Home", systemImage: "car.fill") }
+            TripsView()
+                .tabItem { Label("Trips", systemImage: "map") }
+            PlacesView()
+                .tabItem { Label("Places", systemImage: "mappin.and.ellipse") }
+            SettingsView()
+                .tabItem { Label("Settings", systemImage: "gearshape") }
         }
-        .padding()
     }
 }
 
