@@ -16,6 +16,9 @@ final class StoreService {
     private(set) var lastError: String?
     let policy = TierPolicy()
 
+    // Created once at app launch and alive for the process's lifetime, so
+    // the updates task never needs cancellation (a nonisolated deinit
+    // could not touch this actor-isolated property anyway).
     private var updatesTask: Task<Void, Never>?
 
     func start() {
@@ -31,10 +34,6 @@ final class StoreService {
             await loadProducts()
             await refreshEntitlement()
         }
-    }
-
-    deinit {
-        updatesTask?.cancel()
     }
 
     func loadProducts() async {
