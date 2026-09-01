@@ -21,7 +21,10 @@ final class DestinationPromptService: NSObject, UNUserNotificationCenterDelegate
     func prompt(with places: [Place]) {
         let top = Array(places.prefix(4))
         guard !top.isEmpty else { return }
-        Task {
+        // Detached: UNUserNotificationCenter is not Sendable, so the whole
+        // interaction stays in one nonisolated region instead of crossing
+        // in and out of the main actor.
+        Task.detached {
             let center = UNUserNotificationCenter.current()
             let granted = (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
             guard granted else { return }
@@ -55,11 +58,13 @@ final class DestinationPromptService: NSObject, UNUserNotificationCenterDelegate
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let placeID = UUID(uuidString: response.actionIdentifier)
+        // Answer the system immediately; the pick itself is fire-and-forget
+        // (the completion handler is not Sendable, so it must not cross
+        // into the main-actor task).
+        completionHandler()
+        guard let placeID else { return }
         Task { @MainActor [weak self] in
-            if let placeID {
-                self?.onPick(placeID)
-            }
-            completionHandler()
+            self?.onPick(placeID)
         }
     }
 
