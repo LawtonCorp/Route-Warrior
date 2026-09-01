@@ -1,10 +1,7 @@
-import RouteWarriorKit
-
-/// Persistence layer for Route Warrior. The SwiftData models that mirror the
-/// kit's value types arrive with milestone M2; this target exists from M0 so
-/// the package layout, project generation, and CI wiring are proven before
-/// any schema lands.
+/// Persistence layer for Route Warrior: SwiftData records mirroring the
+/// kit's value types, mapping in `Mapping.swift`, containers in
+/// `StoreFactory.swift`.
 public enum RouteWarriorStore {
     /// Bumped whenever the persisted schema changes shape.
-    public static let schemaVersion = 0
+    public static let schemaVersion = 1
 }
