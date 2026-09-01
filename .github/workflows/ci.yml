@@ -22,7 +22,7 @@ jobs:
         run: ./scripts/kit-purity-gate.sh
 
   kit:
-    name: StarterKit tests + coverage
+    name: RouteWarriorKit tests + coverage
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -75,8 +75,8 @@ jobs:
         run: |
           set +e
           xcodebuild test \
-            -project StarterApp.xcodeproj \
-            -scheme StarterApp \
+            -project RouteWarrior.xcodeproj \
+            -scheme RouteWarrior \
             -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.name }}" \
             CODE_SIGNING_ALLOWED=NO > /tmp/xcodebuild.log 2>&1
           STATUS=$?

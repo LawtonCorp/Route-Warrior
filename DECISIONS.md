@@ -86,3 +86,18 @@ manual pick. **Rejected**: retroactive ETA lookup after arrival (Google
 offers no "ETA as of a past departure" — the snapshot must happen in real
 time); always asking the user at departure (friction kills the zero-touch
 recording promise).
+
+## D-011 — M0 scaffolding choices (2026-09-01)
+
+**Chosen**: rename per the template checklist; App Group
+`group.com.lawtoncorp.routewarrior` and container
+`iCloud.com.lawtoncorp.routewarrior` declared in `project.yml` for both the
+app and widget targets from M0, with a placeholder widget so the extension
+is CI-built from the first commit; `RouteWarriorStore` package target
+stubbed; signing variables renamed (`STARTER_TEAM` → `ROUTEWARRIOR_TEAM`,
+`STARTER_DEVICE` → `ROUTEWARRIOR_DEVICE`); purity gate extended to also
+forbid CoreLocation/SwiftData/MapKit/WidgetKit/ActivityKit in the kit and
+UI frameworks in the Store. **Rejected**: deferring the widget target and
+entitlements to M4 — capabilities added later through Xcode's UI die on
+regeneration, and wiring them now proves them in CI while the surface is
+tiny.

@@ -6,7 +6,11 @@
 # ever reaches the repository. Device builds get their team from
 # scripts/device-build.sh, which passes DEVELOPMENT_TEAM on the xcodebuild
 # command line. Never put a team into this file.
-name: StarterApp
+#
+# The App Group and iCloud entitlements live HERE, for both the app and the
+# widget target — capabilities set in Xcode's UI are discarded on the next
+# regeneration, and a missing App Group fails silently.
+name: RouteWarrior
 options:
   bundleIdPrefix: com.lawtoncorp
   deploymentTarget:
@@ -15,7 +19,7 @@ options:
   groupSortPosition: top
 
 packages:
-  StarterKit:
+  RouteWarriorKit:
     path: .
 
 settings:
@@ -27,25 +31,39 @@ settings:
     CODE_SIGN_IDENTITY: ""
 
 targets:
-  StarterApp:
+  RouteWarrior:
     type: application
     platform: iOS
     sources:
-      - path: App/StarterApp
+      - path: App/RouteWarrior
     dependencies:
-      - package: StarterKit
-        product: StarterKit
-    info:
-      path: App/StarterApp/Info.plist
+      - package: RouteWarriorKit
+        product: RouteWarriorKit
+      - package: RouteWarriorKit
+        product: RouteWarriorStore
+      - target: RouteWarriorWidgets
+        embed: true
+    entitlements:
+      path: App/RouteWarrior/RouteWarrior.entitlements
       properties:
-        CFBundleDisplayName: StarterApp
+        com.apple.security.application-groups:
+          - group.com.lawtoncorp.routewarrior
+        com.apple.developer.icloud-services:
+          - CloudKit
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.lawtoncorp.routewarrior
+    info:
+      path: App/RouteWarrior/Info.plist
+      properties:
+        CFBundleDisplayName: Route Warrior
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         ITSAppUsesNonExemptEncryption: false
+        NSSupportsLiveActivities: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.lawtoncorp.starterapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.lawtoncorp.routewarrior
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
@@ -53,19 +71,47 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
 
-  StarterAppTests:
+  RouteWarriorWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: App/RouteWarriorWidgets
+    entitlements:
+      path: App/RouteWarriorWidgets/RouteWarriorWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.lawtoncorp.routewarrior
+        com.apple.developer.icloud-services:
+          - CloudKit
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.lawtoncorp.routewarrior
+    info:
+      path: App/RouteWarriorWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Route Warrior
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lawtoncorp.routewarrior.widgets
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: "NO"
+
+  RouteWarriorTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: App/StarterAppTests
+      - path: App/RouteWarriorTests
     dependencies:
-      - target: StarterApp
+      - target: RouteWarrior
 
 schemes:
-  StarterApp:
+  RouteWarrior:
     build:
       targets:
-        StarterApp: all
+        RouteWarrior: all
     test:
       targets:
-        - StarterAppTests
+        - RouteWarriorTests

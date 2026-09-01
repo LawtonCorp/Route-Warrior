@@ -7,10 +7,10 @@ was paid for.
 
 ## Architecture
 
-- **All app logic lives in `Sources/StarterKit/`** — a Swift package that
+- **All app logic lives in `Sources/RouteWarriorKit/`** — a Swift package that
   imports no UI framework. `scripts/kit-purity-gate.sh` enforces this in CI.
   The payoff: the kit tests run with plain `swift test` on any Mac, no
-  simulator, in seconds. Keep the app target (`App/StarterApp/`) a thin
+  simulator, in seconds. Keep the app target (`App/RouteWarrior/`) a thin
   SwiftUI rendering layer over the kit.
 - **The `.xcodeproj` is generated, never committed.** XcodeGen produces it from
   `project.yml`; run `./scripts/bootstrap.sh`. **Regeneration discards anything
@@ -20,13 +20,13 @@ was paid for.
   wiring. On Letterama, three shipped defects — a dead input mode, an
   `@Observable` class that never published, an inert `onChange` — were invisible
   to CI because the app target had no tests. Every feature that crosses the
-  kit/app boundary gets at least one assertion in `App/StarterAppTests/`.
+  kit/app boundary gets at least one assertion in `App/RouteWarriorTests/`.
 
 ## Signing and devices
 
 - **Never put `DEVELOPMENT_TEAM` (or any signing setting) into `project.yml`.**
   CI builds unsigned and would break. The team lives in the environment
-  (`STARTER_TEAM`) or in gitignored `scripts/signing.local`, and
+  (`ROUTEWARRIOR_TEAM`) or in gitignored `scripts/signing.local`, and
   `scripts/device-build.sh` passes it on the `xcodebuild` command line.
 - **`./scripts/device-build.sh` is the one command from clone to phone.** It
   regenerates the project, builds signed with `-allowProvisioningUpdates`, and
