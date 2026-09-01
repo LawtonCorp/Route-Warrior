@@ -5,9 +5,23 @@ import UIKit
 struct SettingsView: View {
     @Environment(LocationService.self) private var locationService
 
+    @Environment(StoreService.self) private var store
+    @State private var showPaywall = false
+
     var body: some View {
         NavigationStack {
             List {
+                Section("Route Warrior Pro") {
+                    LabeledContent("Plan", value: store.tier == .pro ? "Pro" : "Free")
+                    if store.tier == .free {
+                        Button("Unlock unlimited history and the ghost race") {
+                            showPaywall = true
+                        }
+                    }
+                    Button("Restore purchases") {
+                        Task { await store.restore() }
+                    }
+                }
                 Section {
                     LabeledContent("Location", value: locationLabel)
                     if locationService.authorizationStatus == .notDetermined {
@@ -41,6 +55,9 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+            }
         }
     }
 

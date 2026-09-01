@@ -148,3 +148,21 @@ symmetric-deviation matching for partial tracks (the undriven remainder
 dominates — see the kit test proving it); per-sample Live Activity
 updates (ActivityKit throttling and battery); in-app race UI as primary
 surface (Google Maps owns the foreground, D-003).
+
+## D-015 — M5 monetization and onboarding wiring (2026-09-01)
+
+**Chosen**: StoreKit 2 subscription state in one `StoreService`
+(entitlement refresh on launch and on every transaction update), with the
+kit's TierPolicy deciding what a tier may do; free-tier history gated in
+the UI through a testable `HistoryGate` (old trips hidden, never
+deleted); analyzed-destination gating by list rank with a lock row that
+opens the paywall; the ghost race's tier provider now reads the real
+entitlement; onboarding as a conditional root view (value → privacy →
+permission primers, per FR-18) tracked by one AppStorage flag; a
+`.storekit` configuration file so purchase flows test in the simulator
+without App Store Connect. Prices are placeholders ($2.99/$19.99) — the
+real numbers are set in App Store Connect at handoff. **Rejected**:
+server-side receipt validation (conflicts with the no-server privacy
+stance; StoreKit 2's on-device verification is the accepted trade-off);
+gating recording itself (D-008: data accrues so upgrading is instantly
+valuable); a hard paywall at first launch.

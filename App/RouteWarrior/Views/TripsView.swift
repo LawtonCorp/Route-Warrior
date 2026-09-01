@@ -3,13 +3,19 @@ import SwiftData
 import SwiftUI
 
 struct TripsView: View {
+    @Environment(StoreService.self) private var store
     @Query(sort: \TripRecord.startedAt, order: .reverse) private var trips: [TripRecord]
     @Query private var places: [PlaceRecord]
     @State private var destinationFilter: UUID?
+    @State private var showPaywall = false
+
+    private var gated: (visible: [TripRecord], hiddenCount: Int) {
+        HistoryGate.visible(trips, tier: store.tier)
+    }
 
     private var filtered: [TripRecord] {
-        guard let destinationFilter else { return trips }
-        return trips.filter { $0.destinationPlaceID == destinationFilter }
+        guard let destinationFilter else { return gated.visible }
+        return gated.visible.filter { $0.destinationPlaceID == destinationFilter }
     }
 
     var body: some View {
@@ -22,6 +28,19 @@ struct TripsView: View {
                         TripRowView(record: record)
                     }
                 }
+                if gated.hiddenCount > 0 {
+                    Button {
+                        showPaywall = true
+                    } label: {
+                        Label(
+                            "\(gated.hiddenCount) older trips — unlock with Pro",
+                            systemImage: "lock.fill"
+                        )
+                    }
+                }
+            }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
             }
             .overlay {
                 if filtered.isEmpty {
