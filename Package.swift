@@ -20,5 +20,6 @@ let package = Package(
         // persistence concerns never leak into algorithm tests.
         .target(name: "RouteWarriorStore", dependencies: ["RouteWarriorKit"]),
         .testTarget(name: "RouteWarriorKitTests", dependencies: ["RouteWarriorKit"]),
+        .testTarget(name: "RouteWarriorStoreTests", dependencies: ["RouteWarriorStore"]),
     ]
 )
