@@ -7,6 +7,7 @@ struct RouteWarriorApp: App {
     private let container: ModelContainer
     @State private var pipeline: RecordingPipeline
     @State private var locationService: LocationService
+    @State private var store: StoreService
 
     /// True when this process is the unit-test host. The host must not
     /// bootstrap CloudKit (the unsigned test build has no iCloud
@@ -39,9 +40,12 @@ struct RouteWarriorApp: App {
             routesProvider: key.isEmpty ? nil : GoogleRoutesClient(apiKey: key)
         )
         _pipeline = State(initialValue: pipeline)
+        let store = StoreService()
+        _store = State(initialValue: store)
         let ghostRace = GhostRaceCoordinator(
             context: ModelContext(container),
-            presenter: Self.isTestHost ? nil : LiveActivityPresenter()
+            presenter: Self.isTestHost ? nil : LiveActivityPresenter(),
+            tierProvider: { store.tier }
         )
         _locationService = State(initialValue: LocationService(
             pipeline: pipeline,
@@ -54,10 +58,12 @@ struct RouteWarriorApp: App {
             ContentView()
                 .environment(pipeline)
                 .environment(locationService)
+                .environment(store)
                 .modelContainer(container)
                 .task {
                     if !Self.isTestHost {
                         locationService.start()
+                        store.start()
                     }
                 }
         }

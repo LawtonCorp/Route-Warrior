@@ -7,22 +7,33 @@ import SwiftUI
 
 struct PlacesView: View {
     @Environment(\.modelContext) private var context
+    @Environment(StoreService.self) private var store
     @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
     @State private var editingNew = false
+    @State private var showPaywall = false
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(places) { place in
-                    NavigationLink {
-                        DestinationDetailView(place: place)
-                    } label: {
-                        VStack(alignment: .leading) {
-                            Text(place.name).font(.headline)
-                            Text(kindLabel(place.kindRaw))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                ForEach(Array(places.enumerated()), id: \.element.id) { rank, place in
+                    if store.policy.canAnalyzeDestination(atRank: rank, tier: store.tier) {
+                        NavigationLink {
+                            DestinationDetailView(place: place)
+                        } label: {
+                            placeRow(place)
                         }
+                    } else {
+                        Button {
+                            showPaywall = true
+                        } label: {
+                            HStack {
+                                placeRow(place)
+                                Spacer()
+                                Image(systemName: "lock.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .tint(.primary)
                     }
                 }
                 .onDelete { offsets in
@@ -52,6 +63,18 @@ struct PlacesView: View {
             .sheet(isPresented: $editingNew) {
                 PlaceEditView()
             }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+            }
+        }
+    }
+
+    private func placeRow(_ place: PlaceRecord) -> some View {
+        VStack(alignment: .leading) {
+            Text(place.name).font(.headline)
+            Text(kindLabel(place.kindRaw))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
