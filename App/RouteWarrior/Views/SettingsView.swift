@@ -8,7 +8,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Permissions") {
+                Section {
                     LabeledContent("Location", value: locationLabel)
                     if locationService.authorizationStatus == .notDetermined {
                         Button("Allow location while using the app") {
@@ -27,6 +27,8 @@ struct SettingsView: View {
                         "Motion",
                         value: locationService.motionAvailable ? "Available" : "Unavailable"
                     )
+                } header: {
+                    Text("Permissions")
                 } footer: {
                     Text("Always-on location and motion access power hands-free trip recording. Your drives stay on this device and in your private iCloud — no accounts, no servers of ours.")
                 }
