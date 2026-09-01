@@ -8,6 +8,7 @@ struct RouteWarriorApp: App {
     @State private var pipeline: RecordingPipeline
     @State private var locationService: LocationService
     @State private var store: StoreService
+    @State private var destinationPrompt: DestinationPromptService
 
     /// True when this process is the unit-test host. The host must not
     /// bootstrap CloudKit (the unsigned test build has no iCloud
@@ -51,6 +52,15 @@ struct RouteWarriorApp: App {
             pipeline: pipeline,
             ghostRace: ghostRace
         ))
+        let prompt = DestinationPromptService(onPick: { placeID in
+            pipeline.requestSnapshot(to: placeID)
+        })
+        _destinationPrompt = State(initialValue: prompt)
+        if !Self.isTestHost {
+            pipeline.onDestinationUnknown = { places in
+                prompt.prompt(with: places)
+            }
+        }
     }
 
     var body: some Scene {

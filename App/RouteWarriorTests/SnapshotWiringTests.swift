@@ -116,6 +116,80 @@ final class SnapshotWiringTests: XCTestCase {
         XCTAssertEqual(snapshots[0].destinationPlaceID, school.id)
     }
 
+    func testManualPickFallbackFetchesAndAttaches() async throws {
+        // No history: the predictor advises nothing, the unknown-destination
+        // hook fires, and the one-tap pick fetches the comparison (FR-6).
+        let container = try RouteWarriorStoreFactory.inMemoryContainer()
+        let context = ModelContext(container)
+        let home = Place(name: "Home", coordinate: Coordinate(latitude: 0, longitude: 0))
+        let school = Place(name: "School", coordinate: Coordinate(latitude: 0, longitude: 0.09))
+        context.insert(PlaceRecord(home))
+        context.insert(PlaceRecord(school))
+        try context.save()
+
+        let plan = Polyline(coordinates: [
+            Coordinate(latitude: 0, longitude: 0),
+            Coordinate(latitude: 0, longitude: 0.09),
+        ])
+        let pipeline = RecordingPipeline(
+            context: context,
+            timezoneID: "America/Chicago",
+            routesProvider: BoxedStub(plan: plan)
+        )
+        var offered: [Place] = []
+        pipeline.onDestinationUnknown = { offered = $0 }
+
+        let departure = Date(timeIntervalSince1970: 1_700_000_000)
+        pipeline.ingest(motion: .init(kind: .automotive, confidence: .high, timestamp: departure))
+        var east = 0.0
+        var time = departure
+        let target = 0.09 * metersPerDegree
+        while east < target {
+            pipeline.ingest(location: point(east: east, at: time, speed: 15))
+            if east == 900 {
+                // The unknown hook fires inside the fetch task.
+                await pipeline.snapshotFetch?.value
+                XCTAssertEqual(offered.count, 2)
+                pipeline.requestSnapshot(to: school.id)
+                await pipeline.snapshotFetch?.value
+            }
+            east += 15
+            time = time.addingTimeInterval(1)
+        }
+        for _ in 0..<200 {
+            pipeline.ingest(location: point(east: east, at: time, speed: 0))
+            time = time.addingTimeInterval(1)
+        }
+
+        let trips = try context.fetch(FetchDescriptor<TripRecord>())
+        XCTAssertEqual(trips.count, 1)
+        XCTAssertNotNil(trips[0].snapshotID)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<SnapshotRecord>()).count, 1)
+    }
+
+    private final class BoxedStub: RoutesProviding {
+        let plan: Polyline
+
+        init(plan: Polyline) {
+            self.plan = plan
+        }
+
+        func computeSnapshot(
+            from origin: Coordinate,
+            to destination: Coordinate,
+            destinationPlaceID: UUID?
+        ) async throws -> PlanSnapshot {
+            PlanSnapshot(
+                requestedAt: .now,
+                destinationPlaceID: destinationPlaceID,
+                polyline: plan,
+                distanceM: plan.lengthMeters,
+                staticDuration: 600,
+                trafficDuration: 700
+            )
+        }
+    }
+
     func testKeylessPipelineRecordsWithoutComparison() throws {
         let container = try RouteWarriorStoreFactory.inMemoryContainer()
         let context = ModelContext(container)

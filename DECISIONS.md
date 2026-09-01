@@ -166,3 +166,21 @@ server-side receipt validation (conflicts with the no-server privacy
 stance; StoreKit 2's on-device verification is the accepted trade-off);
 gating recording itself (D-008: data accrues so upgrading is instantly
 valuable); a hard paywall at first launch.
+
+## D-016 — M6 compliance and the FR-6 pick fallback (2026-09-01)
+
+**Chosen**: FR-6's no-confidence fallback as a local notification with
+the saved places as one-tap actions (`DestinationPromptService` +
+`RecordingPipeline.requestSnapshot(to:)` — the pick fetches the plan
+from wherever the drive currently is; ignoring it just means "no
+comparison"); `PrivacyInfo.xcprivacy` declaring no tracking, no
+collected data, and the three accessed-API categories the code actually
+touches (UserDefaults, SystemBootTime for CoreMotion timestamp
+conversion, FileTimestamp for SwiftData); the App Store artifacts
+(privacy policy, review notes with the Always-location justification,
+listing copy, handoff checklist) as repo docs so submission is
+copy-paste. **Rejected**: an in-drive in-app picker as the primary
+fallback (the phone is locked or showing Google Maps; a notification
+reaches the lock screen); shipping without the manifest (App Store
+rejection); burying the human-only steps in chat instead of
+docs/HANDOFF.md.

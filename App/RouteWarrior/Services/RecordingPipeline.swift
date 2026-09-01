@@ -24,6 +24,11 @@ final class RecordingPipeline {
     private let routesProvider: (any RoutesProviding)?
     private var pendingSnapshots: [PlanSnapshot] = []
 
+    /// FR-6 fallback: fired when a trip starts but no destination clears
+    /// the confidence bar. The app answers with a one-tap picker
+    /// (notification); the pick calls `requestSnapshot(to:)`.
+    var onDestinationUnknown: (@MainActor ([Place]) -> Void)?
+
     init(
         context: ModelContext,
         timezoneID: String = TimeZone.current.identifier,
@@ -105,6 +110,9 @@ final class RecordingPipeline {
                 [first.destinationPlaceID, second.destinationPlaceID]
             case .none: []
             }
+            if targets.isEmpty, !places.isEmpty {
+                onDestinationUnknown?(places)
+            }
             for targetID in targets {
                 guard let place = places.first(where: { $0.id == targetID }) else { continue }
                 if let snapshot = try? await provider.computeSnapshot(
@@ -118,6 +126,28 @@ final class RecordingPipeline {
         } catch {
             // No comparison for this trip — recording is never blocked
             // by the provider (FR-3).
+        }
+    }
+
+    /// The one-tap pick (FR-6): fetch the plan for a destination the user
+    /// named, from wherever the drive currently is. No-op when idle or
+    /// keyless.
+    func requestSnapshot(to placeID: UUID) {
+        guard recorderState == .recording, let routesProvider,
+              let position = recorder.liveTrack.last
+        else { return }
+        snapshotFetch = Task { [weak self] in
+            guard let self else { return }
+            guard let place = try? self.context.fetch(FetchDescriptor<PlaceRecord>())
+                .first(where: { $0.id == placeID })?.place()
+            else { return }
+            if let snapshot = try? await routesProvider.computeSnapshot(
+                from: position.coordinate,
+                to: place.coordinate,
+                destinationPlaceID: place.id
+            ) {
+                self.pendingSnapshots.append(snapshot)
+            }
         }
     }
 
