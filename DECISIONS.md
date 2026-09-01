@@ -132,3 +132,19 @@ the snapshot fetch (recording must never wait on a network); attaching
 the nearest-in-time snapshot regardless of destination (silent
 misattribution is worse than no comparison); committing any key material
 to the repository.
+
+## D-014 — M4 ghost race wiring (2026-09-01)
+
+**Chosen**: the race rides the recording lifecycle from LocationService
+(begin on first recorded sample, feed the live track, end with the
+trip); variant recognition through the kit's one-way `liveMatch` with an
+800 m commitment floor; personal best as the default reference (bucket
+average selectable); Live Activity updates throttled to ~15 s, driven by
+sample timestamps so behavior is deterministic and testable; the
+presenter is a seam (`GhostRacePresenting`) so tests use a spy and only
+the production presenter touches ActivityKit; until M5's StoreService
+lands, the coordinator's tier provider defaults to Pro. **Rejected**:
+symmetric-deviation matching for partial tracks (the undriven remainder
+dominates — see the kit test proving it); per-sample Live Activity
+updates (ActivityKit throttling and battery); in-app race UI as primary
+surface (Google Maps owns the foreground, D-003).

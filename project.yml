@@ -37,6 +37,9 @@ targets:
     platform: iOS
     sources:
       - path: App/RouteWarrior
+      # Shared with the widget target: the Live Activity contract must
+      # compile into both sides (see App/Shared/GhostRaceAttributes.swift).
+      - path: App/Shared
     dependencies:
       - package: RouteWarriorKit
         product: RouteWarriorKit
@@ -93,6 +96,7 @@ targets:
     platform: iOS
     sources:
       - path: App/RouteWarriorWidgets
+      - path: App/Shared
     entitlements:
       path: App/RouteWarriorWidgets/RouteWarriorWidgets.entitlements
       properties:
