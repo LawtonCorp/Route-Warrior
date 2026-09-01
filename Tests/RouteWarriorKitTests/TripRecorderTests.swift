@@ -218,6 +218,19 @@ struct TripRecorderTests {
         #expect(abs(trip.distanceM - 199 * 10) < 199 * 10 * 0.01)
     }
 
+    @Test func liveTrackExposesTheCurrentBuffer() {
+        var recorder = TripRecorder(timezoneID: tz)
+        #expect(recorder.liveTrack.isEmpty)
+        #expect(recorder.recordingStartedAt == nil)
+        _ = recorder.ingest(motion: automotive(t0))
+        var builder = DriveBuilder(start: t0)
+        builder.drive(speedMps: 15, seconds: 40)
+        _ = feed(builder.points, into: &recorder)
+        #expect(recorder.state == .recording)
+        #expect(recorder.recordingStartedAt == t0)
+        #expect(recorder.liveTrack.count == 40)
+    }
+
     @Test func manualStopWithNothingRecordedDiscards() {
         var recorder = TripRecorder(timezoneID: tz)
         recorder.startManualRecording(at: t0)

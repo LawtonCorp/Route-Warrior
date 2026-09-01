@@ -14,11 +14,15 @@ struct PlacesView: View {
         NavigationStack {
             List {
                 ForEach(places) { place in
-                    VStack(alignment: .leading) {
-                        Text(place.name).font(.headline)
-                        Text(kindLabel(place.kindRaw))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    NavigationLink {
+                        DestinationDetailView(place: place)
+                    } label: {
+                        VStack(alignment: .leading) {
+                            Text(place.name).font(.headline)
+                            Text(kindLabel(place.kindRaw))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .onDelete { offsets in

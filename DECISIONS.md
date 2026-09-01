@@ -115,3 +115,20 @@ than dying silently; the template's Greeting placeholder replaced by real
 wiring tests. **Rejected**: continuous GPS while idle (battery, NFR-3);
 crashing on persistence failure; a combined location+persistence object
 (untestable without a device).
+
+## D-013 — M3 comparison wiring (2026-09-01)
+
+**Chosen**: snapshots fetched in a background task at trip start (predict
+destination from history, fetch top one or two per FR-6), held pending,
+and attached at finalize only when the predicted destination matches
+where the drive actually ended — mispredicted snapshots are dropped, not
+misattached. The Google API key rides an Info.plist entry populated from
+the `ROUTEWARRIOR_ROUTES_KEY` build setting (device-build.sh injects it
+from the environment or signing.local; CI stays keyless, so CI builds
+exercise the no-comparison path). Overpass inventories fetch on demand
+when a destination's analytics appear, once per variant, with silent
+retry on the next appearance. **Rejected**: blocking trip finalization on
+the snapshot fetch (recording must never wait on a network); attaching
+the nearest-in-time snapshot regardless of destination (silent
+misattribution is worse than no comparison); committing any key material
+to the repository.
