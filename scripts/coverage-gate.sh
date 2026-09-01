@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# StarterKit must hold >= 90% line coverage. Run after
+# RouteWarriorKit must hold >= 90% line coverage. Run after
 # `swift test --enable-code-coverage`.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -19,7 +19,7 @@ if [ ! -f "$BIN" ]; then
     exit 1
 fi
 
-xcrun llvm-cov export -format=lcov -instr-profile "$PROF" "$BIN" > /tmp/starterkit.lcov
+xcrun llvm-cov export -format=lcov -instr-profile "$PROF" "$BIN" > /tmp/routewarriorkit.lcov
 
 python3 - "$THRESHOLD" <<'PY'
 import sys
@@ -28,12 +28,12 @@ hit = total = 0
 keep = False
 per_file = {}
 cur = None
-for line in open('/tmp/starterkit.lcov'):
+for line in open('/tmp/routewarriorkit.lcov'):
     line = line.strip()
     if line.startswith('SF:'):
         path = line[3:]
-        keep = '/Sources/StarterKit/' in path
-        cur = path.split('/Sources/StarterKit/')[-1] if keep else None
+        keep = '/Sources/RouteWarriorKit/' in path
+        cur = path.split('/Sources/RouteWarriorKit/')[-1] if keep else None
         if keep:
             per_file.setdefault(cur, [0, 0])
     elif keep and line.startswith('DA:'):
@@ -46,11 +46,11 @@ for line in open('/tmp/starterkit.lcov'):
             per_file[cur][0] += 1
 
 if total == 0:
-    print("FAIL: no StarterKit lines were instrumented.")
+    print("FAIL: no RouteWarriorKit lines were instrumented.")
     sys.exit(1)
 
 pct = 100.0 * hit / total
-print(f"StarterKit line coverage: {pct:.2f}% ({hit}/{total} lines)")
+print(f"RouteWarriorKit line coverage: {pct:.2f}% ({hit}/{total} lines)")
 print()
 for name, (h, t) in sorted(per_file.items(), key=lambda kv: kv[1][0] / kv[1][1] if kv[1][1] else 1):
     if t:

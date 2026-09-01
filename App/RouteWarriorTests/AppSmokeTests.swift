@@ -1,6 +1,6 @@
-import StarterKit
+import RouteWarriorKit
 import XCTest
-@testable import StarterApp
+@testable import RouteWarrior
 
 /// The app target needs at least one real test, because a green kit suite says
 /// nothing about wiring: a reducer can pass every test while nothing in the app

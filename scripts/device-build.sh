@@ -11,17 +11,17 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-SCHEME=StarterApp
+SCHEME=RouteWarrior
 CONFIG=Debug
 DERIVED=build/device
 APP="$DERIVED/Build/Products/$CONFIG-iphoneos/$SCHEME.app"
 
 # --- who is signing -------------------------------------------------------
-TEAM="${STARTER_TEAM:-}"
+TEAM="${ROUTEWARRIOR_TEAM:-}"
 if [ -z "$TEAM" ] && [ -f scripts/signing.local ]; then
     # shellcheck disable=SC1091
     . scripts/signing.local
-    TEAM="${STARTER_TEAM:-}"
+    TEAM="${ROUTEWARRIOR_TEAM:-}"
 fi
 if [ -z "$TEAM" ]; then
     cat >&2 <<'MSG'
@@ -29,12 +29,12 @@ No signing team set.
 
 Set it once and every later build picks it up:
 
-    echo 'STARTER_TEAM=YOURTEAMID' > scripts/signing.local
+    echo 'ROUTEWARRIOR_TEAM=YOURTEAMID' > scripts/signing.local
 
 scripts/signing.local is gitignored, so your account never reaches the
 repository. For a single build instead:
 
-    STARTER_TEAM=YOURTEAMID ./scripts/device-build.sh
+    ROUTEWARRIOR_TEAM=YOURTEAMID ./scripts/device-build.sh
 
 Your Team ID is in Xcode → Settings → Accounts, or on the Apple Developer
 site under Membership.
@@ -75,7 +75,7 @@ if [ "${1:-}" = "--build-only" ]; then
     exit 0
 fi
 
-DEVICE="${STARTER_DEVICE:-}"
+DEVICE="${ROUTEWARRIOR_DEVICE:-}"
 if [ -z "$DEVICE" ]; then
     # Pick the phone automatically when exactly one is plugged in; anything
     # less certain is the user's call, not this script's.
@@ -126,7 +126,7 @@ if [ -z "$DEVICE" ]; then
     xcrun devicectl list devices || true
     echo
     echo "Pick one and re-run:"
-    echo "    STARTER_DEVICE='Your iPhone' ./scripts/device-build.sh"
+    echo "    ROUTEWARRIOR_DEVICE='Your iPhone' ./scripts/device-build.sh"
     exit 1
 fi
 

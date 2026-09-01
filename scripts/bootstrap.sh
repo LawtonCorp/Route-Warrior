@@ -10,4 +10,4 @@ fi
 
 xcodegen generate
 echo
-echo "Done. Open StarterApp.xcodeproj in Xcode, or run:  open StarterApp.xcodeproj"
+echo "Done. Open RouteWarrior.xcodeproj in Xcode, or run:  open RouteWarrior.xcodeproj"

@@ -1,5 +1,5 @@
 import Testing
-@testable import StarterKit
+@testable import RouteWarriorKit
 
 struct GreetingTests {
     @Test func greetsByName() {

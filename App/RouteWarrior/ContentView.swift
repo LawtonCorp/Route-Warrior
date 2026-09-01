@@ -1,10 +1,10 @@
-import StarterKit
+import RouteWarriorKit
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: "hammer")
+            Image(systemName: "car.fill")
                 .font(.system(size: 44))
                 .foregroundStyle(.tint)
             Text(Greeting.message(for: "world"))
