@@ -98,6 +98,10 @@ jobs:
           # log tail is the cheapest way to read a failure — so the error list
           # goes at the very end, where a tail will always find it.
           echo "=============== errors ==============="
-          grep -E "error:|Testing failed:|\*\* .* FAILED \*\*" /tmp/xcodebuild.log \
-            | sed "s|$PWD/||" | sort -u | head -60
+          # The test host app logs CoreData noise at launch; drop it or it
+          # drowns the real failure.
+          grep -E "error:|Testing failed:|\*\* .* FAILED \*\*|Test Case .* failed|Test Suite .* failed|XCTAssert|Terminating app|Fatal error|crashed|Restarting after unexpected exit" /tmp/xcodebuild.log \
+            | grep -v "CoreData: error" | sed "s|$PWD/||" | sort -u | head -40
+          echo "=============== failing tests ========"
+          grep -A 15 "Failing tests:" /tmp/xcodebuild.log | head -40
           echo "======================================"
