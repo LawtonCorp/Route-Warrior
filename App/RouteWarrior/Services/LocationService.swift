@@ -16,10 +16,13 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private let motionManager = CMMotionActivityManager()
     private let pipeline: RecordingPipeline
+    private let ghostRace: GhostRaceCoordinator?
+    private var raceActive = false
     private var highPowerActive = false
 
-    init(pipeline: RecordingPipeline) {
+    init(pipeline: RecordingPipeline, ghostRace: GhostRaceCoordinator? = nil) {
         self.pipeline = pipeline
+        self.ghostRace = ghostRace
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest
@@ -46,7 +49,24 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
 
     func forward(location point: TrackPoint) {
         pipeline.ingest(location: point)
+        syncGhostRace()
         syncPowerMode()
+    }
+
+    /// The ghost race rides the recording lifecycle: begin on the first
+    /// recorded sample, feed the live track, end when the trip does (FR-15).
+    private func syncGhostRace() {
+        guard let ghostRace else { return }
+        if pipeline.recorderState == .recording, let startedAt = pipeline.recordingStartedAt {
+            if !raceActive {
+                ghostRace.tripBegan()
+                raceActive = true
+            }
+            ghostRace.ingest(track: pipeline.liveTrack, startedAt: startedAt)
+        } else if raceActive {
+            ghostRace.tripEnded()
+            raceActive = false
+        }
     }
 
     func forward(motion sample: TripRecorder.MotionSample) {

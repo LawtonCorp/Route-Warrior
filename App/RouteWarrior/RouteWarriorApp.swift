@@ -39,7 +39,14 @@ struct RouteWarriorApp: App {
             routesProvider: key.isEmpty ? nil : GoogleRoutesClient(apiKey: key)
         )
         _pipeline = State(initialValue: pipeline)
-        _locationService = State(initialValue: LocationService(pipeline: pipeline))
+        let ghostRace = GhostRaceCoordinator(
+            context: ModelContext(container),
+            presenter: Self.isTestHost ? nil : LiveActivityPresenter()
+        )
+        _locationService = State(initialValue: LocationService(
+            pipeline: pipeline,
+            ghostRace: ghostRace
+        ))
     }
 
     var body: some Scene {
