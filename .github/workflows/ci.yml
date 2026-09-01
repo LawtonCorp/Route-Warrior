@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Cheap gates first: they need no macOS minutes and fail fast on the
+  # constraints that are easiest to violate accidentally.
+  gates:
+    name: Release gates (kit purity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: UI-free kit gate
+        run: ./scripts/kit-purity-gate.sh
+
+  kit:
+    name: StarterKit tests + coverage
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: swift --version && xcodebuild -version
+      - name: Build
+        run: swift build --build-tests
+      - name: Test with coverage
+        run: |
+          # Surface the failures, not the noise: capture the log, tail it, and
+          # print only the error lines when something breaks.
+          set +e
+          swift test --enable-code-coverage > /tmp/swift-test.log 2>&1
+          STATUS=$?
+          set -e
+          tail -5 /tmp/swift-test.log
+          if [ "$STATUS" -ne 0 ]; then
+            echo "=============== failures ==============="
+            grep -E "error:|✘|Issue recorded|Expectation failed" /tmp/swift-test.log \
+              | sed "s|$PWD/||" | head -60
+            echo "========================================"
+          fi
+          exit $STATUS
+      - name: Coverage gate
+        run: ./scripts/coverage-gate.sh
+
+  app:
+    name: iOS app build + tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Select a simulator
+        id: sim
+        # Auto-pick the newest available iPhone rather than hardcoding a model
+        # name that Apple retires with the next Xcode image.
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available
+          NAME=$(xcrun simctl list devices available --json \
+            | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];\
+            c=[x for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']];\
+            print(sorted(c,key=lambda x:x['name'])[-1]['name'])")
+          echo "Using simulator: $NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+      - name: Build and test
+        run: |
+          set +e
+          xcodebuild test \
+            -project StarterApp.xcodeproj \
+            -scheme StarterApp \
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.name }}" \
+            CODE_SIGNING_ALLOWED=NO > /tmp/xcodebuild.log 2>&1
+          STATUS=$?
+          set -e
+          tail -3 /tmp/xcodebuild.log
+          exit $STATUS
+      - name: Keep the full build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: /tmp/xcodebuild.log
+          retention-days: 5
+      - name: What broke
+        if: failure()
+        run: |
+          # Deliberately the last step in the job. xcodebuild buries the handful
+          # of lines that matter under thousands of compile invocations, and a
+          # log tail is the cheapest way to read a failure — so the error list
+          # goes at the very end, where a tail will always find it.
+          echo "=============== errors ==============="
+          grep -E "error:|Testing failed:|\*\* .* FAILED \*\*" /tmp/xcodebuild.log \
+            | sed "s|$PWD/||" | sort -u | head -60
+          echo "======================================"
