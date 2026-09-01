@@ -34,14 +34,17 @@ struct LiveMatchTests {
     }
 
     @Test func partialDriveMatchesItsVariant() {
+        // Bind once: the computed properties mint a fresh id per access.
+        let a = variantA
+        let b = variantB
         // First 3 km of Route A (the full route is ~10 km).
         let partial = Polyline(coordinates: [
             Coordinate(latitude: 0, longitude: 0),
             Coordinate(latitude: 0, longitude: 0.027),
         ])
-        let match = RouteMatcher.liveMatch(partialTrack: partial, candidates: [variantA, variantB])
-        #expect(match?.variantID == variantA.id)
-        #expect(match!.deviationM < 50)
+        let match = RouteMatcher.liveMatch(partialTrack: partial, candidates: [a, b])
+        #expect(match?.variantID == a.id)
+        #expect((match?.deviationM ?? .infinity) < 50)
     }
 
     @Test func tooShortATrackRefusesToCommit() {
