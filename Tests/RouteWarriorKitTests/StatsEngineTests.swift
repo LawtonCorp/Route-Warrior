@@ -80,7 +80,7 @@ struct StatsEngineTests {
         let forty = (0..<40).map { trip(day: 1, hour: 7, duration: 600 + Double($0) * 10) }
         #expect(StatsEngine.freeFlowBaseline(for: forty) == 610)
 
-        let four = (0..<4).map { trip(day: 1, hour: 7, duration: 600) }
+        let four = (0..<4).map { _ in trip(day: 1, hour: 7, duration: 600) }
         #expect(StatsEngine.freeFlowBaseline(for: four) == nil)
     }
 
