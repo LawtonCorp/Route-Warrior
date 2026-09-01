@@ -18,10 +18,12 @@ APP="$DERIVED/Build/Products/$CONFIG-iphoneos/$SCHEME.app"
 
 # --- who is signing -------------------------------------------------------
 TEAM="${ROUTEWARRIOR_TEAM:-}"
-if [ -z "$TEAM" ] && [ -f scripts/signing.local ]; then
+ROUTES_KEY="${ROUTEWARRIOR_ROUTES_KEY:-}"
+if [ -f scripts/signing.local ]; then
     # shellcheck disable=SC1091
     . scripts/signing.local
-    TEAM="${ROUTEWARRIOR_TEAM:-}"
+    TEAM="${TEAM:-${ROUTEWARRIOR_TEAM:-}}"
+    ROUTES_KEY="${ROUTES_KEY:-${ROUTEWARRIOR_ROUTES_KEY:-}}"
 fi
 if [ -z "$TEAM" ]; then
     cat >&2 <<'MSG'
@@ -58,6 +60,7 @@ xcodebuild \
     -destination 'generic/platform=iOS' \
     -derivedDataPath "$DERIVED" \
     -allowProvisioningUpdates \
+    ROUTEWARRIOR_ROUTES_KEY="$ROUTES_KEY" \
     DEVELOPMENT_TEAM="$TEAM" \
     CODE_SIGN_STYLE=Automatic \
     CODE_SIGNING_ALLOWED=YES \

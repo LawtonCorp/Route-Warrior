@@ -25,6 +25,7 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    ROUTEWARRIOR_ROUTES_KEY: ""
     DEVELOPMENT_TEAM: ""
     CODE_SIGNING_REQUIRED: "NO"
     CODE_SIGNING_ALLOWED: "NO"
@@ -74,6 +75,9 @@ targets:
           so recording is hands-free.
         UIBackgroundModes:
           - location
+        # Injected at build time (scripts/device-build.sh); empty in CI, so
+        # CI builds run keyless and trips show "no comparison".
+        GoogleRoutesAPIKey: $(ROUTEWARRIOR_ROUTES_KEY)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lawtoncorp.routewarrior

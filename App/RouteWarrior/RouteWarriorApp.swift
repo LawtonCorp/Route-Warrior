@@ -31,7 +31,13 @@ struct RouteWarriorApp: App {
                 ?? (try! RouteWarriorStoreFactory.inMemoryContainer())
         }
         self.container = container
-        let pipeline = RecordingPipeline(context: ModelContext(container))
+        // Keyless builds run fine — trips simply record without a Google
+        // comparison (FR-6 fallback).
+        let key = GoogleRoutesClient.configuredKey
+        let pipeline = RecordingPipeline(
+            context: ModelContext(container),
+            routesProvider: key.isEmpty ? nil : GoogleRoutesClient(apiKey: key)
+        )
         _pipeline = State(initialValue: pipeline)
         _locationService = State(initialValue: LocationService(pipeline: pipeline))
     }

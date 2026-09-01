@@ -9,8 +9,14 @@ struct TripDetailView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     let record: TripRecord
+    @Query private var allSnapshots: [SnapshotRecord]
 
     private var trip: Trip? { try? record.trip() }
+
+    private var snapshot: PlanSnapshot? {
+        guard let id = record.snapshotID else { return nil }
+        return allSnapshots.first { $0.id == id }.flatMap { try? $0.snapshot() }
+    }
 
     var body: some View {
         List {
@@ -33,6 +39,12 @@ struct TripDetailView: View {
 
     private func routeMap(for trip: Trip) -> some View {
         Map {
+            if let snapshot {
+                MapPolyline(coordinates: snapshot.polyline.coordinates.map {
+                    CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+                })
+                .stroke(.orange, style: StrokeStyle(lineWidth: 3, dash: [6, 6]))
+            }
             MapPolyline(coordinates: trip.points.map {
                 CLLocationCoordinate2D(
                     latitude: $0.coordinate.latitude,
@@ -53,7 +65,18 @@ struct TripDetailView: View {
                 LabeledContent("Stops", value: "\(trip.stopEvents.count)")
             }
             LabeledContent("Recorded", value: record.sourceRaw == "manual" ? "Manually" : "Automatically")
-            if record.snapshotID == nil {
+            if let snapshot {
+                let delta = record.endedAt.timeIntervalSince(record.startedAt) - snapshot.trafficDuration
+                LabeledContent("Google's ETA was", value: Format.duration(snapshot.trafficDuration))
+                LabeledContent("You vs. the ETA") {
+                    Text(Format.signedDelta(delta))
+                        .foregroundStyle(delta <= 0 ? .green : .orange)
+                        .monospacedDigit()
+                }
+                if let followed = record.followedPlan {
+                    LabeledContent("Followed Google's route", value: followed ? "Yes" : "No — your own way")
+                }
+            } else {
                 LabeledContent("Google comparison", value: "None for this trip")
             }
         }

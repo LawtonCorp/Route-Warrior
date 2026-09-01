@@ -92,6 +92,16 @@ public struct TripRecorder: Sendable {
     // MARK: Stored state
 
     public private(set) var state: State = .idle
+
+    /// The points gathered so far in the current armed/recording segment —
+    /// the live surface for origin lookup and the ghost race (FR-15).
+    public var liveTrack: [TrackPoint] { buffer }
+
+    /// When the current recording's first retained point was taken;
+    /// nil unless recording.
+    public var recordingStartedAt: Date? {
+        state == .recording ? buffer.first?.timestamp : nil
+    }
     private let config: Config
     private let timezoneID: String
 
