@@ -153,7 +153,8 @@ public struct TripRecorder: Sendable {
     private mutating func ingestWhileArmed(_ point: TrackPoint) -> Output? {
         let speed = effectiveSpeed(of: point, after: buffer.last)
         buffer.append(point)
-        buffer.removeAll { point.timestamp.timeIntervalSince($0.timestamp) > config.armedBufferDuration }
+        let horizon = config.armedBufferDuration
+        buffer.removeAll { point.timestamp.timeIntervalSince($0.timestamp) > horizon }
 
         if speed >= config.startSpeedMps {
             if movingSince == nil { movingSince = point.timestamp }
