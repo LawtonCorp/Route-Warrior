@@ -109,6 +109,15 @@ app-target test proves unforced builds start free.
   by the code under test proves nothing. Say plainly which claims are
   machine-checked and which need a phone in hand.
 
+## Draft spec awaiting answers
+
+`docs/SPEC_IN_APP_MAP.md` (PR: claude/spec-in-app-map) proposes an in-app
+map with Apple and Google routing (FR-19…FR-24, milestones M7–M9). It is
+blocked on Brian's answers to its §9 questions and two Google items he
+must verify on the Mac (Maps SDK map-load pricing; the terms clause on
+non-Google maps, which also touches v1's trip-detail overlay). Do not
+start building it until those are answered.
+
 ## What's next
 
 1. **Brian's checklist** (`docs/HANDOFF.md`, in order): Google Routes API
