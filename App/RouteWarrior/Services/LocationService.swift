@@ -12,6 +12,7 @@ import RouteWarriorKit
 final class LocationService: NSObject, CLLocationManagerDelegate {
     private(set) var authorizationStatus: CLAuthorizationStatus = .notDetermined
     private(set) var motionAvailable = CMMotionActivityManager.isActivityAvailable()
+    private(set) var motionAuthorization: CMAuthorizationStatus = CMMotionActivityManager.authorizationStatus()
 
     private let manager = CLLocationManager()
     private let motionManager = CMMotionActivityManager()
@@ -32,6 +33,7 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     }
 
     func start() {
+        pipeline.note("App launched — location: \(Self.label(authorizationStatus)); motion: \(Self.label(motionAuthorization))")
         manager.startMonitoringSignificantLocationChanges()
         startMotionUpdates()
         syncPowerMode()
@@ -83,7 +85,9 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
                 confidence: Self.confidence(of: activity),
                 timestamp: Date(timeInterval: activity.timestamp - ProcessInfo.processInfo.systemUptime, since: .now)
             )
+            let authorization = CMMotionActivityManager.authorizationStatus()
             Task { @MainActor [weak self] in
+                self?.motionAuthorization = authorization
                 self?.forward(motion: sample)
             }
         }
@@ -96,15 +100,29 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
             if highPowerActive {
                 manager.stopUpdatingLocation()
                 highPowerActive = false
+                pipeline.note("GPS off (idle)")
             }
         case .armed, .recording:
+            applyBackgroundPolicy()
             if !highPowerActive {
-                manager.allowsBackgroundLocationUpdates =
-                    manager.authorizationStatus == .authorizedAlways
                 manager.startUpdatingLocation()
                 highPowerActive = true
+                let background = manager.allowsBackgroundLocationUpdates ? "continues when locked" : "foreground only"
+                pipeline.note("GPS on — \(Self.label(authorizationStatus)), \(background)")
             }
         }
+    }
+
+    /// Background delivery needs the `location` background mode (declared
+    /// in project.yml) plus any location authorization: a When-In-Use app
+    /// keeps the updates it started in the foreground, under the system's
+    /// blue indicator. Gating this on Always (as v1 did) meant a manual
+    /// recording lost GPS the moment the phone locked — D-019.
+    private func applyBackgroundPolicy() {
+        let status = manager.authorizationStatus
+        let authorized = status == .authorizedAlways || status == .authorizedWhenInUse
+        manager.allowsBackgroundLocationUpdates = authorized
+        manager.showsBackgroundLocationIndicator = true
     }
 
     // MARK: CLLocationManagerDelegate
@@ -132,8 +150,14 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let status = manager.authorizationStatus
         Task { @MainActor [weak self] in
-            self?.authorizationStatus = status
-            self?.syncPowerMode()
+            guard let self else { return }
+            let changed = self.authorizationStatus != status
+            self.authorizationStatus = status
+            if changed {
+                self.pipeline.note("Location permission: \(Self.label(status))")
+            }
+            if self.highPowerActive { self.applyBackgroundPolicy() }
+            self.syncPowerMode()
         }
     }
 
@@ -158,6 +182,25 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         case .high: return .high
         case .medium: return .medium
         default: return .low
+        }
+    }
+
+    static func label(_ status: CLAuthorizationStatus) -> String {
+        switch status {
+        case .authorizedAlways: "Always"
+        case .authorizedWhenInUse: "While using"
+        case .denied: "Denied"
+        case .restricted: "Restricted"
+        default: "Not set"
+        }
+    }
+
+    static func label(_ status: CMAuthorizationStatus) -> String {
+        switch status {
+        case .authorized: "Allowed"
+        case .denied: "Denied"
+        case .restricted: "Restricted"
+        default: "Not asked yet"
         }
     }
 }

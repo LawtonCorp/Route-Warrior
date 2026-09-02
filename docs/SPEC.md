@@ -59,8 +59,12 @@ opt-in sharing layer can reference them without a schema migration.
 
 Pure state machine: `idle → armed` (automotive motion activity, confidence
 ≥ medium) → `recording` (speed ≥ 4.5 m/s sustained 30 s, or 500 m
-displacement) → `ending` (speed < 1 m/s for 180 s, or walking/stationary
-motion) → `finalized` (trim trailing idle; discard if < 800 m or < 3 min).
+displacement) → `ending` (speed < 1 m/s for 180 s, or walking/running/
+cycling motion — immediate if no driving-speed point in the last 30 s,
+otherwise confirmed by 20 s of sub-driving-speed points; "stationary" never
+ends a trip, a red light is stationary — D-019) → `finalized` (trim the
+walk and trailing idle; discard if < 800 m or < 3 min). Every finalize
+reports an `EndCause` and a `SegmentSummary` for the recorder log.
 Inputs are abstract `LocationSample`/`MotionSample` events, so the whole
 lifecycle is unit-tested with synthetic streams (missed-start, garage cold
 start, drive-through idle, red-light-at-end edge cases as named fixtures).

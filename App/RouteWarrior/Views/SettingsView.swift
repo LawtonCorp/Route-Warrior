@@ -47,14 +47,27 @@ struct SettingsView: View {
                         Link("Open system settings", destination: URL(string: UIApplication.openSettingsURLString)!)
                     }
                     LabeledContent {
-                        Text(locationService.motionAvailable ? "Available" : "Unavailable")
+                        Text(motionLabel)
                     } label: {
                         settingsLabel("Motion", symbol: "figure.walk.motion", color: Theme.win)
+                    }
+                    if locationService.motionAuthorization == .denied {
+                        Link("Allow motion in system settings", destination: URL(string: UIApplication.openSettingsURLString)!)
                     }
                 } header: {
                     Text("Permissions")
                 } footer: {
                     Text("Always-on location and motion access power hands-free trip recording. Your drives stay on this device and in your private iCloud — no accounts, no servers of ours.")
+                }
+
+                Section {
+                    NavigationLink {
+                        RecorderLogView()
+                    } label: {
+                        settingsLabel("Recorder log", symbol: "list.bullet.rectangle.fill", color: Theme.google)
+                    }
+                } footer: {
+                    Text("What the recorder did on each drive — when it armed, started, and why it ended. Check here if a drive went missing.")
                 }
 
                 Section("About") {
@@ -84,13 +97,12 @@ struct SettingsView: View {
     }
 
     private var locationLabel: String {
-        switch locationService.authorizationStatus {
-        case .authorizedAlways: "Always"
-        case .authorizedWhenInUse: "While using"
-        case .denied: "Denied"
-        case .restricted: "Restricted"
-        default: "Not set"
-        }
+        LocationService.label(locationService.authorizationStatus)
+    }
+
+    private var motionLabel: String {
+        guard locationService.motionAvailable else { return "Unavailable" }
+        return LocationService.label(locationService.motionAuthorization)
     }
 
     private var appVersion: String {

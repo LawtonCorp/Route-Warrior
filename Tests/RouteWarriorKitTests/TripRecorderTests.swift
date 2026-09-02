@@ -148,6 +148,121 @@ struct TripRecorderTests {
         #expect(trip.endedAt == t0.addingTimeInterval(299))
     }
 
+    // MARK: Motion-end robustness (D-019)
+
+    @Test func stationaryAtARedLightDoesNotEndTheTrip() {
+        // CoreMotion reports "stationary" for a car waiting at a light. That
+        // used to finalize on the spot, chopping a drive into sub-3-minute
+        // fragments that were all discarded as too brief.
+        var recorder = TripRecorder(timezoneID: tz)
+        _ = recorder.ingest(motion: automotive(t0))
+        var builder = DriveBuilder(start: t0)
+        builder.drive(speedMps: 15, seconds: 120)
+        builder.drive(speedMps: 0, seconds: 90) // a long light
+        var outputs = feed(builder.points, into: &recorder)
+        let stationary = TripRecorder.MotionSample(
+            kind: .stationary, confidence: .high, timestamp: builder.time
+        )
+        #expect(recorder.ingest(motion: stationary) == nil)
+        #expect(recorder.state == .recording)
+
+        let fed = builder.points.count
+        builder.drive(speedMps: 15, seconds: 120)
+        builder.drive(speedMps: 0, seconds: 200)
+        outputs += feed(Array(builder.points[fed...]), into: &recorder)
+
+        let finalized = outputs.filter { if case .tripFinalized = $0 { true } else { false } }
+        #expect(finalized.count == 1)
+        guard let trip = finalizedTrip(in: outputs) else { return }
+        #expect(trip.endedAt == t0.addingTimeInterval(329))
+        #expect(abs(trip.distanceM - 3585) < 3585 * 0.01)
+        #expect(abs(trip.idleTime - 90) < 5)
+        #expect(recorder.lastEndCause == .idleTimeout)
+    }
+
+    @Test func spuriousWalkingWhileCruisingDoesNotEndTheTrip() {
+        var recorder = TripRecorder(timezoneID: tz)
+        _ = recorder.ingest(motion: automotive(t0))
+        var builder = DriveBuilder(start: t0)
+        builder.drive(speedMps: 15, seconds: 120)
+        var outputs = feed(builder.points, into: &recorder)
+        // One misclassified sample at highway speed.
+        let walking = TripRecorder.MotionSample(
+            kind: .walking, confidence: .high, timestamp: builder.time
+        )
+        #expect(recorder.ingest(motion: walking) == nil)
+        #expect(recorder.state == .recording)
+
+        let fed = builder.points.count
+        builder.drive(speedMps: 15, seconds: 120) // still cruising: suspicion clears
+        builder.drive(speedMps: 0, seconds: 200)
+        outputs += feed(Array(builder.points[fed...]), into: &recorder)
+
+        let finalized = outputs.filter { if case .tripFinalized = $0 { true } else { false } }
+        #expect(finalized.count == 1)
+        guard let trip = finalizedTrip(in: outputs) else { return }
+        #expect(trip.endedAt == t0.addingTimeInterval(239))
+        #expect(abs(trip.distanceM - 239 * 15) < 239 * 15 * 0.01)
+    }
+
+    @Test func walkingRightAfterStoppingIsConfirmedByLocationAndTrimmed() {
+        // Parked and out of the car within the grace window: the walking
+        // sample alone is a suspect; twenty seconds of walking-pace points
+        // confirm it, and the walk itself is not part of the drive.
+        var recorder = TripRecorder(timezoneID: tz)
+        _ = recorder.ingest(motion: automotive(t0))
+        var builder = DriveBuilder(start: t0)
+        builder.drive(speedMps: 15, seconds: 300)
+        builder.drive(speedMps: 0, seconds: 10)
+        var outputs = feed(builder.points, into: &recorder)
+        let walking = TripRecorder.MotionSample(
+            kind: .walking, confidence: .medium, timestamp: builder.time
+        )
+        #expect(recorder.ingest(motion: walking) == nil)
+        #expect(recorder.state == .recording)
+
+        let fed = builder.points.count
+        builder.drive(speedMps: 1.4, seconds: 30)
+        outputs += feed(Array(builder.points[fed...]), into: &recorder)
+
+        guard let trip = finalizedTrip(in: outputs) else {
+            Issue.record("walking-pace points after a walking sample must finalize")
+            return
+        }
+        #expect(recorder.state == .idle)
+        #expect(recorder.lastEndCause == .pedestrianMotion)
+        #expect(trip.endedAt == t0.addingTimeInterval(299))
+        #expect(abs(trip.distanceM - 299 * 15) < 299 * 15 * 0.01)
+    }
+
+    @Test func endCauseAndSegmentSummaryDescribeADiscard() {
+        var recorder = TripRecorder(timezoneID: tz)
+        _ = recorder.ingest(motion: automotive(t0))
+        var builder = DriveBuilder(start: t0)
+        builder.drive(speedMps: 15, seconds: 40)
+        builder.drive(speedMps: 0, seconds: 200)
+        let outputs = feed(builder.points, into: &recorder)
+        #expect(outputs.contains(.tripDiscarded(.tooBrief)))
+        #expect(recorder.lastEndCause == .idleTimeout)
+        // 40 driving points over 39 s covering 39 hops of 15 m.
+        #expect(recorder.lastSegment?.points == 40)
+        #expect(recorder.lastSegment?.duration == 39)
+        #expect(abs((recorder.lastSegment?.distanceM ?? 0) - 585) < 6)
+        #expect(recorder.lastSegment?.rejectedPoints == 0)
+    }
+
+    @Test func rejectedPointsAreCountedForTheSegment() {
+        var recorder = TripRecorder(timezoneID: tz)
+        recorder.startManualRecording(at: t0)
+        var noisy = DriveBuilder(start: t0)
+        noisy.drive(speedMps: 15, seconds: 30, accuracyM: 500)
+        #expect(feed(noisy.points, into: &recorder).isEmpty)
+        #expect(recorder.stopRecording() == .tripDiscarded(.tooBrief))
+        #expect(recorder.lastEndCause == .manualStop)
+        #expect(recorder.lastSegment?.points == 0)
+        #expect(recorder.lastSegment?.rejectedPoints == 30)
+    }
+
     @Test func gapInStreamSplitsTheTrip() {
         var recorder = TripRecorder(timezoneID: tz)
         _ = recorder.ingest(motion: automotive(t0))
@@ -165,6 +280,7 @@ struct TripRecorderTests {
         #expect(trip != nil)
         #expect(trip?.endedAt == t0.addingTimeInterval(299))
         #expect(recorder.state == .idle)
+        #expect(recorder.lastEndCause == .gapSplit)
     }
 
     // MARK: Arming
