@@ -19,11 +19,13 @@ APP="$DERIVED/Build/Products/$CONFIG-iphoneos/$SCHEME.app"
 # --- who is signing -------------------------------------------------------
 TEAM="${ROUTEWARRIOR_TEAM:-}"
 ROUTES_KEY="${ROUTEWARRIOR_ROUTES_KEY:-}"
+FORCE_PRO="${ROUTEWARRIOR_FORCE_PRO:-}"
 if [ -f scripts/signing.local ]; then
     # shellcheck disable=SC1091
     . scripts/signing.local
     TEAM="${TEAM:-${ROUTEWARRIOR_TEAM:-}}"
     ROUTES_KEY="${ROUTES_KEY:-${ROUTEWARRIOR_ROUTES_KEY:-}}"
+    FORCE_PRO="${FORCE_PRO:-${ROUTEWARRIOR_FORCE_PRO:-}}"
 fi
 if [ -z "$TEAM" ]; then
     cat >&2 <<'MSG'
@@ -53,6 +55,7 @@ echo "==> Generating the project"
 # with the portal on its own; without it a first build on a new machine fails
 # on provisioning rather than on anything you wrote.
 echo "==> Building $SCHEME ($CONFIG) for device, team $TEAM"
+[ "$FORCE_PRO" = "1" ] && echo "==> Pro tier FORCED ON for this build (D-017 owner override)"
 xcodebuild \
     -project "$SCHEME.xcodeproj" \
     -scheme "$SCHEME" \
@@ -61,6 +64,7 @@ xcodebuild \
     -derivedDataPath "$DERIVED" \
     -allowProvisioningUpdates \
     ROUTEWARRIOR_ROUTES_KEY="$ROUTES_KEY" \
+    ROUTEWARRIOR_FORCE_PRO="$FORCE_PRO" \
     DEVELOPMENT_TEAM="$TEAM" \
     CODE_SIGN_STYLE=Automatic \
     CODE_SIGNING_ALLOWED=YES \

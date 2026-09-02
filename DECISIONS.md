@@ -184,3 +184,26 @@ fallback (the phone is locked or showing Google Maps; a notification
 reaches the lock screen); shipping without the manifest (App Store
 rejection); burying the human-only steps in chat instead of
 docs/HANDOFF.md.
+
+## D-017 — App icon and the owner-build Pro override (2026-09-02)
+
+**Chosen**: a generated 1024×1024 app icon (single-size universal entry)
+drawn in the app's own trip-detail language — the driver's bold solid
+blue route beating Google's dashed orange detour to a checkered finish,
+on a navy map grid; and a Pro-tier override for personal device builds:
+`scripts/device-build.sh` injects `ROUTEWARRIOR_FORCE_PRO` into
+Info.plist as `RouteWarriorForcePro` exactly the way it injects the
+Google key, and `StoreService` reports `.pro` when the value is the
+exact string "1". The default is empty everywhere (project.yml's base
+setting), so CI and any App Store archive are untouched — proven by an
+app-target test that asserts the unforced build starts `.free`. The
+override can only raise the tier, never mask a real entitlement, and
+recording was never gated by tier in the first place (D-008). The Xcode
+run scheme also gets `storeKitConfiguration` pointing at the local
+`.storekit` file so the real purchase flow is testable in the simulator
+before App Store Connect exists. **Rejected**: a DEBUG-only compile
+flag (device-build.sh builds Debug today, but the Info.plist route
+keeps the behaviour identical if that ever changes, and the empty
+default is the actual safety); a hidden in-app unlock gesture (a
+public-app foot-gun); granting Pro by hardcoding the tier (would ship
+to the store).

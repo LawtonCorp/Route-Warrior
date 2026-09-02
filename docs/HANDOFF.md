@@ -59,6 +59,12 @@ Work top to bottom — later items depend on earlier ones.
    `com.lawtoncorp.routewarrior.pro.annual`, with your chosen prices
    (the .storekit placeholders are $2.99 / $19.99).
 2. Sandbox-test purchase, restore, and cancellation on-device.
+3. **Your own Pro unlock (D-017)**: add `ROUTEWARRIOR_FORCE_PRO=1` to
+   `scripts/signing.local` and re-run `./scripts/device-build.sh` — your
+   builds report Pro without a subscription. Comment it out when you want
+   to test the real purchase/sandbox flow on your phone; it never affects
+   CI or App Store archives (the setting is empty unless this script
+   passes it).
 
 ## 5. App Store submission (M6)
 
