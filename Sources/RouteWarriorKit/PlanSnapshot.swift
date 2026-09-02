@@ -67,3 +67,27 @@ public struct PlanSnapshot: Sendable, Equatable, Codable, Identifiable {
         self.alternates = alternates
     }
 }
+
+public extension PlanSnapshot {
+    /// The same departure with the alternate at `index` as the recommended
+    /// route and the former recommendation demoted to an alternate (FR-20:
+    /// tapping an alternate on the Plan screen makes it the plan). The id
+    /// is kept: it is still this departure's snapshot from this provider.
+    func promotingAlternate(at index: Int) -> PlanSnapshot {
+        guard alternates.indices.contains(index) else { return self }
+        var promoted = self
+        let chosen = alternates[index]
+        var rest = alternates
+        rest.remove(at: index)
+        rest.insert(
+            AltRoute(polyline: polyline, staticDuration: staticDuration, trafficDuration: trafficDuration),
+            at: 0
+        )
+        promoted.polyline = chosen.polyline
+        promoted.staticDuration = chosen.staticDuration
+        promoted.trafficDuration = chosen.trafficDuration
+        promoted.distanceM = chosen.polyline.lengthMeters
+        promoted.alternates = rest
+        return promoted
+    }
+}

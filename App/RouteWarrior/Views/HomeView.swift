@@ -5,6 +5,11 @@ import SwiftUI
 struct HomeView: View {
     @Environment(RecordingPipeline.self) private var pipeline
     @Environment(LocationService.self) private var locationService
+    @Environment(StoreService.self) private var store
+    @State private var showPlan = false
+    @State private var showDrive = false
+    @State private var driveAfterPlan = false
+    @State private var showPaywall = false
     @Query(sort: \TripRecord.startedAt, order: .reverse) private var trips: [TripRecord]
     @Query private var snapshots: [SnapshotRecord]
 
@@ -40,6 +45,22 @@ struct HomeView: View {
                     TripDetailView(record: record)
                 }
             }
+            .sheet(isPresented: $showPlan, onDismiss: {
+                // Present the drive view only after the sheet is gone; iOS
+                // drops a presentation started mid-dismissal.
+                if driveAfterPlan {
+                    driveAfterPlan = false
+                    showDrive = true
+                }
+            }) {
+                PlanView { driveAfterPlan = store.policy.driveViewAvailable(for: store.tier) }
+            }
+            .fullScreenCover(isPresented: $showDrive) {
+                DriveView()
+            }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+            }
         }
     }
 
@@ -62,6 +83,29 @@ struct HomeView: View {
                 }
                 Spacer()
                 recordButton
+            }
+            if pipeline.isRecording {
+                Button {
+                    if store.policy.driveViewAvailable(for: store.tier) {
+                        showDrive = true
+                    } else {
+                        showPaywall = true
+                    }
+                } label: {
+                    Label("Open the drive view", systemImage: "map.fill")
+                }
+                .buttonStyle(.bordered)
+                .tint(tint)
+                .font(.footnote)
+            } else {
+                Button {
+                    showPlan = true
+                } label: {
+                    Label("Where to?", systemImage: "magnifyingglass")
+                }
+                .buttonStyle(.bordered)
+                .tint(tint)
+                .font(.footnote)
             }
             if let outcome = pipeline.lastOutcome {
                 Text(outcome)
