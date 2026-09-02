@@ -19,6 +19,9 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     private(set) var alwaysRequested = UserDefaults.standard.bool(forKey: "alwaysLocationRequested")
     private static let alwaysRequestedKey = "alwaysLocationRequested"
     private var motionUpdatesActive = false
+    /// The most recent fix from any source — centres the New Place map at
+    /// city scale instead of the whole country (D-021).
+    private(set) var lastKnownCoordinate: Coordinate?
 
     private let manager = CLLocationManager()
     private let motionManager = CMMotionActivityManager()
@@ -53,6 +56,15 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     /// Motion & Fitness prompt). Idempotent.
     func enableMotionDetection() {
         startMotionUpdates()
+    }
+
+    /// One fix for the UI when no drive is on; iOS answers through the
+    /// normal delegate path (or `didFailWithError`, which we ignore).
+    func requestOneShotLocation() {
+        guard !highPowerActive else { return }
+        let status = manager.authorizationStatus
+        guard status == .authorizedAlways || status == .authorizedWhenInUse else { return }
+        manager.requestLocation()
     }
 
     func requestWhenInUseAuthorization() {
@@ -161,7 +173,9 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
                 horizontalAccuracyM: location.horizontalAccuracy
             )
         }
+        let latest = points.last?.coordinate
         Task { @MainActor [weak self] in
+            if let latest { self?.lastKnownCoordinate = latest }
             for point in points {
                 self?.forward(location: point)
             }

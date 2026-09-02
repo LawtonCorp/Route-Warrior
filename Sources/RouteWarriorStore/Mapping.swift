@@ -76,6 +76,7 @@ public extension PlaceRecord {
         longitude = place.coordinate.longitude
         radiusM = place.radiusM
         kindRaw = place.kind.rawValue
+        address = place.address
         createdAt = place.createdAt
     }
 
@@ -86,6 +87,7 @@ public extension PlaceRecord {
             coordinate: Coordinate(latitude: latitude, longitude: longitude),
             radiusM: radiusM,
             kind: Place.Kind(rawValue: kindRaw) ?? .custom,
+            address: address,
             createdAt: createdAt
         )
     }

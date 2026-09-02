@@ -288,3 +288,32 @@ real question to a random later moment, which is worse for trust and
 for support); blocking the app until Always is granted (App Review and
 D-008: recording via the Record button is a legitimate While Using
 mode); keeping the old copy that called Always an optional upgrade.
+
+## D-021 — New Place: city-scale map and address search (2026-09-02)
+
+**Trigger**: Brian, after adding places: the map opened on the whole
+country and the only way to place a pin was to zoom in by hand; there
+was no way to type an address.
+
+**Chosen**: the map opens at city scale (about 12 km across) around the
+phone's last known fix — `LocationService` now remembers the latest
+coordinate from any source and can request a one-shot fix when the form
+opens before one exists; until then the camera follows the user with the
+old automatic framing as the fallback. An Address field with
+autocomplete (`MKLocalSearchCompleter`, addresses and points of
+interest, biased to 50 km around the user) and a lookup on tap or return
+(`MKLocalSearch`) drops the pin, zooms to about 1.5 km, fills an empty
+Name from the result, and writes the resolved address back into the
+field. Tapping the map still works and clears the address, since a
+hand-placed pin has no verified one. `Place` gains a display-only
+`address` (tolerant decoding for records without it; the geofence is
+still the coordinate), persisted on `PlaceRecord` and shown under the
+name in the Places list. Apple's search was chosen over Google's Places
+API because it needs no key, costs nothing, and keeps the privacy label
+honest — the only data leaving the phone is the query Apple needs.
+**Rejected**: Google Places autocomplete (a second billable key and a
+second data flow to disclose for a convenience feature); reverse-
+geocoding hand-dropped pins into an address (an invented address on a
+pin the user placed deliberately is misleading; leave it blank);
+`.userLocation` alone for the camera (its zoom is system-chosen and the
+form often opens before a fix exists).
