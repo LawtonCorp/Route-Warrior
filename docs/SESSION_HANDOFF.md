@@ -5,8 +5,8 @@ checklist lives in `docs/HANDOFF.md`; this file is everything else — what
 exists, why, and what the previous session learned the hard way. Read
 `CLAUDE.md` first; it is binding. Product rationale is in
 `docs/REQUIREMENTS.md`, `docs/SPEC.md`, `docs/BUILD_PLAN.md`, and every
-behaviour choice is logged in `DECISIONS.md` (D-001…D-021; continue from
-D-022)._
+behaviour choice is logged in `DECISIONS.md` (D-001…D-022; continue from
+D-023)._
 
 ## Where things stand
 
@@ -108,6 +108,15 @@ app-target test proves unforced builds start free.
   example, Movable Type haversine, equator geometry) — a fixture generated
   by the code under test proves nothing. Say plainly which claims are
   machine-checked and which need a phone in hand.
+
+## v2 in progress: in-app map (docs/SPEC_IN_APP_MAP.md)
+
+Approved 2026-09-02 (D-022): FR-19…FR-24, milestones M7 (Apple map, in
+progress) → M8 (Google map via the Maps SDK; privacy label changes) → M9
+(optional guidance). Rules with teeth: a provider's plan line is drawn
+only on that provider's map surface; the departure snapshot is never
+replaced by a reroute; both providers are snapshotted at every departure
+("beat both"); drive view and reroute are Pro, plan preview is free.
 
 ## What's next
 

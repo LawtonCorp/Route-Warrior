@@ -317,3 +317,27 @@ geocoding hand-dropped pins into an address (an invented address on a
 pin the user placed deliberately is misleading; leave it blank);
 `.userLocation` alone for the camera (its zoom is system-chosen and the
 form often opens before a fix exists).
+
+## D-022 — v2 direction: the map comes inside the app (2026-09-02)
+
+**Trigger**: Brian wants to pick a destination and see the routing
+inside Route Warrior, from Apple or Google by preference, and then drive
+it or leave it. Spec: `docs/SPEC_IN_APP_MAP.md` (FR-19…FR-24).
+
+**Chosen** (Brian's answers to the spec's questions): visual guidance
+only — map, route, position, ETA, off-plan signal, no voice (Apple has
+no guidance API; Google's is a separate commercial SDK); Google mode
+through the official Maps SDK so Google's routes are drawn on Google's
+map and Apple's on Apple's — a rule that also reshapes v1's trip detail,
+where the other provider becomes numbers, not a line on the wrong map;
+the App Privacy label change that Google's SDK brings is accepted, and
+lands with the SDK in M8; Apple is the default provider; both providers
+are snapshotted at every departure so every trip feeds both verdicts;
+reroute on tap in M7 with the automatic variant built on the same path
+behind a default-off setting, the departure snapshot never being
+replaced; plan preview free, drive view and reroute Pro; Apple (M7)
+ships and field-tests first. **Rejected**: voice turn-by-turn now
+(Google-only, contract-gated); drawing Google's route on Apple's map
+(the terms risk the embedding rules exist to avoid); keeping "Data Not
+Collected" by staying Apple-only (Brian chose the Google map); replacing
+the baseline on reroute (would make "your way" unprovable).
