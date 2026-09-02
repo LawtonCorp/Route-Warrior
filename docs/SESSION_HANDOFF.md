@@ -5,8 +5,8 @@ checklist lives in `docs/HANDOFF.md`; this file is everything else — what
 exists, why, and what the previous session learned the hard way. Read
 `CLAUDE.md` first; it is binding. Product rationale is in
 `docs/REQUIREMENTS.md`, `docs/SPEC.md`, `docs/BUILD_PLAN.md`, and every
-behaviour choice is logged in `DECISIONS.md` (D-001…D-023; continue from
-D-024)._
+behaviour choice is logged in `DECISIONS.md` (D-001…D-024; continue from
+D-025)._
 
 ## Where things stand
 
@@ -109,21 +109,20 @@ app-target test proves unforced builds start free.
   by the code under test proves nothing. Say plainly which claims are
   machine-checked and which need a phone in hand.
 
-## v2 in progress: in-app map (docs/SPEC_IN_APP_MAP.md)
+## v2: in-app map (docs/SPEC_IN_APP_MAP.md)
 
-Approved 2026-09-02 (D-022): FR-19…FR-24. **M7 (Apple map) is merged**
-(#21 engine, D-023; #22 screens: Plan a drive, the drive view,
-DriveMonitor). Next is **M8: the Google map** via the official Maps SDK
-for iOS (map loads confirmed free and unlimited on the pricing page,
-2026-09-02): add the SDK as a Swift Package in project.yml, a
-`GoogleMapSurface` (`UIViewRepresentable` over `GMSMapView`), flip
-`MapSettings.googleSurfaceAvailable`, add the onboarding provider page,
-update `PrivacyInfo.xcprivacy` / the App Privacy label / the policy for
-Google's SDK, and a HANDOFF step to enable "Maps SDK for iOS" on the
-key. Rules with teeth: a provider's plan line is drawn only on that
-provider's map surface; the departure snapshot is never replaced by a
-reroute; both providers are snapshotted at every departure; drive view
-and reroute are Pro, plan preview is free. M9 (guidance) is optional.
+Approved 2026-09-02 (D-022): FR-19…FR-24. **M7 (Apple map) merged** (#21
+engine D-023, #22 screens). **M8 (Google map) is in PR** (D-024): the
+Maps SDK for iOS as a Swift Package in project.yml, `MapScene` +
+`MapSurfaceView` with Apple and Google surfaces, the onboarding provider
+page, privacy manifest/policy/HANDOFF updates. Brian's steps after it
+merges: enable "Maps SDK for iOS" on the key (HANDOFF §2.7) and answer
+the App Privacy questionnaire from Xcode's Generate Privacy Report
+(HANDOFF §5.2). Rules with teeth: a provider's plan line is drawn only on
+that provider's map surface (`MapScene.drawablePlans(for:)`); the
+departure snapshot is never replaced by a reroute; both providers are
+snapshotted at every departure; drive view and reroute are Pro, plan
+preview is free. M9 (guidance) is optional and unscheduled.
 
 ## What's next
 
