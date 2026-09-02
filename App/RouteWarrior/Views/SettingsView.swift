@@ -33,18 +33,11 @@ struct SettingsView: View {
                     } label: {
                         settingsLabel("Location", symbol: "location.fill", color: Theme.route)
                     }
-                    if locationService.authorizationStatus == .notDetermined {
-                        Button("Allow location while using the app") {
-                            locationService.requestWhenInUseAuthorization()
-                        }
-                    }
-                    if locationService.authorizationStatus == .authorizedWhenInUse {
-                        Button("Upgrade to Always (hands-free recording)") {
-                            locationService.requestAlwaysAuthorization()
-                        }
-                    }
-                    if locationService.authorizationStatus == .denied {
-                        Link("Open system settings", destination: URL(string: UIApplication.openSettingsURLString)!)
+                    if let warning = LocationPrimer.warning(for: locationService.authorizationStatus) {
+                        Text(warning)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        LocationFixButton()
                     }
                     LabeledContent {
                         Text(motionLabel)

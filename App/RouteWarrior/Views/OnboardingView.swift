@@ -1,8 +1,10 @@
 import SwiftUI
 
 /// FR-18: educate before asking. Three pages — the payoff, the privacy
-/// promise, then the permission primers in order. Shown once (tracked in
-/// AppStorage); every prompt is preceded by its explanation.
+/// promise, then the permission walk-through, which is driven by what iOS
+/// has actually granted so it ends on Always, not on While Using (D-020).
+/// Shown once (tracked in AppStorage); every prompt is preceded by its
+/// explanation, and Motion is only requested once this is complete.
 struct OnboardingView: View {
     @Environment(LocationService.self) private var locationService
     @AppStorage("onboardingComplete") private var onboardingComplete = false
@@ -44,24 +46,84 @@ struct OnboardingView: View {
         }
     }
 
+    // MARK: Permissions, step by step
+
+    private var step: LocationPrimer.Step {
+        LocationPrimer.step(
+            for: locationService.authorizationStatus,
+            alwaysRequested: locationService.alwaysRequested
+        )
+    }
+
     private var permissionsPage: some View {
         pageLayout(
-            icon: "location.circle",
-            color: Theme.google,
-            title: "Hands-free needs two permissions.",
-            body: "Location records the route; Motion notices when a drive starts and ends. Allow \"While Using\" first — you can upgrade to \"Always\" in Settings for fully automatic recording, or skip it and use the manual Record button."
+            icon: permissionIcon,
+            color: permissionColor,
+            title: permissionTitle,
+            body: permissionBody
         ) {
             VStack(spacing: 12) {
-                Button("Allow location") {
-                    locationService.requestWhenInUseAuthorization()
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(Theme.google)
-                Button("Start using Route Warrior") {
-                    onboardingComplete = true
+                LocationFixButton(style: .prominent)
+                switch step {
+                case .askWhileUsing:
+                    EmptyView()
+                case .askAlways, .openSettingsForAlways:
+                    Button("Keep While Using — I'll record manually") { finish() }
+                case .done:
+                    Button("Start using Route Warrior") { finish() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Theme.win)
+                case .openSettingsForLocation:
+                    Button("Continue without recording") { finish() }
                 }
             }
         }
+    }
+
+    private var permissionIcon: String {
+        switch step {
+        case .done: "checkmark.circle.fill"
+        case .openSettingsForAlways, .openSettingsForLocation: "gearshape.fill"
+        case .askWhileUsing, .askAlways: "location.circle"
+        }
+    }
+
+    private var permissionColor: Color {
+        switch step {
+        case .done: Theme.win
+        case .openSettingsForLocation: Theme.recording
+        case .askWhileUsing, .askAlways, .openSettingsForAlways: Theme.google
+        }
+    }
+
+    private var permissionTitle: String {
+        switch step {
+        case .askWhileUsing: "Hands-free needs location set to Always."
+        case .askAlways: "One more step: Always."
+        case .openSettingsForAlways: "Always is still off."
+        case .done: "You're set."
+        case .openSettingsForLocation: "Location is off."
+        }
+    }
+
+    private var permissionBody: String {
+        switch step {
+        case .askWhileUsing:
+            "Route Warrior records drives in the background, so iPhone must allow location Always. With only While Using, it can't follow a drive once the phone locks. iPhone asks in two steps: While Using first, then Always."
+        case .askAlways:
+            "You allowed While Using. That records only drives you start with the Record button while the app is open. Tap Change to Always, then choose \"Change to Always Allow\" so drives record themselves."
+        case .openSettingsForAlways:
+            "iPhone asks about Always only once. To record hands-free, open Settings → Route Warrior → Location and choose Always. You can do this any time from the Settings tab."
+        case .done:
+            "Location is set to Always, so drives record themselves. Next, iPhone asks for Motion & Fitness — that's how Route Warrior notices a drive starting without running GPS all day."
+        case .openSettingsForLocation:
+            "Route Warrior cannot record without location. Open Settings → Route Warrior → Location and choose Always."
+        }
+    }
+
+    private func finish() {
+        onboardingComplete = true
+        locationService.enableMotionDetection()
     }
 
     private func pageLayout(

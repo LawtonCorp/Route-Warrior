@@ -13,6 +13,12 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     private(set) var authorizationStatus: CLAuthorizationStatus = .notDetermined
     private(set) var motionAvailable = CMMotionActivityManager.isActivityAvailable()
     private(set) var motionAuthorization: CMAuthorizationStatus = CMMotionActivityManager.authorizationStatus()
+    /// iOS shows the "Change to Always Allow" prompt once per install; after
+    /// that only the Settings app can change it, so the UI must know the
+    /// prompt is spent (D-020).
+    private(set) var alwaysRequested = UserDefaults.standard.bool(forKey: "alwaysLocationRequested")
+    private static let alwaysRequestedKey = "alwaysLocationRequested"
+    private var motionUpdatesActive = false
 
     private let manager = CLLocationManager()
     private let motionManager = CMMotionActivityManager()
@@ -35,8 +41,18 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     func start() {
         pipeline.note("App launched — location: \(Self.label(authorizationStatus)); motion: \(Self.label(motionAuthorization))")
         manager.startMonitoringSignificantLocationChanges()
-        startMotionUpdates()
+        // FR-18: the Motion prompt waits for onboarding to explain it; the
+        // onboarding flow calls `enableMotionDetection()` when it finishes.
+        if UserDefaults.standard.bool(forKey: "onboardingComplete") {
+            startMotionUpdates()
+        }
         syncPowerMode()
+    }
+
+    /// Starts motion activity updates (and, the first time, the system
+    /// Motion & Fitness prompt). Idempotent.
+    func enableMotionDetection() {
+        startMotionUpdates()
     }
 
     func requestWhenInUseAuthorization() {
@@ -44,6 +60,9 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     }
 
     func requestAlwaysAuthorization() {
+        alwaysRequested = true
+        UserDefaults.standard.set(true, forKey: Self.alwaysRequestedKey)
+        pipeline.note("Asked for Always location")
         manager.requestAlwaysAuthorization()
     }
 
@@ -77,7 +96,9 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     }
 
     private func startMotionUpdates() {
-        guard motionAvailable else { return }
+        guard motionAvailable, !motionUpdatesActive else { return }
+        motionUpdatesActive = true
+        pipeline.note("Motion detection on (\(Self.label(motionAuthorization)))")
         motionManager.startActivityUpdates(to: .main) { [weak self] activity in
             guard let activity else { return }
             let sample = TripRecorder.MotionSample(
