@@ -85,8 +85,10 @@ struct AppleMapSurface: View {
         coordinates.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
     }
 
-    /// A region around every coordinate with a third of padding.
-    static func region(fitting coordinates: [Coordinate]) -> MKCoordinateRegion {
+    /// A region around every coordinate with a third of padding. Pure
+    /// geometry, so it is nonisolated (a View's members are main-actor by
+    /// default under Swift 6) and testable from any context.
+    nonisolated static func region(fitting coordinates: [Coordinate]) -> MKCoordinateRegion {
         guard let first = coordinates.first else {
             return MKCoordinateRegion(
                 center: CLLocationCoordinate2D(latitude: 0, longitude: 0),
