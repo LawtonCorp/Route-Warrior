@@ -341,3 +341,27 @@ ships and field-tests first. **Rejected**: voice turn-by-turn now
 (the terms risk the embedding rules exist to avoid); keeping "Data Not
 Collected" by staying Apple-only (Brian chose the Google map); replacing
 the baseline on reroute (would make "your way" unprovable).
+
+## D-023 — M7 engine: both plans per trip, Apple through MapKit (2026-09-02)
+
+**Chosen**: `AppleDirectionsClient` behind the existing `RoutesProviding`
+seam, so Apple's plan is a snapshot like any other — with static and
+traffic durations equal, because MapKit exposes one traffic-aware
+`expectedTravelTime` and Apple does not separate the two. A trip now
+carries a primary plan (the preferred provider's, the one the driver
+saw) and an alternate (the other provider's), each with its own
+followed label; the verdict engine is provider-neutral (`Winner.provider`)
+and a destination shows one verdict per provider that has plans. Plans
+match a finished drive by saved place or, for a planned drive to a
+searched address, by ending within 200 m of the plan's endpoint. The
+off-plan rule is a pure, hysteretic detector (leave at >120 m sustained
+20 s, return at <60 m) tuned later from the recorder log. The map
+preference is UserDefaults (a device choice, not trip data); Google mode
+is offered only when both a key and the Google map surface exist, so in
+M7 the picker shows Apple alone while Google's plan is still fetched for
+every trip. Trip detail draws only Apple's plan on its Apple map and
+lists the other provider as numbers (D-022 §9.2); v1's dashed Google line
+on the Apple map is gone. **Rejected**: an array of snapshot IDs on the
+trip (CloudKit-fragile; two providers is the whole design); re-fetching
+plans at "Go" when the preview already has them; drawing Google's line
+on the Apple map "just for legacy trips".
