@@ -111,11 +111,19 @@ app-target test proves unforced builds start free.
 
 ## v2 in progress: in-app map (docs/SPEC_IN_APP_MAP.md)
 
-Approved 2026-09-02 (D-022): FR-19…FR-24, milestones M7 (Apple map: engine merged as D-023, screens next) → M8 (Google map via the Maps SDK; privacy label changes) → M9
-(optional guidance). Rules with teeth: a provider's plan line is drawn
-only on that provider's map surface; the departure snapshot is never
-replaced by a reroute; both providers are snapshotted at every departure
-("beat both"); drive view and reroute are Pro, plan preview is free.
+Approved 2026-09-02 (D-022): FR-19…FR-24. **M7 (Apple map) is merged**
+(#21 engine, D-023; #22 screens: Plan a drive, the drive view,
+DriveMonitor). Next is **M8: the Google map** via the official Maps SDK
+for iOS (map loads confirmed free and unlimited on the pricing page,
+2026-09-02): add the SDK as a Swift Package in project.yml, a
+`GoogleMapSurface` (`UIViewRepresentable` over `GMSMapView`), flip
+`MapSettings.googleSurfaceAvailable`, add the onboarding provider page,
+update `PrivacyInfo.xcprivacy` / the App Privacy label / the policy for
+Google's SDK, and a HANDOFF step to enable "Maps SDK for iOS" on the
+key. Rules with teeth: a provider's plan line is drawn only on that
+provider's map surface; the departure snapshot is never replaced by a
+reroute; both providers are snapshotted at every departure; drive view
+and reroute are Pro, plan preview is free. M9 (guidance) is optional.
 
 ## What's next
 
