@@ -1,7 +1,7 @@
 # In-app map and routing — draft spec (v2 candidate)
 
-_Status: DRAFT, awaiting Brian's answers to §9. Nothing here is built.
-Numbering continues docs/REQUIREMENTS.md (FR-19+). This revisits the v1
+_Status: APPROVED 2026-09-02 (answers in §9, logged as D-022). M7 in
+progress. Numbering continues docs/REQUIREMENTS.md (FR-19+). This revisits the v1
 non-goal "turn-by-turn navigation in-app" (D-003) deliberately: v1 proved
 the recording and comparison engine; v2 lets the driver see the plan
 inside Route Warrior instead of in another app._
@@ -31,7 +31,7 @@ are blocked here) and need a look on the Mac before M8 starts.
 | Voice / lane guidance, automatic reroute | **None.** MapKit has no guidance API; anything beyond drawing the route and steps is ours to build | **None** in the Maps SDK | Yes — Google Maps-grade turn-by-turn |
 | Access / cost | Apple Developer Program only | API key with "Maps SDK for iOS" enabled; map loads on mobile are **verify**: believed free of charge | **Verify**: believed to require a Mobility agreement with Google and per-destination pricing; not a drop-in |
 | Privacy | No third-party SDK; label stays "Data Not Collected" (D-006, D-016) | Google's SDK ships its own privacy manifest and reports usage to Google → the App Privacy label **changes** and the policy must disclose it | Same, more so |
-| Terms on mixing | Apple map data is meant for Apple maps | **Verify**: Google Maps Platform terms have historically restricted displaying Google content (routes, places) on a non-Google map (§3.2.3). This also touches v1's trip detail, which draws Google's dashed line on an Apple map | n/a |
+| Terms on mixing | Apple map data is meant for Apple maps | Embedding is allowed through the official SDK with attribution and branding intact and an authorized key (Brian, 2026-09-02). Google content on a *non-Google* map is the thing to avoid — so Google's line is drawn only on the Google surface, which also changes v1's trip detail (see §9.2) | n/a |
 
 Conclusions this spec is built on:
 
@@ -187,33 +187,29 @@ Conclusions this spec is built on:
   Always-location justification (already in APP_REVIEW_NOTES), and a
   statement that guidance is visual only.
 
-## 9. Questions for Brian (answers unblock M7)
+## 9. Decisions (Brian, 2026-09-02 — D-022)
 
-1. **Guidance depth.** (a) Map + route + your dot + ETA + off-plan, no
-   voice — both providers can do this. (b) Add a next-turn banner and step
-   list built from the provider's steps — both can. (c) Voice turn-by-turn
-   like Google Maps — Google only, Navigation SDK, commercial track.
-   Recommendation: build (a) in M7, (b) in M9, decide (c) after M8.
-2. **Google map surface.** Real Google tiles via the Maps SDK (matches
-   user expectation; adds a large SDK and a privacy change) vs. Google's
-   route drawn on the Apple map (no SDK; terms risk). Recommendation:
-   Maps SDK, after the terms check.
-3. **Privacy stance.** Keep "Data Not Collected" by shipping Apple-only
-   (Google stays the *comparison* engine it is today), or accept the
-   label change for Google mode. Recommendation: ship M7 either way; decide
-   before M8.
-4. **Default provider for new users.** Apple (free, keyless, private) or
-   Google (the brand premise). Recommendation: Apple as the map default,
-   Google remains the comparison in every trip that has a key.
-5. **"Beat both."** Snapshot both providers at every departure so every
-   trip feeds both verdicts (one Google call per trip in Apple mode too)?
-   Recommendation: yes, it is the strongest version of the promise.
-6. **Reroute policy off the plan.** Never (baseline only), on tap, or
-   automatic like a nav app? Recommendation: on tap in M7; automatic as a
-   setting later. The baseline never changes either way.
-7. **Pro gating.** Plan preview free for all; drive view and reroute Pro?
-   Or everything free to drive adoption and keep Pro for history/analytics?
-   Recommendation: preview free, drive view Pro, since it is the live
-   feature alongside the ghost race (D-008).
-8. **Order.** OK to ship M7 (Apple) and field-test it while you verify the
-   two Google items and decide Q3?
+1. **Guidance depth: (a).** Map, route, your dot, ETA, off-plan signal. No
+   voice. Next-turn banner and step list stay M9.
+2. **Google map surface: (a) the Maps SDK.** Google's routes are drawn on
+   Google's map, Apple's on Apple's. Brian's reading of Google's embedding
+   requirements (official SDK, attribution and branding untouched, an
+   authorized key on a billing account) is the compliance basis for M8.
+   Consequence for every screen with a map, including v1's trip detail:
+   **a provider's plan line is drawn only on that provider's surface.**
+   The other provider appears as numbers (ETA, delta) and in its verdict
+   card, never as a line on the wrong map.
+3. **Privacy: (b).** Accept the App Privacy label change for Google mode.
+   `PrivacyInfo.xcprivacy`, the questionnaire, and the policy are updated
+   in M8, when the SDK actually ships.
+4. **Default provider: (a) Apple.**
+5. **"Beat both": yes.** Every departure snapshots both providers when a
+   Google key is present; each trip feeds both verdicts.
+6. **Off the plan: (b) now, built for (c).** Reroute on tap in M7, drawn as
+   a second line; an "Reroute automatically" setting (default off) drives
+   the same code path with a throttle. The departure snapshot is never
+   replaced.
+7. **Pro gating: (a).** Plan preview free; drive view and reroute Pro.
+8. **Order: yes.** M7 (Apple) ships and field-tests first. Brian verifies
+   Maps SDK map-load pricing on the Mac before M8 (click steps given in
+   chat).
