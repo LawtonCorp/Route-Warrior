@@ -9,18 +9,22 @@ struct PaywallView: View {
         NavigationStack {
             List {
                 Section {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Route Warrior Pro")
-                            .font(.title2.bold())
-                        featureRow("infinity", "Unlimited trip history")
-                        featureRow("mappin.and.ellipse", "Analytics on every destination")
-                        featureRow("flag.checkered", "The ghost race — beat your best, live")
-                        featureRow("chart.bar.xaxis", "Full verdicts, heatmaps, and trends")
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 12) {
+                            IconTile(symbol: "star.fill", color: Theme.pro, size: 40)
+                            Text("Route Warrior Pro")
+                                .font(.title2.bold())
+                        }
+                        featureRow("infinity", Theme.route, "Unlimited trip history")
+                        featureRow("mappin.and.ellipse", Theme.win, "Analytics on every destination")
+                        featureRow("flag.checkered", Theme.pro, "The ghost race — beat your best, live")
+                        featureRow("chart.bar.xaxis", Theme.google, "Full verdicts, heatmaps, and trends")
                         Text("Recording is always free — your history keeps building either way.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 6)
+                    .tintedRow(Theme.pro)
                 }
 
                 Section {
@@ -45,12 +49,14 @@ struct PaywallView: View {
                                 Spacer()
                                 Text(product.displayPrice)
                                     .bold()
+                                    .foregroundStyle(Theme.pro)
                             }
                         }
+                        .tint(.primary)
                     }
                 } footer: {
                     if let error = store.lastError {
-                        Text(error).foregroundStyle(.red)
+                        Text(error).foregroundStyle(Theme.recording)
                     }
                 }
 
@@ -73,10 +79,10 @@ struct PaywallView: View {
         }
     }
 
-    private func featureRow(_ icon: String, _ text: String) -> some View {
+    private func featureRow(_ icon: String, _ color: Color, _ text: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
-                .foregroundStyle(.tint)
+                .foregroundStyle(color)
                 .frame(width: 22)
             Text(text)
         }

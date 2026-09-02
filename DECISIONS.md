@@ -207,3 +207,24 @@ keeps the behaviour identical if that ever changes, and the empty
 default is the actual safety); a hidden in-app unlock gesture (a
 public-app foot-gun); granting Pro by hardcoding the tier (would ship
 to the store).
+
+## D-018 — Colour carries meaning (2026-09-02)
+
+**Chosen**: one small palette (`App/RouteWarrior/Support/Theme.swift`)
+built from the vocabulary the trip map and the app icon already teach:
+blue is the route you drove, orange is Google's plan, green is a win,
+plus indigo for Pro and amber/red for the armed/recording states. Every
+use of colour says something — the Home status card tints by recorder
+state, trip rows carry a green hare or an orange tortoise from the ETA
+delta, places get a glyph per kind, the destination verdict is a tinted
+card, stops are coloured by cause — and the mappings are plain functions
+with app-target tests so a green row can never mean a loss. The accent
+colour moves from the muted indigo to the route blue (with a lighter
+dark-mode variant) so tabs, links, and buttons match the map. The
+heatmap softens from a green→red stoplight to green→orange, matching the
+row palette. **Rejected**: a bespoke dark-navy chrome or themed
+backgrounds (flashy, fights the system list styling and dark mode, and
+Brian asked for "a bit", not a redesign); decorative per-screen colours
+with no meaning (the plainness was the absence of information, not of
+paint); touching the Live Activity (it already uses the same green/orange
+and is a separate target).

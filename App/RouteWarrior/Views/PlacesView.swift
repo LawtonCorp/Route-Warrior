@@ -30,7 +30,7 @@ struct PlacesView: View {
                                 placeRow(place)
                                 Spacer()
                                 Image(systemName: "lock.fill")
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Theme.pro)
                             }
                         }
                         .tint(.primary)
@@ -70,16 +70,16 @@ struct PlacesView: View {
     }
 
     private func placeRow(_ place: PlaceRecord) -> some View {
-        VStack(alignment: .leading) {
-            Text(place.name).font(.headline)
-            Text(kindLabel(place.kindRaw))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        let kind = Place.Kind(rawValue: place.kindRaw) ?? .custom
+        return HStack(spacing: 12) {
+            IconTile(symbol: kind.symbol, color: kind.color, size: 34)
+            VStack(alignment: .leading) {
+                Text(place.name).font(.headline)
+                Text(kind.rawValue.capitalized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
-    }
-
-    private func kindLabel(_ raw: String) -> String {
-        Place.Kind(rawValue: raw)?.rawValue.capitalized ?? "Custom"
     }
 }
 

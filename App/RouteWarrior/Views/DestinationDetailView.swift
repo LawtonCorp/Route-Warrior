@@ -56,29 +56,54 @@ struct DestinationDetailView: View {
     private var verdictSection: some View {
         Section("Your route vs. Google") {
             let verdict = VerdictEngine.verdict(forDestination: trips, snapshotsByID: snapshotsByID)
+            let confidence = "median, \(verdict.confidence.rawValue) confidence"
             switch verdict.winner {
             case .insufficientData:
-                Label(
-                    "Collecting data (\(verdict.mineSampleCount)/5 yours, \(verdict.googleSampleCount)/5 Google)",
-                    systemImage: "hourglass"
+                verdictCard(
+                    symbol: "hourglass",
+                    color: .gray,
+                    title: "Collecting data",
+                    detail: "\(verdict.mineSampleCount)/5 of your drives, \(verdict.googleSampleCount)/5 with a Google plan"
                 )
-                .foregroundStyle(.secondary)
             case .tie:
-                Label("Dead heat — within the margin", systemImage: "equal.circle")
+                verdictCard(
+                    symbol: "equal.circle",
+                    color: Theme.route,
+                    title: "Dead heat",
+                    detail: "Within the margin (\(confidence))"
+                )
             case .mine:
-                Label(
-                    "Your route wins by ~\(Format.duration(abs(verdict.medianDeltaSeconds))) (median, \(verdict.confidence.rawValue) confidence)",
-                    systemImage: "trophy.fill"
+                verdictCard(
+                    symbol: "trophy.fill",
+                    color: Theme.win,
+                    title: "Your route wins by ~\(Format.duration(abs(verdict.medianDeltaSeconds)))",
+                    detail: confidence
                 )
-                .foregroundStyle(.green)
             case .google:
-                Label(
-                    "Google's plan wins by ~\(Format.duration(verdict.medianDeltaSeconds)) (median, \(verdict.confidence.rawValue) confidence)",
-                    systemImage: "map.fill"
+                verdictCard(
+                    symbol: "map.fill",
+                    color: Theme.google,
+                    title: "Google's plan wins by ~\(Format.duration(verdict.medianDeltaSeconds))",
+                    detail: confidence
                 )
-                .foregroundStyle(.orange)
             }
         }
+    }
+
+    private func verdictCard(symbol: String, color: Color, title: String, detail: String) -> some View {
+        HStack(spacing: 12) {
+            IconTile(symbol: symbol, color: color, size: 40)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.headline)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 6)
+        .tintedRow(color)
     }
 
     // MARK: Overall stats
@@ -103,6 +128,8 @@ struct DestinationDetailView: View {
             ForEach(variants) { variant in
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
+                        Image(systemName: "point.topleft.down.curvedto.point.bottomright.up")
+                            .foregroundStyle(Theme.route)
                         Text(variant.autoName.isEmpty ? "Route" : variant.autoName)
                             .font(.headline)
                         Spacer()
@@ -123,7 +150,12 @@ struct DestinationDetailView: View {
     private func intersectionLine(for variant: VariantRecord) -> some View {
         HStack(spacing: 6) {
             if let signals = variant.signalCount, let stops = variant.stopSignCount {
-                Text("\(signals) signals · \(stops) stop signs on this route")
+                Image(systemName: "circle.fill")
+                    .foregroundStyle(Theme.armed)
+                Text("\(signals) signals")
+                Image(systemName: "octagon.fill")
+                    .foregroundStyle(Theme.recording)
+                Text("\(stops) stop signs")
                 if let coverage = variant.coverageRaw {
                     Text("(map coverage: \(coverage))")
                         .foregroundStyle(.secondary)
@@ -139,7 +171,7 @@ struct DestinationDetailView: View {
     // MARK: Heatmap
 
     private var heatmapSection: some View {
-        Section("By day and time (median)") {
+        Section {
             let matrix = StatsEngine.weekdayBucketMatrix(for: trips)
             if matrix.isEmpty {
                 Text("Not enough trips yet.").foregroundStyle(.secondary)
@@ -172,6 +204,10 @@ struct DestinationDetailView: View {
                 }
                 .padding(.vertical, 4)
             }
+        } header: {
+            Text("By day and time (median)")
+        } footer: {
+            Text("Minutes. Green is your fastest slot, orange the slowest.")
         }
     }
 
@@ -180,7 +216,9 @@ struct DestinationDetailView: View {
         if let stats {
             let span = max(1, worst - best)
             let heat = (stats.median - best) / span // 0 = fastest, 1 = slowest
-            color = Color(hue: 0.33 - 0.33 * heat, saturation: 0.7, brightness: 0.85)
+            // Green through amber to orange — the trip-row palette, not a
+            // stoplight red; the slowest slot is a fact, not an alarm.
+            color = Color(hue: 0.36 - 0.28 * heat, saturation: 0.55, brightness: 0.88)
         } else {
             color = Color.secondary.opacity(0.12)
         }
@@ -210,6 +248,8 @@ struct DestinationDetailView: View {
                         x: .value("Month", entry.month),
                         y: .value("Median minutes", entry.stats.median / 60)
                     )
+                    .foregroundStyle(Theme.route.gradient)
+                    .cornerRadius(4)
                 }
                 .frame(height: 160)
                 .padding(.vertical, 4)
