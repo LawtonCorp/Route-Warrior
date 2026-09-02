@@ -25,7 +25,7 @@ final class StoreService {
         forcesPro(infoValue: Bundle.main.object(forInfoDictionaryKey: "RouteWarriorForcePro"))
     }
 
-    private(set) var tier: TierPolicy.Tier = Self.isForcedPro ? .pro : .free
+    private(set) var tier: TierPolicy.Tier = StoreService.isForcedPro ? .pro : .free
     private(set) var products: [Product] = []
     private(set) var lastError: String?
     let policy = TierPolicy()
