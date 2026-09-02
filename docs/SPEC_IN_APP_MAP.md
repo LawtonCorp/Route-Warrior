@@ -19,9 +19,10 @@ is faster*. The map is where the driver watches the proof happen.
 
 ## 2. What each provider can actually do
 
-Facts first, because the two are not symmetric. Items marked **verify**
-could not be confirmed from this environment (Google's developer pages
-are blocked here) and need a look on the Mac before M8 starts.
+Facts first, because the two are not symmetric. The Google pricing facts
+were read off mapsplatform.google.com/pricing by Brian on 2026-09-02;
+the Navigation SDK's access terms remain **verify** if M9 ever goes that
+way.
 
 | Capability | Apple (MapKit) | Google (Maps SDK for iOS) | Google (Navigation SDK) |
 |---|---|---|---|
@@ -29,7 +30,7 @@ are blocked here) and need a look on the Mac before M8 starts.
 | Route + ETA | `MKDirections`: polyline, steps, `expectedTravelTime` (traffic-aware), up to 3 alternates. Free, no key, rate-limited | Routes API (already integrated, D-001/D-013): polyline, static + traffic-aware durations, alternates, per-step instructions. Billed per call | Included, per-destination billing |
 | Live traffic overlay | `showsTraffic` on the map style. Free | `isTrafficEnabled`. Free | Yes |
 | Voice / lane guidance, automatic reroute | **None.** MapKit has no guidance API; anything beyond drawing the route and steps is ours to build | **None** in the Maps SDK | Yes — Google Maps-grade turn-by-turn |
-| Access / cost | Apple Developer Program only | API key with "Maps SDK for iOS" enabled; map loads on mobile are **verify**: believed free of charge | **Verify**: believed to require a Mobility agreement with Google and per-destination pricing; not a drop-in |
+| Access / cost | Apple Developer Program only | API key with "Maps SDK for iOS" enabled; map loads are **free and unlimited** ("Maps SDK — Essentials — Unlimited — $0" on the pricing page, 2026-09-02) | **Verify**: believed to require a Mobility agreement with Google and per-destination pricing; not a drop-in |
 | Privacy | No third-party SDK; label stays "Data Not Collected" (D-006, D-016) | Google's SDK ships its own privacy manifest and reports usage to Google → the App Privacy label **changes** and the policy must disclose it | Same, more so |
 | Terms on mixing | Apple map data is meant for Apple maps | Embedding is allowed through the official SDK with attribution and branding intact and an authorized key (Brian, 2026-09-02). Google content on a *non-Google* map is the thing to avoid — so Google's line is drawn only on the Google surface, which also changes v1's trip detail (see §9.2) | n/a |
 
@@ -45,8 +46,9 @@ Conclusions this spec is built on:
    do is the thing this app needs: the route drawn, your position on it,
    traffic, the ETA, and "you are off the plan".
 3. **Apple mode costs nothing and changes no privacy disclosure**, so it
-   ships first (M7). Google mode (M8) is gated on the two **verify** items
-   and on the privacy decision in §9.
+   ships first (M7). Google mode (M8) follows: the map loads are free, the
+   embedding terms are satisfied by using the official SDK, and Brian
+   accepted the privacy-label change (§9).
 
 ## 3. Product behaviour
 
@@ -170,9 +172,11 @@ Conclusions this spec is built on:
 ## 7. Costs
 
 - Apple: $0 beyond the developer program.
-- Google: Routes API calls as today (one per trip, two for "beat both",
-  plus one per reroute tap); Maps SDK map loads **verify** (believed free);
-  Navigation SDK — commercial agreement, only if M9 goes that way.
+- Google: Routes API calls as today (one per trip in Google mode or with
+  "beat both", plus one per Google reroute); Maps SDK map loads are free
+  and unlimited (confirmed 2026-09-02), so the Google map itself adds
+  nothing to the bill; Navigation SDK — commercial agreement, only if M9
+  goes that way.
 
 ## 8. Risks
 
@@ -210,6 +214,6 @@ Conclusions this spec is built on:
    the same code path with a throttle. The departure snapshot is never
    replaced.
 7. **Pro gating: (a).** Plan preview free; drive view and reroute Pro.
-8. **Order: yes.** M7 (Apple) ships and field-tests first. Brian verifies
-   Maps SDK map-load pricing on the Mac before M8 (click steps given in
-   chat).
+8. **Order: yes.** M7 (Apple) shipped 2026-09-02 (#21, #22). Maps SDK
+   map-load pricing verified the same day: free and unlimited. M8 is
+   unblocked.
