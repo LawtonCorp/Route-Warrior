@@ -1,18 +1,18 @@
 import CoreLocation
-import MapKit
 import RouteWarriorKit
 import RouteWarriorStore
 import SwiftData
 import SwiftUI
 
-/// FR-20: pick a destination, see the plans, go. This is the Apple map
-/// surface (D-022 §9.2): Apple's route is drawn; any other provider's
-/// plan is shown as numbers. Free for every tier — the live drive view
-/// after "Go" is the Pro part.
+/// FR-20: pick a destination, see the plans, go. The map is whichever
+/// surface the user chose (FR-19); that provider's route is drawn and any
+/// other provider's plan is shown as numbers (D-022 §9.2). Free for every
+/// tier — the live drive view after "Go" is the Pro part.
 struct PlanView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(RecordingPipeline.self) private var pipeline
     @Environment(LocationService.self) private var locationService
+    @Environment(MapSettings.self) private var mapSettings
     @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
 
     /// Called after recording has started from the chosen plans.
@@ -30,11 +30,15 @@ struct PlanView: View {
     @State private var failed = false
     @State private var addressQuery = ""
     @State private var completer = AddressCompleter()
-    @State private var camera: MapCameraPosition = .automatic
 
-    /// The plan drawn on this (Apple) surface.
-    private var shownPlan: PlanSnapshot? { plans.first { $0.provider == .appleMaps } }
-    private var otherPlans: [PlanSnapshot] { plans.filter { $0.provider != .appleMaps } }
+    private var surfaceProvider: PlanSnapshot.Provider { mapSettings.provider.snapshotProvider }
+    /// The plan drawn on the chosen surface.
+    private var shownPlan: PlanSnapshot? { plans.first { $0.provider == surfaceProvider } }
+    private var otherPlans: [PlanSnapshot] { plans.filter { $0.provider != surfaceProvider } }
+
+    private var scene: MapScene {
+        MapScene(plans: plans, destinationName: destination?.name, camera: .fitContent)
+    }
 
     var body: some View {
         NavigationStack {
@@ -53,10 +57,10 @@ struct PlanView: View {
                 }
             }
             .onAppear {
-                if locationService.lastKnownCoordinate == nil {
-                    locationService.requestOneShotLocation()
-                } else if let here = locationService.lastKnownCoordinate {
+                if let here = locationService.lastKnownCoordinate {
                     completer.focus(on: here)
+                } else {
+                    locationService.requestOneShotLocation()
                 }
             }
             .onChange(of: locationService.lastKnownCoordinate == nil) {
@@ -128,23 +132,9 @@ struct PlanView: View {
     private var planSection: some View {
         Section {
             if let shownPlan {
-                Map(position: $camera) {
-                    ForEach(Array(shownPlan.alternates.enumerated()), id: \.offset) { _, alternate in
-                        MapPolyline(coordinates: Self.clCoordinates(alternate.polyline))
-                            .stroke(Color.secondary.opacity(0.5), lineWidth: 3)
-                    }
-                    MapPolyline(coordinates: Self.clCoordinates(shownPlan.polyline))
-                        .stroke(Theme.google, style: StrokeStyle(lineWidth: 4, dash: [8, 6]))
-                    if let end = shownPlan.destination {
-                        Marker(destination?.name ?? "Destination", coordinate: CLLocationCoordinate2D(
-                            latitude: end.latitude, longitude: end.longitude
-                        ))
-                    }
-                    UserAnnotation()
-                }
-                .mapStyle(.standard(showsTraffic: true))
-                .frame(height: 300)
-                .listRowInsets(EdgeInsets())
+                MapSurfaceView(scene: scene)
+                    .frame(height: 300)
+                    .listRowInsets(EdgeInsets())
                 planRow(
                     title: "\(shownPlan.provider.displayName)'s plan",
                     eta: shownPlan.trafficDuration,
@@ -252,9 +242,6 @@ struct PlanView: View {
             plans = fetched
             loading = false
             failed = fetched.isEmpty
-            if let shown = fetched.first(where: { $0.provider == .appleMaps }) {
-                camera = .region(Self.region(fitting: shown.polyline.coordinates + [origin]))
-            }
         }
     }
 
@@ -285,32 +272,5 @@ struct PlanView: View {
         pipeline.startPlannedDrive(with: plans)
         onStarted()
         dismiss()
-    }
-
-    // MARK: Geometry
-
-    private static func clCoordinates(_ polyline: Polyline) -> [CLLocationCoordinate2D] {
-        polyline.coordinates.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
-    }
-
-    /// A region around every coordinate with a third of padding.
-    private static func region(fitting coordinates: [Coordinate]) -> MKCoordinateRegion {
-        guard let first = coordinates.first else {
-            return MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 0, longitude: 0), latitudinalMeters: 1_000, longitudinalMeters: 1_000)
-        }
-        var minLat = first.latitude, maxLat = first.latitude
-        var minLon = first.longitude, maxLon = first.longitude
-        for c in coordinates {
-            minLat = min(minLat, c.latitude); maxLat = max(maxLat, c.latitude)
-            minLon = min(minLon, c.longitude); maxLon = max(maxLon, c.longitude)
-        }
-        let span = MKCoordinateSpan(
-            latitudeDelta: max(0.01, (maxLat - minLat) * 1.35),
-            longitudeDelta: max(0.01, (maxLon - minLon) * 1.35)
-        )
-        return MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: (minLat + maxLat) / 2, longitude: (minLon + maxLon) / 2),
-            span: span
-        )
     }
 }

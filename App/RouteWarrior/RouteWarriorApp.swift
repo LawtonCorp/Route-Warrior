@@ -1,3 +1,4 @@
+import GoogleMaps
 import RouteWarriorKit
 import RouteWarriorStore
 import SwiftData
@@ -43,6 +44,11 @@ struct RouteWarriorApp: App {
         var providers: [PlanSnapshot.Provider: any RoutesProviding] = [.appleMaps: AppleDirectionsClient()]
         if !key.isEmpty {
             providers[.googleRoutes] = GoogleRoutesClient(apiKey: key)
+        }
+        // The Google map surface needs the SDK primed with the key before
+        // any GMSMapView exists (M8). Keyless and test-host builds skip it.
+        if !key.isEmpty, !Self.isTestHost {
+            GMSServices.provideAPIKey(key)
         }
         let mapSettings = MapSettings(googleAvailable: MapSettings.googleAvailable(hasKey: !key.isEmpty))
         _mapSettings = State(initialValue: mapSettings)

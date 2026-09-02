@@ -7,17 +7,59 @@ import SwiftUI
 /// explanation, and Motion is only requested once this is complete.
 struct OnboardingView: View {
     @Environment(LocationService.self) private var locationService
+    @Environment(MapSettings.self) private var mapSettings
     @AppStorage("onboardingComplete") private var onboardingComplete = false
     @State private var page = 0
+
+    /// The provider page exists only when there is a choice (FR-19): a
+    /// keyless build has Apple alone and skips it.
+    private var offersProviderChoice: Bool { mapSettings.availableProviders.count > 1 }
+    private var permissionsTag: Int { offersProviderChoice ? 3 : 2 }
 
     var body: some View {
         TabView(selection: $page) {
             valuePage.tag(0)
             privacyPage.tag(1)
-            permissionsPage.tag(2)
+            if offersProviderChoice {
+                providerPage.tag(2)
+            }
+            permissionsPage.tag(permissionsTag)
         }
         .tabViewStyle(.page)
         .interactiveDismissDisabled()
+    }
+
+    // MARK: Whose routes?
+
+    private var providerPage: some View {
+        pageLayout(
+            icon: "map.fill",
+            color: Theme.route,
+            title: "Whose routes do you want to beat?",
+            body: "Pick the map and routes you see inside Route Warrior. Both providers' plans are compared on every drive; this only chooses the map you look at. Change it any time in Settings."
+        ) {
+            VStack(spacing: 12) {
+                ForEach(mapSettings.availableProviders, id: \.self) { provider in
+                    Button {
+                        mapSettings.select(provider)
+                    } label: {
+                        HStack {
+                            Text(provider.displayName)
+                            Spacer()
+                            if mapSettings.provider == provider {
+                                Image(systemName: "checkmark.circle.fill")
+                            }
+                        }
+                        .frame(maxWidth: 280)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(mapSettings.provider == provider ? Theme.route : .secondary)
+                }
+                Button("Continue") { page = permissionsTag }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Theme.route)
+            }
+        }
     }
 
     private var valuePage: some View {
@@ -40,7 +82,7 @@ struct OnboardingView: View {
             title: "Your drives are yours.",
             body: "Everything stays on your iPhone and in your private iCloud. No accounts. No servers of ours. No analytics. The only thing that ever leaves your phone is the route request that makes the Google comparison possible."
         ) {
-            Button("Continue") { page = 2 }
+            Button("Continue") { page = offersProviderChoice ? 2 : permissionsTag }
                 .buttonStyle(.borderedProminent)
                 .tint(Theme.win)
         }
