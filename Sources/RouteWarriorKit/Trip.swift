@@ -53,10 +53,15 @@ public struct Trip: Sendable, Equatable, Codable, Identifiable {
     public var movingTime: TimeInterval
     public var idleTime: TimeInterval
     public var stopEvents: [StopEvent]
+    /// The plan the driver saw (the preferred provider's) at departure.
     public var snapshotID: UUID?
     /// True when the driven shape matched the snapshot's recommended route;
     /// nil when there was no snapshot to compare against.
     public var followedPlan: Bool?
+    /// The other provider's plan for the same departure ("beat both",
+    /// D-022), with its own followed label. Nil on v1 trips.
+    public var altSnapshotID: UUID?
+    public var followedAltPlan: Bool?
     public var source: Source
     public var excludedFromStats: Bool
 
@@ -77,6 +82,8 @@ public struct Trip: Sendable, Equatable, Codable, Identifiable {
         stopEvents: [StopEvent] = [],
         snapshotID: UUID? = nil,
         followedPlan: Bool? = nil,
+        altSnapshotID: UUID? = nil,
+        followedAltPlan: Bool? = nil,
         source: Source = .auto,
         excludedFromStats: Bool = false
     ) {
@@ -94,6 +101,8 @@ public struct Trip: Sendable, Equatable, Codable, Identifiable {
         self.stopEvents = stopEvents
         self.snapshotID = snapshotID
         self.followedPlan = followedPlan
+        self.altSnapshotID = altSnapshotID
+        self.followedAltPlan = followedAltPlan
         self.source = source
         self.excludedFromStats = excludedFromStats
     }

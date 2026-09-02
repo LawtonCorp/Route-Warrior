@@ -49,4 +49,14 @@ public struct TierPolicy: Sendable {
     public func ghostRaceAvailable(for tier: Tier) -> Bool {
         tier == .pro
     }
+
+    /// The live in-app drive view (FR-21). Plan preview stays free.
+    public func driveViewAvailable(for tier: Tier) -> Bool {
+        tier == .pro
+    }
+
+    /// Asking a provider for a fresh plan mid-drive (FR-22).
+    public func rerouteAvailable(for tier: Tier) -> Bool {
+        tier == .pro
+    }
 }

@@ -29,6 +29,8 @@ public extension TripRecord {
         idleTime = trip.idleTime
         snapshotID = trip.snapshotID
         followedPlan = trip.followedPlan
+        altSnapshotID = trip.altSnapshotID
+        followedAltPlan = trip.followedAltPlan
         sourceRaw = trip.source.rawValue
         excludedFromStats = trip.excludedFromStats
         pointsBlob = try JSONEncoder().encode(trip.points)
@@ -57,6 +59,8 @@ public extension TripRecord {
             stopEvents: stopEvents,
             snapshotID: snapshotID,
             followedPlan: followedPlan,
+            altSnapshotID: altSnapshotID,
+            followedAltPlan: followedAltPlan,
             source: Trip.Source(rawValue: sourceRaw) ?? .auto,
             excludedFromStats: excludedFromStats
         )
