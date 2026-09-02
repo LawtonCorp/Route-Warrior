@@ -38,7 +38,8 @@ struct RouteWarriorApp: App {
         let key = GoogleRoutesClient.configuredKey
         let pipeline = RecordingPipeline(
             context: ModelContext(container),
-            routesProvider: key.isEmpty ? nil : GoogleRoutesClient(apiKey: key)
+            routesProvider: key.isEmpty ? nil : GoogleRoutesClient(apiKey: key),
+            logStorage: Self.isTestHost ? nil : UserDefaults.standard
         )
         _pipeline = State(initialValue: pipeline)
         let store = StoreService()

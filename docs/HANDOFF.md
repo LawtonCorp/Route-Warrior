@@ -35,9 +35,11 @@ Work top to bottom — later items depend on earlier ones.
 
 - **M2 — recording**: carry the app for a week of normal driving. Pass =
   every real drive appears (no missed trips), no phantom trips, battery
-  drain acceptable to you. Auto-detect thresholds are in
-  `TripRecorder.Config`; tune there if reality disagrees, and record the
-  change in DECISIONS.md.
+  drain acceptable to you. When a drive goes missing, open Settings →
+  Recorder log: it says when the app armed, started, and why each
+  recording ended, with the point counts the discard thresholds saw.
+  Auto-detect thresholds are in `TripRecorder.Config`; tune there if
+  reality disagrees, and record the change in DECISIONS.md.
 - **M3 — comparisons**: on your known routes, check the trip detail's
   Google-vs-actual delta feels right, and count the actual stop signs and
   signals once to compare against the app's counts (expect OSM gaps —

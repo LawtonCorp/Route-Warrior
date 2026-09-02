@@ -228,3 +228,36 @@ Brian asked for "a bit", not a redesign); decorative per-screen colours
 with no meaning (the plainness was the absence of information, not of
 paint); touching the Live Activity (it already uses the same green/orange
 and is a separate target).
+
+## D-019 — Field test 1: stops must not end drives; make the recorder legible (2026-09-02)
+
+**Trigger**: Brian's first drives with the app (15 and 20 minutes) both
+ended in "Trip too brief to keep" and nothing saved.
+
+**Chosen**: (1) A `stationary` motion sample no longer ends a recording —
+a car at a red light *is* stationary, and one such sample chopped drives
+into sub-3-minute fragments that were each discarded; the 180 s idle
+window is the stop rule. Pedestrian motion (walking/running/cycling, ≥
+medium confidence) ends the trip immediately only when no point at
+driving speed arrived in the last 30 s (`pedestrianEndGrace`); inside
+that window it is a suspect that 20 s of sub-driving-speed points
+confirm (`pedestrianEndConfirm`) — a driving-speed point dismisses it.
+The walk is trimmed from the drive either way. (2) Background location
+updates are allowed under When-In-Use as well as Always: the `location`
+background mode is declared, and a When-In-Use app keeps updates it
+started in the foreground under the system indicator; gating on Always
+meant a manual recording lost GPS the moment the phone locked. (3) The
+recorder now reports why each recording ended (`EndCause`) and what it
+held (`SegmentSummary`: kept points, duration, distance, samples dropped
+by the accuracy filter); the Home outcome line carries that detail, and
+Settings gains a "Recorder log" (last 40 events, persisted in
+UserDefaults so an app kill mid-drive still leaves a trace) with arm,
+start, end, permission, and GPS-power events, plus the motion
+*authorization* (Settings previously showed only hardware availability).
+Thresholds are first guesses to be tuned from that log. **Rejected**:
+requiring sustained pedestrian samples (CoreMotion emits on change, so
+a second sample may never come — location confirmation is the reliable
+witness); ending on any non-automotive sample as before (the bug);
+raising `minTripDuration` to mask fragmentation (would keep saving the
+fragments, not the drive); a Console/OSLog-only diagnostic (Brian reads
+the phone, not Xcode).
