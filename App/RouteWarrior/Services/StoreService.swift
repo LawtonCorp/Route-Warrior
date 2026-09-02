@@ -11,7 +11,21 @@ final class StoreService {
     static let monthlyID = "com.lawtoncorp.routewarrior.pro.monthly"
     static let annualID = "com.lawtoncorp.routewarrior.pro.annual"
 
-    private(set) var tier: TierPolicy.Tier = .free
+    /// Owner-build Pro override (D-017). scripts/device-build.sh can inject
+    /// `RouteWarriorForcePro` into Info.plist exactly the way it injects the
+    /// Google key; the value is empty in CI and in any build made without
+    /// the setting, so store builds are unaffected. The override only ever
+    /// raises the tier to .pro — a real entitlement is never masked.
+    nonisolated static func forcesPro(infoValue: Any?) -> Bool {
+        guard let value = infoValue as? String else { return false }
+        return value.trimmingCharacters(in: .whitespaces) == "1"
+    }
+
+    private nonisolated static var isForcedPro: Bool {
+        forcesPro(infoValue: Bundle.main.object(forInfoDictionaryKey: "RouteWarriorForcePro"))
+    }
+
+    private(set) var tier: TierPolicy.Tier = StoreService.isForcedPro ? .pro : .free
     private(set) var products: [Product] = []
     private(set) var lastError: String?
     let policy = TierPolicy()
@@ -54,7 +68,7 @@ final class StoreService {
                 pro = true
             }
         }
-        tier = pro ? .pro : .free
+        tier = (pro || Self.isForcedPro) ? .pro : .free
     }
 
     func purchase(_ product: Product) async {

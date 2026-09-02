@@ -26,6 +26,7 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     ROUTEWARRIOR_ROUTES_KEY: ""
+    ROUTEWARRIOR_FORCE_PRO: ""
     DEVELOPMENT_TEAM: ""
     CODE_SIGNING_REQUIRED: "NO"
     CODE_SIGNING_ALLOWED: "NO"
@@ -81,6 +82,10 @@ targets:
         # Injected at build time (scripts/device-build.sh); empty in CI, so
         # CI builds run keyless and trips show "no comparison".
         GoogleRoutesAPIKey: $(ROUTEWARRIOR_ROUTES_KEY)
+        # Owner-build Pro override (D-017): "1" forces the Pro tier for
+        # personal device builds. Empty everywhere by default — only
+        # scripts/device-build.sh ever sets it, so archives are unaffected.
+        RouteWarriorForcePro: $(ROUTEWARRIOR_FORCE_PRO)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lawtoncorp.routewarrior
@@ -133,6 +138,10 @@ schemes:
     build:
       targets:
         RouteWarrior: all
+    run:
+      # Simulator runs from Xcode use the local StoreKit configuration, so
+      # the purchase flow is testable before App Store Connect exists.
+      storeKitConfiguration: App/RouteWarrior/RouteWarrior.storekit
     test:
       targets:
         - RouteWarriorTests
