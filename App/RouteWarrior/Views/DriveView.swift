@@ -120,13 +120,16 @@ struct DriveView: View {
     // MARK: Controls
 
     private var controls: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Button {
                 dismiss()
             } label: {
-                Label("Hide", systemImage: "chevron.down")
+                Image(systemName: "chevron.down")
+                    .font(.body.weight(.semibold))
+                    .frame(width: 22, height: 22)
             }
             .buttonStyle(.bordered)
+            .accessibilityLabel("Hide the drive view")
             if rerouteAllowed, plan != nil {
                 Button {
                     guard let last = pipeline.liveTrack.last else { return }
@@ -134,25 +137,31 @@ struct DriveView: View {
                 } label: {
                     if monitor?.rerouting == true {
                         ProgressView()
+                            .frame(width: 22, height: 22)
                     } else {
                         Label("Reroute", systemImage: "arrow.triangle.turn.up.right.diamond")
+                            .lineLimit(1)
+                            .fixedSize()
                     }
                 }
                 .buttonStyle(.bordered)
                 .tint(Theme.pro)
                 .disabled(monitor == nil || monitor?.rerouting == true)
             }
-            Spacer()
+            Spacer(minLength: 0)
             Button(role: .destructive) {
                 pipeline.stopManualRecording()
                 dismiss()
             } label: {
-                Label("End drive", systemImage: "stop.fill")
+                Label("End", systemImage: "stop.fill")
+                    .lineLimit(1)
+                    .fixedSize()
             }
             .buttonStyle(.borderedProminent)
             .tint(Theme.recording)
+            .accessibilityLabel("End the drive")
         }
-        .padding(12)
+        .padding(10)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .padding(.horizontal, 12)
         .padding(.bottom, 8)
