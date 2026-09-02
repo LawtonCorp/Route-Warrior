@@ -68,14 +68,12 @@ struct HomeView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-            if locationService.authorizationStatus == .notDetermined
-                || locationService.authorizationStatus == .denied {
-                Label(
-                    "Location permission is required to record drives — see Settings.",
-                    systemImage: "exclamationmark.triangle.fill"
-                )
-                .font(.footnote)
-                .foregroundStyle(Theme.google)
+            if let warning = LocationPrimer.warning(for: locationService.authorizationStatus) {
+                Label(warning, systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.google)
+                LocationFixButton(style: .bordered)
+                    .font(.footnote)
             }
         }
         .padding(.vertical, 6)

@@ -261,3 +261,30 @@ witness); ending on any non-automotive sample as before (the bug);
 raising `minTripDuration` to mask fragmentation (would keep saving the
 fragments, not the drive); a Console/OSLog-only diagnostic (Brian reads
 the phone, not Xcode).
+
+## D-020 — Onboarding walks to Always and says what While Using costs (2026-09-02)
+
+**Trigger**: Brian, after the first device build: if hands-free recording
+needs Always, setup must say so; a user who picks While Using has to
+learn that the app cannot follow their drive.
+
+**Chosen**: the permissions page is driven by the actual grant. Nothing
+yet → "Hands-free needs location set to Always" and the While Using
+request (iOS insists on that first step). While Using → "One more step:
+Always", the consequence in plain words (only drives started with the
+Record button while the app is open), and a Change to Always button
+that shows iOS's one-time "Change to Always Allow" prompt; a secondary
+"Keep While Using — I'll record manually" is the honest opt-out. Because
+iOS shows that prompt once per install, the app remembers that it asked
+(`alwaysRequested`) and afterwards offers a Settings deep link instead
+of a button that would do nothing. Always → "You're set" and the Motion
+explanation. Denied → Settings link. The same `LocationPrimer` logic
+(pure, tested) drives the Home card, which now warns under While Using
+too and carries the fix button, and the Settings row. Motion & Fitness
+is no longer requested at first launch: it starts when onboarding
+finishes, after its explanation (FR-18 as written). **Rejected**:
+requesting Always directly (iOS grants provisional Always and defers the
+real question to a random later moment, which is worse for trust and
+for support); blocking the app until Always is granted (App Review and
+D-008: recording via the Record button is a legitimate While Using
+mode); keeping the old copy that called Always an optional upgrade.
