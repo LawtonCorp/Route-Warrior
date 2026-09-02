@@ -2,9 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Route Warrior collects nothing: no tracking, no data types leave
-	     the user's control to us. Location/motion are used on-device and in
-	     the user's private iCloud only (see docs/PRIVACY_POLICY.md). -->
+	<!-- Route Warrior itself collects nothing: no tracking, no data types
+	     leave the user's control to us. Location/motion are used on-device
+	     and in the user's private iCloud only (see docs/PRIVACY_POLICY.md).
+	     Since M8 the app links the Google Maps SDK for iOS, which ships its
+	     own privacy manifest; Xcode's Generate Privacy Report aggregates it
+	     with this one, and the App Privacy label follows that report
+	     (docs/HANDOFF.md §5). -->
 	<key>NSPrivacyTracking</key>
 	<false/>
 	<key>NSPrivacyTrackingDomains</key>

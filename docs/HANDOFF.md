@@ -30,6 +30,12 @@ Work top to bottom — later items depend on earlier ones.
    `ROUTEWARRIOR_ROUTES_KEY=xxx ./scripts/device-build.sh` — it lands in
    Info.plist as `GoogleRoutesAPIKey`. Keyless builds run fine; trips just
    show "no comparison".
+7. **For the Google map (M8)**: enable **Maps SDK for iOS** on the same
+   project (APIs & Services → Library) and add it to the key's *API
+   restrictions* next to Routes API. Map loads are free and unlimited;
+   set a daily quota anyway (Google Maps Platform → Quotas → Maps SDK for
+   iOS). Without this the Google map renders blank while everything else
+   works.
 
 ## 3. Field tests (the phone-in-hand exit criteria)
 
@@ -72,8 +78,15 @@ Work top to bottom — later items depend on earlier ones.
 
 1. Host the privacy policy (docs/PRIVACY_POLICY.md) at a public URL and set
    it in App Store Connect.
-2. App Privacy questionnaire: "Data Not Collected" (no data leaves the
-   user's control to us; disclose the Google Routes call in the policy).
+2. App Privacy questionnaire: since the Google map (M8) the app links
+   the Google Maps SDK, which declares its own collection, so "Data Not
+   Collected" no longer applies. Do this once from the archive: Xcode →
+   Product → Archive → in the Organizer, right-click the archive →
+   **Generate Privacy Report** → open the PDF; it lists every data type
+   the bundled SDKs declare. Answer the App Store Connect questionnaire
+   from that PDF, mark each Google type as "not linked to the user" and
+   "not used for tracking" unless the report says otherwise, and attach
+   nothing for LawtonCorp itself — we still collect nothing.
 3. Record the App Review demo video (see docs/APP_REVIEW_NOTES.md) showing
    the always-location education flow and the recording feature.
 4. Screenshots (6.7" and 6.1"): Home recording state, Trip detail with

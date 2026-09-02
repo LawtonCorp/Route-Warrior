@@ -7,9 +7,9 @@ import RouteWarriorKit
 @MainActor
 @Observable
 final class MapSettings {
-    /// Flips to true when the Google map surface ships (M8). Until then
-    /// Google stays the comparison engine and never the map.
-    static let googleSurfaceAvailable = false
+    /// The Google map surface shipped in M8 (D-024); Google mode still
+    /// needs a key with "Maps SDK for iOS" enabled on it.
+    static let googleSurfaceAvailable = true
 
     private(set) var provider: MapProvider
     private(set) var autoReroute: Bool

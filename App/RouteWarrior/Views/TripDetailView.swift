@@ -8,6 +8,7 @@ import SwiftUI
 struct TripDetailView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(MapSettings.self) private var mapSettings
     let record: TripRecord
     @Query private var allSnapshots: [SnapshotRecord]
 
@@ -37,11 +38,20 @@ struct TripDetailView: View {
         return result
     }
 
-    /// D-022: a provider's line is drawn only on that provider's map. This
-    /// screen is the Apple surface, so only Apple's plan is drawn; a
-    /// Google plan appears as numbers in the Drive section instead.
+    /// D-022: a provider's line is drawn only on that provider's map. The
+    /// map is whichever surface the user chose; the other provider's plan
+    /// appears as numbers in the Drive section instead.
     private var drawablePlan: PlanSnapshot? {
-        plans.map(\.plan).first { $0.provider == .appleMaps }
+        plans.map(\.plan).first { $0.provider == mapSettings.provider.snapshotProvider }
+    }
+
+    private func scene(for trip: Trip) -> MapScene {
+        MapScene(
+            plans: plans.map(\.plan),
+            trail: trip.points.map(\.coordinate),
+            showsTraffic: false,
+            camera: .fitContent
+        )
     }
 
     var body: some View {
@@ -70,21 +80,7 @@ struct TripDetailView: View {
     }
 
     private func routeMap(for trip: Trip) -> some View {
-        Map {
-            if let drawablePlan {
-                MapPolyline(coordinates: drawablePlan.polyline.coordinates.map {
-                    CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
-                })
-                .stroke(Theme.google, style: StrokeStyle(lineWidth: 3, dash: [6, 6]))
-            }
-            MapPolyline(coordinates: trip.points.map {
-                CLLocationCoordinate2D(
-                    latitude: $0.coordinate.latitude,
-                    longitude: $0.coordinate.longitude
-                )
-            })
-            .stroke(Theme.route, lineWidth: 4)
-        }
+        MapSurfaceView(scene: scene(for: trip))
     }
 
     /// The same two strokes as the map, so the colours need no caption.

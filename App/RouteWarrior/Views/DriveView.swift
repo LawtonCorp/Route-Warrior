@@ -1,13 +1,11 @@
-import CoreLocation
-import MapKit
 import RouteWarriorKit
 import SwiftUI
 import UIKit
 
-/// FR-21/FR-22: the map that follows the car. The plan (Apple's, on this
-/// Apple surface — D-022 §9.2) is the dashed line; your trail is blue and
-/// turns green the moment you leave the plan; a reroute, if asked for,
-/// is a second line. Nothing here changes the departure snapshot. Pro.
+/// FR-21/FR-22: the map that follows the car, on the surface the user
+/// chose. That provider's plan is the dashed line; your trail is blue and
+/// turns green the moment you leave the plan; a reroute, if asked for, is
+/// a second line. Nothing here changes the departure snapshot. Pro.
 struct DriveView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(RecordingPipeline.self) private var pipeline
@@ -15,12 +13,13 @@ struct DriveView: View {
     @Environment(GhostRaceCoordinator.self) private var ghostRace
     @Environment(StoreService.self) private var store
 
-    @State private var camera: MapCameraPosition = .userLocation(followsHeading: true, fallback: .automatic)
     @State private var monitor: DriveMonitor?
 
-    /// The plan drawn on this surface.
+    private var surfaceProvider: PlanSnapshot.Provider { mapSettings.provider.snapshotProvider }
+
+    /// The plan drawn on this surface and judged against.
     private var plan: PlanSnapshot? {
-        pipeline.plansForCurrentDrive.first { $0.provider == .appleMaps }
+        pipeline.plansForCurrentDrive.first { $0.provider == surfaceProvider }
     }
 
     private var isOffPlan: Bool {
@@ -30,9 +29,20 @@ struct DriveView: View {
 
     private var rerouteAllowed: Bool { store.policy.rerouteAvailable(for: store.tier) }
 
+    private var scene: MapScene {
+        MapScene(
+            plans: pipeline.plansForCurrentDrive,
+            reroute: monitor?.reroute,
+            trail: pipeline.liveTrack.map(\.coordinate),
+            offPlan: isOffPlan,
+            camera: .followUser
+        )
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
-            map
+            MapSurfaceView(scene: scene)
+                .ignoresSafeArea()
             banner
         }
         .overlay(alignment: .bottom) { controls }
@@ -50,35 +60,6 @@ struct DriveView: View {
         .onChange(of: pipeline.isRecording) {
             if !pipeline.isRecording { dismiss() }
         }
-    }
-
-    // MARK: Map
-
-    private var map: some View {
-        Map(position: $camera) {
-            if let plan {
-                MapPolyline(coordinates: Self.clCoordinates(plan.polyline))
-                    .stroke(Theme.google, style: StrokeStyle(lineWidth: 4, dash: [8, 6]))
-            }
-            if let reroute = monitor?.reroute {
-                MapPolyline(coordinates: Self.clCoordinates(reroute.polyline))
-                    .stroke(Theme.pro, lineWidth: 4)
-            }
-            if pipeline.liveTrack.count >= 2 {
-                MapPolyline(coordinates: pipeline.liveTrack.map {
-                    CLLocationCoordinate2D(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude)
-                })
-                .stroke(isOffPlan ? Theme.win : Theme.route, lineWidth: 5)
-            }
-            UserAnnotation()
-        }
-        .mapStyle(.standard(showsTraffic: true))
-        .mapControls {
-            MapUserLocationButton()
-            MapCompass()
-            MapScaleView()
-        }
-        .ignoresSafeArea()
     }
 
     // MARK: Banner
@@ -128,7 +109,7 @@ struct DriveView: View {
         if let startedAt = pipeline.recordingStartedAt {
             parts.append("\(Format.duration(Date.now.timeIntervalSince(startedAt))) so far")
         }
-        if let status = ghostRace.status {
+        if ghostRace.status != nil {
             parts.append("vs. your \(ghostRace.reference == .personalBest ? "best" : "average")")
         } else if plan != nil {
             parts.append("ghost race joins once the route is recognised")
@@ -187,19 +168,16 @@ struct DriveView: View {
         }
         guard monitor?.plan.id != plan.id else { return }
         let destinationID = plan.destinationPlaceID
+        let provider = plan.provider
         guard let destination = plan.destination else {
             monitor = nil
             return
         }
         monitor = DriveMonitor(plan: plan) { position in
             await pipeline.computePlan(
-                from: position, to: destination, destinationPlaceID: destinationID, provider: .appleMaps
+                from: position, to: destination, destinationPlaceID: destinationID, provider: provider
             )
         }
         monitor?.ingest(track: pipeline.liveTrack, autoReroute: false)
-    }
-
-    private static func clCoordinates(_ polyline: Polyline) -> [CLLocationCoordinate2D] {
-        polyline.coordinates.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
     }
 }

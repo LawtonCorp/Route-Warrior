@@ -21,6 +21,13 @@ options:
 packages:
   RouteWarriorKit:
     path: .
+  # Google's map inside the app (M8, D-022/D-024). Binary xcframework via
+  # Swift Package; map loads are free and unlimited (pricing page,
+  # 2026-09-02). The key rides the same GoogleRoutesAPIKey Info.plist entry
+  # with "Maps SDK for iOS" enabled on it (docs/HANDOFF.md).
+  GoogleMaps:
+    url: https://github.com/googlemaps/ios-maps-sdk
+    from: "11.0.0"
 
 settings:
   base:
@@ -46,6 +53,7 @@ targets:
         product: RouteWarriorKit
       - package: RouteWarriorKit
         product: RouteWarriorStore
+      - package: GoogleMaps
       - target: RouteWarriorWidgets
         embed: true
     entitlements:

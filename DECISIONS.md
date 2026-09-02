@@ -365,3 +365,27 @@ on the Apple map is gone. **Rejected**: an array of snapshot IDs on the
 trip (CloudKit-fragile; two providers is the whole design); re-fetching
 plans at "Go" when the preview already has them; drawing Google's line
 on the Apple map "just for legacy trips".
+
+## D-024 — M8: Google's map through the official SDK, one scene for both maps (2026-09-02)
+
+**Chosen**: the Maps SDK for iOS as a Swift Package (binary xcframework,
+from 11.0.0; map loads confirmed free and unlimited on the pricing page
+the same day), primed with the existing key at launch and skipped in
+keyless and test-host builds. A single `MapScene` value describes what a
+map screen draws — plans, reroute, trail, off-plan state, destination,
+traffic, camera — and applies the D-022 §9.2 rule in one tested place:
+a surface draws only its own provider's plans and reroute, the rest are
+listed as numbers. `MapSurfaceView` picks Apple's `Map` or Google's
+`GMSMapView` from the preference, so the Plan, Drive and Trip-detail
+screens stopped drawing map content themselves. Google mode appears in
+Settings and on a new onboarding page only when a key is present and the
+surface exists (`googleSurfaceAvailable`). Privacy: the manifest and the
+policy say the Google SDK reports usage to Google when Google is the
+chosen map, "Data Not Collected" is withdrawn, and the App Privacy
+questionnaire is answered from Xcode's Generate Privacy Report so the
+SDK's own declarations, not our guesses, drive it. **Rejected**: drawing
+Google's route on Apple's map or vice versa (the terms risk the whole
+surface design exists to avoid); two copies of every map screen (the
+scene abstraction is the spec's §5 and the cheaper path); guessing the
+SDK's collected data types in our manifest (Apple aggregates SDK
+manifests; the report is authoritative).

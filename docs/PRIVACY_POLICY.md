@@ -33,15 +33,22 @@ Two narrowly scoped requests, both essential to features you can see:
 2. **OpenStreetMap (Overpass API)** — to count stop signs and traffic
    signals, the app requests intersection data for a padded bounding box
    around a route — a deliberately blurred area, not your exact path.
+3. **Google Maps SDK** — only when you choose Google as your map in
+   Settings (Apple is the default). Google's map software then runs
+   inside the app to draw the map, and it talks to Google to fetch map
+   imagery and to report usage and diagnostics, as described in
+   [Google's privacy policy](https://policies.google.com/privacy). With
+   Apple as your map, this component is idle.
 
 That is the complete list. If a future version adds anything to it, this
 policy will change and the app will say so.
 
 ## What we collect
 
-Nothing. We receive no telemetry, no crash reports beyond what you opt to
-share with Apple, and no usage data. The App Store's privacy label for
-Route Warrior reads **Data Not Collected**.
+Nothing. LawtonCorp receives no telemetry, no crash reports beyond what
+you opt to share with Apple, and no usage data. The App Store's privacy
+label reflects the Google Maps SDK's own disclosures when Google is your
+chosen map; it is not data we ever see.
 
 ## Permissions the app asks for
 
