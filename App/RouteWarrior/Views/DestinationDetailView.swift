@@ -53,40 +53,66 @@ struct DestinationDetailView: View {
 
     // MARK: Verdict
 
+    /// Providers with at least one plan among this destination's trips,
+    /// Apple first (the default map).
+    private var providersWithPlans: [PlanSnapshot.Provider] {
+        [PlanSnapshot.Provider.appleMaps, .googleRoutes].filter { provider in
+            trips.contains { VerdictEngine.plan(of: $0, from: provider, snapshotsByID: snapshotsByID) != nil }
+        }
+    }
+
     private var verdictSection: some View {
-        Section("Your route vs. Google") {
-            let verdict = VerdictEngine.verdict(forDestination: trips, snapshotsByID: snapshotsByID)
-            let confidence = "median, \(verdict.confidence.rawValue) confidence"
-            switch verdict.winner {
-            case .insufficientData:
+        Section("Your route vs. the plans") {
+            if providersWithPlans.isEmpty {
                 verdictCard(
                     symbol: "hourglass",
                     color: .gray,
-                    title: "Collecting data",
-                    detail: "\(verdict.mineSampleCount)/5 of your drives, \(verdict.googleSampleCount)/5 with a Google plan"
-                )
-            case .tie:
-                verdictCard(
-                    symbol: "equal.circle",
-                    color: Theme.route,
-                    title: "Dead heat",
-                    detail: "Within the margin (\(confidence))"
-                )
-            case .mine:
-                verdictCard(
-                    symbol: "trophy.fill",
-                    color: Theme.win,
-                    title: "Your route wins by ~\(Format.duration(abs(verdict.medianDeltaSeconds)))",
-                    detail: confidence
-                )
-            case .google:
-                verdictCard(
-                    symbol: "map.fill",
-                    color: Theme.google,
-                    title: "Google's plan wins by ~\(Format.duration(verdict.medianDeltaSeconds))",
-                    detail: confidence
+                    title: "No plans to compare yet",
+                    detail: "Plans arrive with drives that start from the Plan screen, or when a destination is predicted at departure."
                 )
             }
+            ForEach(providersWithPlans, id: \.self) { provider in
+                providerVerdictCard(
+                    VerdictEngine.verdict(forDestination: trips, snapshotsByID: snapshotsByID, provider: provider),
+                    provider: provider
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func providerVerdictCard(_ verdict: VerdictEngine.Verdict, provider: PlanSnapshot.Provider) -> some View {
+        let name = provider.displayName
+        let confidence = "median, \(verdict.confidence.rawValue) confidence"
+        switch verdict.winner {
+        case .insufficientData:
+            verdictCard(
+                symbol: "hourglass",
+                color: .gray,
+                title: "Collecting data vs. \(name)",
+                detail: "\(verdict.mineSampleCount)/5 of your drives, \(verdict.providerSampleCount)/5 with \(name)'s plan"
+            )
+        case .tie:
+            verdictCard(
+                symbol: "equal.circle",
+                color: Theme.route,
+                title: "Dead heat with \(name)",
+                detail: "Within the margin (\(confidence))"
+            )
+        case .mine:
+            verdictCard(
+                symbol: "trophy.fill",
+                color: Theme.win,
+                title: "Your route beats \(name) by ~\(Format.duration(abs(verdict.medianDeltaSeconds)))",
+                detail: confidence
+            )
+        case .provider:
+            verdictCard(
+                symbol: "map.fill",
+                color: Theme.google,
+                title: "\(name)'s plan wins by ~\(Format.duration(verdict.medianDeltaSeconds))",
+                detail: confidence
+            )
         }
     }
 

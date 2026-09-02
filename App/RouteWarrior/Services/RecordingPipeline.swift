@@ -5,10 +5,12 @@ import SwiftData
 
 /// The kit/app boundary for recording: feeds converted samples through
 /// TripRecorder; at trip start it predicts the destination and snapshots
-/// the provider's plan (FR-5/FR-6); on a finalized trip it runs
-/// StopDetector + RouteMatcher, attaches the matching snapshot, and
-/// persists everything. Every rule lives in the kit; this object only
-/// wires and stores — which is exactly what the app-target tests exercise.
+/// every provider's plan (FR-5/FR-6, "beat both" D-022); on a finalized
+/// trip it runs StopDetector + RouteMatcher, attaches the matching
+/// snapshots — the preferred provider's as the primary plan, the other as
+/// the alternate — and persists everything. Every rule lives in the kit;
+/// this object only wires and stores — which is exactly what the
+/// app-target tests exercise.
 @MainActor
 @Observable
 final class RecordingPipeline {
@@ -22,6 +24,10 @@ final class RecordingPipeline {
 
     static let logCapacity = 40
     private static let logDefaultsKey = "recorderLog"
+    /// A drive that ends within this distance of a plan's endpoint gets
+    /// that plan even when the endpoint is not a saved place (a planned
+    /// drive to a searched address, FR-20).
+    static let plannedArrivalRadiusM: Double = 200
 
     private(set) var recorderState: TripRecorder.State = .idle
     private(set) var lastOutcome: String?
@@ -35,7 +41,11 @@ final class RecordingPipeline {
     private var recorder: TripRecorder
     private let context: ModelContext
     private let timezoneID: String
-    private let routesProvider: (any RoutesProviding)?
+    /// Every routing provider this build can reach, by the provider its
+    /// snapshots carry.
+    private let providers: [PlanSnapshot.Provider: any RoutesProviding]
+    /// Whose plan the driver sees — the primary snapshot on the trip.
+    private let preference: @MainActor () -> MapProvider
     private let logStorage: UserDefaults?
     private var pendingSnapshots: [PlanSnapshot] = []
     private var samplesThisSegment = 0
@@ -49,11 +59,19 @@ final class RecordingPipeline {
         context: ModelContext,
         timezoneID: String = TimeZone.current.identifier,
         routesProvider: (any RoutesProviding)? = nil,
+        providers: [PlanSnapshot.Provider: any RoutesProviding] = [:],
+        preference: @escaping @MainActor () -> MapProvider = { MapProvider.default },
         logStorage: UserDefaults? = nil
     ) {
         self.context = context
         self.timezoneID = timezoneID
-        self.routesProvider = routesProvider
+        var all = providers
+        if let routesProvider {
+            // v1 spelling: a single Google provider.
+            all[.googleRoutes] = routesProvider
+        }
+        self.providers = all
+        self.preference = preference
         self.logStorage = logStorage
         self.recorder = TripRecorder(timezoneID: timezoneID)
         self.log = Self.loadLog(from: logStorage)
@@ -62,6 +80,12 @@ final class RecordingPipeline {
     var isRecording: Bool { recorderState == .recording }
     var liveTrack: [TrackPoint] { recorder.liveTrack }
     var recordingStartedAt: Date? { recorder.recordingStartedAt }
+    /// Providers this build can ask, Apple first (the default map).
+    var availableProviders: [PlanSnapshot.Provider] {
+        [PlanSnapshot.Provider.appleMaps, .googleRoutes].filter { providers[$0] != nil }
+    }
+    /// The plans held for the current drive (for the drive view).
+    var plansForCurrentDrive: [PlanSnapshot] { pendingSnapshots }
 
     func ingest(location point: TrackPoint) {
         if recorder.state != .idle {
@@ -85,8 +109,56 @@ final class RecordingPipeline {
         note("Recording started by the Record button")
     }
 
+    /// FR-20: the driver chose a destination and saw the plans. Recording
+    /// starts now (unless a drive is already being recorded) and those
+    /// plans become the departure snapshots — no second fetch.
+    func startPlannedDrive(with snapshots: [PlanSnapshot]) {
+        if recorder.state != .recording {
+            recorder.startManualRecording(at: .now)
+            recorderState = recorder.state
+            samplesThisSegment = 0
+        }
+        pendingSnapshots = snapshots
+        lastOutcome = "Recording (planned)"
+        note("Recording started from the plan screen with \(snapshots.count) plan(s)")
+    }
+
     func stopManualRecording() {
         handle(recorder.stopRecording())
+    }
+
+    // MARK: Plans on demand (FR-20 preview, FR-22 reroute)
+
+    /// Every available provider's plan from `origin` to `destination`.
+    /// Failures are silent: a missing plan is a missing comparison, never
+    /// an error the driver has to handle.
+    func computePlans(
+        from origin: Coordinate,
+        to destination: Coordinate,
+        destinationPlaceID: UUID?
+    ) async -> [PlanSnapshot] {
+        var plans: [PlanSnapshot] = []
+        for provider in availableProviders {
+            guard let client = providers[provider] else { continue }
+            if let plan = try? await client.computeSnapshot(
+                from: origin, to: destination, destinationPlaceID: destinationPlaceID
+            ) {
+                plans.append(plan)
+            }
+        }
+        return plans
+    }
+
+    func computePlan(
+        from origin: Coordinate,
+        to destination: Coordinate,
+        destinationPlaceID: UUID?,
+        provider: PlanSnapshot.Provider
+    ) async -> PlanSnapshot? {
+        guard let client = providers[provider] else { return nil }
+        return try? await client.computeSnapshot(
+            from: origin, to: destination, destinationPlaceID: destinationPlaceID
+        )
     }
 
     // MARK: Recorder log (D-019)
@@ -181,24 +253,16 @@ final class RecordingPipeline {
         date.formatted(date: .omitted, time: .shortened)
     }
 
-    // MARK: Departure snapshot (FR-5/FR-6)
+    // MARK: Departure snapshots (FR-5/FR-6, "beat both")
 
     private func beginSnapshotFetch(departure: Date) {
-        guard let routesProvider, let originPoint = recorder.liveTrack.first else { return }
+        guard !providers.isEmpty, let originPoint = recorder.liveTrack.first else { return }
         snapshotFetch = Task { [weak self] in
-            await self?.fetchSnapshots(
-                provider: routesProvider,
-                originPoint: originPoint,
-                departure: departure
-            )
+            await self?.fetchSnapshots(originPoint: originPoint, departure: departure)
         }
     }
 
-    private func fetchSnapshots(
-        provider: any RoutesProviding,
-        originPoint: TrackPoint,
-        departure: Date
-    ) async {
+    private func fetchSnapshots(originPoint: TrackPoint, departure: Date) async {
         do {
             let places = try context.fetch(FetchDescriptor<PlaceRecord>()).map { $0.place() }
             let origin = RouteMatcher.place(containing: originPoint.coordinate, in: places)
@@ -220,16 +284,7 @@ final class RecordingPipeline {
             }
             for targetID in targets {
                 guard let place = places.first(where: { $0.id == targetID }) else { continue }
-                if let snapshot = try? await provider.computeSnapshot(
-                    from: originPoint.coordinate,
-                    to: place.coordinate,
-                    destinationPlaceID: place.id
-                ) {
-                    pendingSnapshots.append(snapshot)
-                    note("Google plan fetched for \(place.name): ETA \(Format.duration(snapshot.trafficDuration))")
-                } else {
-                    note("Google plan for \(place.name) failed")
-                }
+                await fetchAllPlans(from: originPoint.coordinate, to: place, label: place.name)
             }
         } catch {
             // No comparison for this trip — recording is never blocked
@@ -237,11 +292,25 @@ final class RecordingPipeline {
         }
     }
 
-    /// The one-tap pick (FR-6): fetch the plan for a destination the user
-    /// named, from wherever the drive currently is. No-op when idle or
-    /// keyless.
+    private func fetchAllPlans(from origin: Coordinate, to place: Place, label: String) async {
+        for provider in availableProviders {
+            guard let client = providers[provider] else { continue }
+            if let snapshot = try? await client.computeSnapshot(
+                from: origin, to: place.coordinate, destinationPlaceID: place.id
+            ) {
+                pendingSnapshots.append(snapshot)
+                note("\(provider.displayName) plan fetched for \(label): ETA \(Format.duration(snapshot.trafficDuration))")
+            } else {
+                note("\(provider.displayName) plan for \(label) failed")
+            }
+        }
+    }
+
+    /// The one-tap pick (FR-6): fetch every provider's plan for a
+    /// destination the user named, from wherever the drive currently is.
+    /// No-op when idle or with no provider.
     func requestSnapshot(to placeID: UUID) {
-        guard recorderState == .recording, let routesProvider,
+        guard recorderState == .recording, !providers.isEmpty,
               let position = recorder.liveTrack.last
         else { return }
         snapshotFetch = Task { [weak self] in
@@ -249,20 +318,26 @@ final class RecordingPipeline {
             guard let place = try? self.context.fetch(FetchDescriptor<PlaceRecord>())
                 .first(where: { $0.id == placeID })?.place()
             else { return }
-            if let snapshot = try? await routesProvider.computeSnapshot(
-                from: position.coordinate,
-                to: place.coordinate,
-                destinationPlaceID: place.id
-            ) {
-                self.pendingSnapshots.append(snapshot)
-                self.note("Google plan fetched for \(place.name) (your pick): ETA \(Format.duration(snapshot.trafficDuration))")
-            }
+            await self.fetchAllPlans(from: position.coordinate, to: place, label: "\(place.name) (your pick)")
         }
     }
 
     private func clearPendingSnapshots() {
         pendingSnapshots.removeAll()
         snapshotFetch = nil
+    }
+
+    /// A plan belongs to a finished drive when it was made for the place
+    /// the drive ended at, or ends within `plannedArrivalRadiusM` of where
+    /// the drive ended (a searched address, FR-20).
+    static func snapshot(
+        _ snapshot: PlanSnapshot,
+        matchesArrivalAt end: Coordinate?,
+        place arrived: Place?
+    ) -> Bool {
+        if let arrived, snapshot.destinationPlaceID == arrived.id { return true }
+        guard let end, let planEnd = snapshot.destination else { return false }
+        return Geo.distanceMeters(from: end, to: planEnd) <= plannedArrivalRadiusM
     }
 
     // MARK: Persistence
@@ -277,18 +352,24 @@ final class RecordingPipeline {
             let variantRecords = try context.fetch(FetchDescriptor<VariantRecord>())
             let variants = variantRecords.compactMap { try? $0.variant() }
 
-            // The snapshot whose predicted destination matches where the
-            // drive actually ended; mispredictions are simply dropped.
-            let destination = trip.points.last.flatMap {
-                RouteMatcher.place(containing: $0.coordinate, in: places)
+            // The plans whose destination matches where the drive actually
+            // ended; mispredictions are simply dropped. The preferred
+            // provider's is the primary plan (the one the driver saw); the
+            // other provider's rides along as the alternate.
+            let end = trip.points.last?.coordinate
+            let arrived = end.flatMap { RouteMatcher.place(containing: $0, in: places) }
+            let matching = pendingSnapshots.filter {
+                Self.snapshot($0, matchesArrivalAt: end, place: arrived)
             }
-            let snapshot = destination.flatMap { arrived in
-                pendingSnapshots.first { $0.destinationPlaceID == arrived.id }
-            }
-            enriched.snapshotID = snapshot?.id
+            let wanted = preference().snapshotProvider
+            let primary = matching.first { $0.provider == wanted } ?? matching.first
+            let alt = matching.first { $0.provider != primary?.provider }
+            enriched.snapshotID = primary?.id
+            enriched.altSnapshotID = alt?.id
 
             let result = RouteMatcher.assign(
-                trip: enriched, places: places, variants: variants, snapshot: snapshot
+                trip: enriched, places: places, variants: variants,
+                snapshot: primary, altSnapshot: alt
             )
             if let newVariant = result.newVariant {
                 context.insert(VariantRecord(newVariant))
@@ -296,13 +377,17 @@ final class RecordingPipeline {
                       let record = variantRecords.first(where: { $0.id == variantID }) {
                 record.tripCount += 1
             }
-            if let snapshot {
+            for snapshot in [primary, alt].compactMap({ $0 }) {
                 context.insert(try SnapshotRecord(snapshot))
             }
             context.insert(try TripRecord(result.trip))
             try context.save()
             lastOutcome = "Trip saved"
-            let comparison = snapshot == nil ? "no Google comparison" : "with Google comparison"
+            let comparison = switch (primary, alt) {
+            case (nil, _): "no plan to compare"
+            case (let p?, nil): "vs. \(p.provider.displayName)"
+            case (let p?, let a?): "vs. \(p.provider.displayName) and \(a.provider.displayName)"
+            }
             note("Trip saved: \(Format.duration(trip.endedAt.timeIntervalSince(trip.startedAt))), \(Format.distance(trip.distanceM)), \(comparison)\(endDetailCauseOnly)")
         } catch {
             // Never lose a drive silently: surface the failure.

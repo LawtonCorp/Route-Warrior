@@ -23,6 +23,8 @@ public final class TripRecord {
     public var idleTime: Double = 0
     public var snapshotID: UUID?
     public var followedPlan: Bool?
+    public var altSnapshotID: UUID?
+    public var followedAltPlan: Bool?
     public var sourceRaw: String = Trip.Source.auto.rawValue
     public var excludedFromStats: Bool = false
     @Attribute(.externalStorage) public var pointsBlob: Data = Data()

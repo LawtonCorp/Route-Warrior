@@ -13,9 +13,35 @@ struct TripDetailView: View {
 
     private var trip: Trip? { try? record.trip() }
 
-    private var snapshot: PlanSnapshot? {
-        guard let id = record.snapshotID else { return nil }
+    private func snapshot(id: UUID?) -> PlanSnapshot? {
+        guard let id else { return nil }
         return allSnapshots.first { $0.id == id }.flatMap { try? $0.snapshot() }
+    }
+
+    /// The plan the driver saw at departure (the preferred provider's).
+    private var snapshot: PlanSnapshot? { snapshot(id: record.snapshotID) }
+    /// The other provider's plan for the same departure ("beat both").
+    private var altSnapshot: PlanSnapshot? { snapshot(id: record.altSnapshotID) }
+
+    private struct PlanEntry: Identifiable {
+        let plan: PlanSnapshot
+        let followed: Bool?
+        var id: UUID { plan.id }
+    }
+
+    /// Every plan with its followed label, primary first.
+    private var plans: [PlanEntry] {
+        var result: [PlanEntry] = []
+        if let snapshot { result.append(PlanEntry(plan: snapshot, followed: record.followedPlan)) }
+        if let altSnapshot { result.append(PlanEntry(plan: altSnapshot, followed: record.followedAltPlan)) }
+        return result
+    }
+
+    /// D-022: a provider's line is drawn only on that provider's map. This
+    /// screen is the Apple surface, so only Apple's plan is drawn; a
+    /// Google plan appears as numbers in the Drive section instead.
+    private var drawablePlan: PlanSnapshot? {
+        plans.map(\.plan).first { $0.provider == .appleMaps }
     }
 
     var body: some View {
@@ -45,8 +71,8 @@ struct TripDetailView: View {
 
     private func routeMap(for trip: Trip) -> some View {
         Map {
-            if let snapshot {
-                MapPolyline(coordinates: snapshot.polyline.coordinates.map {
+            if let drawablePlan {
+                MapPolyline(coordinates: drawablePlan.polyline.coordinates.map {
                     CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
                 })
                 .stroke(Theme.google, style: StrokeStyle(lineWidth: 3, dash: [6, 6]))
@@ -65,8 +91,10 @@ struct TripDetailView: View {
     private var mapLegend: some View {
         HStack(spacing: 18) {
             legendSwatch(Theme.route, dashed: false, label: "Your drive")
-            if snapshot != nil {
-                legendSwatch(Theme.google, dashed: true, label: "Google's plan")
+            if let drawablePlan {
+                legendSwatch(Theme.google, dashed: true, label: "\(drawablePlan.provider.displayName)'s plan")
+            } else if let first = plans.first {
+                Text("\(first.plan.provider.displayName)'s plan: see below")
             }
             Spacer()
         }
@@ -86,14 +114,15 @@ struct TripDetailView: View {
         }
     }
 
-    /// The headline of the whole screen: did you beat the plan?
+    /// The headline of the whole screen: did you beat the plan you saw?
     private func comparisonCard(snapshot: PlanSnapshot) -> some View {
         let delta = record.endedAt.timeIntervalSince(record.startedAt) - snapshot.trafficDuration
         let tone = TripTone.forTrip(deltaSeconds: delta, excluded: false)
+        let name = snapshot.provider.displayName
         return HStack(spacing: 12) {
             IconTile(symbol: tone.symbol, color: tone.color, size: 40)
             VStack(alignment: .leading, spacing: 2) {
-                Text(delta <= 0 ? "You beat Google's ETA" : "Google's ETA beat you")
+                Text(delta <= 0 ? "You beat \(name)'s ETA" : "\(name)'s ETA beat you")
                     .font(.headline)
                 Text("\(Format.signedDelta(delta)) against a \(Format.duration(snapshot.trafficDuration)) plan")
                     .font(.caption.monospacedDigit())
@@ -115,19 +144,21 @@ struct TripDetailView: View {
                 LabeledContent("Stops", value: "\(trip.stopEvents.count)")
             }
             LabeledContent("Recorded", value: record.sourceRaw == "manual" ? "Manually" : "Automatically")
-            if let snapshot {
-                let delta = record.endedAt.timeIntervalSince(record.startedAt) - snapshot.trafficDuration
-                LabeledContent("Google's ETA was", value: Format.duration(snapshot.trafficDuration))
-                LabeledContent("You vs. the ETA") {
+            if plans.isEmpty {
+                LabeledContent("Plan comparison", value: "None for this trip")
+            }
+            ForEach(plans) { entry in
+                let name = entry.plan.provider.displayName
+                let delta = record.endedAt.timeIntervalSince(record.startedAt) - entry.plan.trafficDuration
+                LabeledContent("\(name)'s ETA was", value: Format.duration(entry.plan.trafficDuration))
+                LabeledContent("You vs. \(name)") {
                     Text(Format.signedDelta(delta))
                         .foregroundStyle(delta <= 0 ? Theme.win : Theme.google)
                         .monospacedDigit()
                 }
-                if let followed = record.followedPlan {
-                    LabeledContent("Followed Google's route", value: followed ? "Yes" : "No — your own way")
+                if let followed = entry.followed {
+                    LabeledContent("Followed \(name)'s route", value: followed ? "Yes" : "No — your own way")
                 }
-            } else {
-                LabeledContent("Google comparison", value: "None for this trip")
             }
         }
     }

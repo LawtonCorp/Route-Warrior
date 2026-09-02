@@ -35,6 +35,7 @@ public enum RouteMatcher {
         places: [Place],
         variants: [RouteVariant],
         snapshot: PlanSnapshot? = nil,
+        altSnapshot: PlanSnapshot? = nil,
         config: Config = Config()
     ) -> Result {
         var updated = trip
@@ -48,6 +49,10 @@ public enum RouteMatcher {
         if let snapshot,
            let deviation = track.symmetricMeanDeviation(to: snapshot.polyline, samples: config.samples) {
             updated.followedPlan = deviation <= config.followedPlanThresholdM
+        }
+        if let altSnapshot,
+           let deviation = track.symmetricMeanDeviation(to: altSnapshot.polyline, samples: config.samples) {
+            updated.followedAltPlan = deviation <= config.followedPlanThresholdM
         }
 
         // A variant needs both endpoints to mean anything: "my way to school"

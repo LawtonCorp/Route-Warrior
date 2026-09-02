@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(LocationService.self) private var locationService
 
     @Environment(StoreService.self) private var store
+    @Environment(MapSettings.self) private var mapSettings
     @State private var showPaywall = false
 
     var body: some View {
@@ -27,6 +28,30 @@ struct SettingsView: View {
                         Task { await store.restore() }
                     }
                 }
+                Section {
+                    Picker(selection: Binding(
+                        get: { mapSettings.provider },
+                        set: { mapSettings.select($0) }
+                    )) {
+                        ForEach(mapSettings.availableProviders, id: \.self) { provider in
+                            Text(provider.displayName).tag(provider)
+                        }
+                    } label: {
+                        settingsLabel("Map & routes", symbol: "map.fill", color: Theme.route)
+                    }
+                    Toggle(isOn: Binding(
+                        get: { mapSettings.autoReroute },
+                        set: { mapSettings.setAutoReroute($0) }
+                    )) {
+                        settingsLabel("Reroute automatically", symbol: "arrow.triangle.turn.up.right.diamond.fill", color: Theme.google)
+                    }
+                    .disabled(!store.policy.rerouteAvailable(for: store.tier))
+                } header: {
+                    Text("Map")
+                } footer: {
+                    Text(mapFooter)
+                }
+
                 Section {
                     LabeledContent {
                         Text(locationLabel)
@@ -91,6 +116,19 @@ struct SettingsView: View {
 
     private var locationLabel: String {
         LocationService.label(locationService.authorizationStatus)
+    }
+
+    private var mapFooter: String {
+        var lines: [String] = []
+        if mapSettings.availableProviders.count == 1 {
+            lines.append("Apple's map and routes. The Google map arrives in a later update; Google's plan is still compared on every trip when a key is present.")
+        } else {
+            lines.append("Whose map and routes you see. Both providers' plans are compared on every trip.")
+        }
+        lines.append(store.policy.rerouteAvailable(for: store.tier)
+            ? "Automatic reroute asks for a fresh plan when you leave the one you started with. The original plan stays the baseline for the verdict."
+            : "Automatic reroute is part of Pro.")
+        return lines.joined(separator: " ")
     }
 
     private var motionLabel: String {

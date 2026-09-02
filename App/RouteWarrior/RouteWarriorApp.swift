@@ -1,3 +1,4 @@
+import RouteWarriorKit
 import RouteWarriorStore
 import SwiftData
 import SwiftUI
@@ -9,6 +10,7 @@ struct RouteWarriorApp: App {
     @State private var locationService: LocationService
     @State private var store: StoreService
     @State private var destinationPrompt: DestinationPromptService
+    @State private var mapSettings: MapSettings
 
     /// True when this process is the unit-test host. The host must not
     /// bootstrap CloudKit (the unsigned test build has no iCloud
@@ -33,12 +35,20 @@ struct RouteWarriorApp: App {
                 ?? (try! RouteWarriorStoreFactory.inMemoryContainer())
         }
         self.container = container
-        // Keyless builds run fine — trips simply record without a Google
-        // comparison (FR-6 fallback).
+        // Apple's plan is always available (free, keyless); Google's rides
+        // along whenever a key is present so every trip feeds both verdicts
+        // ("beat both", D-022). Keyless builds simply have one provider.
         let key = GoogleRoutesClient.configuredKey
+        var providers: [PlanSnapshot.Provider: any RoutesProviding] = [.appleMaps: AppleDirectionsClient()]
+        if !key.isEmpty {
+            providers[.googleRoutes] = GoogleRoutesClient(apiKey: key)
+        }
+        let mapSettings = MapSettings(googleAvailable: MapSettings.googleAvailable(hasKey: !key.isEmpty))
+        _mapSettings = State(initialValue: mapSettings)
         let pipeline = RecordingPipeline(
             context: ModelContext(container),
-            routesProvider: key.isEmpty ? nil : GoogleRoutesClient(apiKey: key),
+            providers: providers,
+            preference: { mapSettings.provider },
             logStorage: Self.isTestHost ? nil : UserDefaults.standard
         )
         _pipeline = State(initialValue: pipeline)
@@ -70,6 +80,7 @@ struct RouteWarriorApp: App {
                 .environment(pipeline)
                 .environment(locationService)
                 .environment(store)
+                .environment(mapSettings)
                 .modelContainer(container)
                 .task {
                     if !Self.isTestHost {

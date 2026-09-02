@@ -6,6 +6,8 @@ enum RoutesClientError: Error {
     /// no comparison (FR-6 fallback). Never fatal.
     case noAPIKey
     case badResponse(Int)
+    /// The provider answered with no route at all.
+    case noRoutes
 }
 
 /// The production RoutesProviding: Google Routes API computeRoutes v2.

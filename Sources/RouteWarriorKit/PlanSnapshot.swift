@@ -4,8 +4,10 @@ import Foundation
 /// real time because no provider answers "what would you have said an hour
 /// ago" (D-010).
 public struct PlanSnapshot: Sendable, Equatable, Codable, Identifiable {
-    public enum Provider: String, Sendable, Codable {
+    public enum Provider: String, Sendable, Codable, CaseIterable {
         case googleRoutes
+        /// MapKit directions (D-022, M7).
+        case appleMaps
     }
 
     public struct AltRoute: Sendable, Equatable, Codable {
@@ -39,6 +41,9 @@ public struct PlanSnapshot: Sendable, Equatable, Codable, Identifiable {
     public var trafficFactor: Double {
         staticDuration > 0 ? trafficDuration / staticDuration : 1
     }
+
+    /// Where the plan ends — the last point of the recommended route.
+    public var destination: Coordinate? { polyline.coordinates.last }
 
     public init(
         id: UUID = UUID(),
