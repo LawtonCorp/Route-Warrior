@@ -21,28 +21,33 @@ struct OnboardingView: View {
     private var valuePage: some View {
         pageLayout(
             icon: "flag.checkered",
+            color: Theme.route,
             title: "Beat the nav. Prove it.",
             body: "Route Warrior records the routes you actually drive and compares them against Google's plan — every trip, hands-free. Find out when your shortcut really is faster."
         ) {
             Button("Continue") { page = 1 }
                 .buttonStyle(.borderedProminent)
+                .tint(Theme.route)
         }
     }
 
     private var privacyPage: some View {
         pageLayout(
             icon: "lock.shield",
+            color: Theme.win,
             title: "Your drives are yours.",
             body: "Everything stays on your iPhone and in your private iCloud. No accounts. No servers of ours. No analytics. The only thing that ever leaves your phone is the route request that makes the Google comparison possible."
         ) {
             Button("Continue") { page = 2 }
                 .buttonStyle(.borderedProminent)
+                .tint(Theme.win)
         }
     }
 
     private var permissionsPage: some View {
         pageLayout(
             icon: "location.circle",
+            color: Theme.google,
             title: "Hands-free needs two permissions.",
             body: "Location records the route; Motion notices when a drive starts and ends. Allow \"While Using\" first — you can upgrade to \"Always\" in Settings for fully automatic recording, or skip it and use the manual Record button."
         ) {
@@ -51,6 +56,7 @@ struct OnboardingView: View {
                     locationService.requestWhenInUseAuthorization()
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(Theme.google)
                 Button("Start using Route Warrior") {
                     onboardingComplete = true
                 }
@@ -60,6 +66,7 @@ struct OnboardingView: View {
 
     private func pageLayout(
         icon: String,
+        color: Color,
         title: String,
         body bodyText: String,
         @ViewBuilder actions: () -> some View
@@ -68,7 +75,9 @@ struct OnboardingView: View {
             Spacer()
             Image(systemName: icon)
                 .font(.system(size: 56))
-                .foregroundStyle(.tint)
+                .foregroundStyle(color)
+                .frame(width: 136, height: 136)
+                .background(color.opacity(0.12), in: Circle())
             Text(title)
                 .font(.title.bold())
                 .multilineTextAlignment(.center)

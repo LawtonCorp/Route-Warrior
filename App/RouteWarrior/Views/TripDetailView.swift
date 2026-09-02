@@ -25,6 +25,12 @@ struct TripDetailView: View {
                     routeMap(for: trip)
                         .frame(height: 260)
                         .listRowInsets(EdgeInsets())
+                    mapLegend
+                }
+            }
+            if let snapshot {
+                Section {
+                    comparisonCard(snapshot: snapshot)
                 }
             }
             statsSection
@@ -43,7 +49,7 @@ struct TripDetailView: View {
                 MapPolyline(coordinates: snapshot.polyline.coordinates.map {
                     CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
                 })
-                .stroke(.orange, style: StrokeStyle(lineWidth: 3, dash: [6, 6]))
+                .stroke(Theme.google, style: StrokeStyle(lineWidth: 3, dash: [6, 6]))
             }
             MapPolyline(coordinates: trip.points.map {
                 CLLocationCoordinate2D(
@@ -51,8 +57,52 @@ struct TripDetailView: View {
                     longitude: $0.coordinate.longitude
                 )
             })
-            .stroke(.blue, lineWidth: 4)
+            .stroke(Theme.route, lineWidth: 4)
         }
+    }
+
+    /// The same two strokes as the map, so the colours need no caption.
+    private var mapLegend: some View {
+        HStack(spacing: 18) {
+            legendSwatch(Theme.route, dashed: false, label: "Your drive")
+            if snapshot != nil {
+                legendSwatch(Theme.google, dashed: true, label: "Google's plan")
+            }
+            Spacer()
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+
+    private func legendSwatch(_ color: Color, dashed: Bool, label: String) -> some View {
+        HStack(spacing: 6) {
+            Path { path in
+                path.move(to: CGPoint(x: 0, y: 2))
+                path.addLine(to: CGPoint(x: 24, y: 2))
+            }
+            .stroke(color, style: StrokeStyle(lineWidth: 3, dash: dashed ? [4, 3] : []))
+            .frame(width: 24, height: 4)
+            Text(label)
+        }
+    }
+
+    /// The headline of the whole screen: did you beat the plan?
+    private func comparisonCard(snapshot: PlanSnapshot) -> some View {
+        let delta = record.endedAt.timeIntervalSince(record.startedAt) - snapshot.trafficDuration
+        let tone = TripTone.forTrip(deltaSeconds: delta, excluded: false)
+        return HStack(spacing: 12) {
+            IconTile(symbol: tone.symbol, color: tone.color, size: 40)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(delta <= 0 ? "You beat Google's ETA" : "Google's ETA beat you")
+                    .font(.headline)
+                Text("\(Format.signedDelta(delta)) against a \(Format.duration(snapshot.trafficDuration)) plan")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 6)
+        .tintedRow(tone.color)
     }
 
     private var statsSection: some View {
@@ -70,7 +120,7 @@ struct TripDetailView: View {
                 LabeledContent("Google's ETA was", value: Format.duration(snapshot.trafficDuration))
                 LabeledContent("You vs. the ETA") {
                     Text(Format.signedDelta(delta))
-                        .foregroundStyle(delta <= 0 ? .green : .orange)
+                        .foregroundStyle(delta <= 0 ? Theme.win : Theme.google)
                         .monospacedDigit()
                 }
                 if let followed = record.followedPlan {
@@ -86,7 +136,12 @@ struct TripDetailView: View {
         Section("Stops") {
             ForEach(Array(stops.enumerated()), id: \.offset) { _, stop in
                 HStack {
-                    Text(label(for: stop.cause))
+                    Label {
+                        Text(label(for: stop.cause))
+                    } icon: {
+                        Image(systemName: symbol(for: stop.cause))
+                            .foregroundStyle(color(for: stop.cause))
+                    }
                     Spacer()
                     Text(Format.duration(stop.duration))
                         .foregroundStyle(.secondary)
@@ -125,6 +180,24 @@ struct TripDetailView: View {
         case .signal: "Signal (inferred)"
         case .trafficQueue: "Traffic queue"
         case .unknown: "Stop"
+        }
+    }
+
+    private func symbol(for cause: StopEvent.Cause) -> String {
+        switch cause {
+        case .stopSign: "octagon.fill"
+        case .signal: "circle.fill"
+        case .trafficQueue: "car.2.fill"
+        case .unknown: "pause.circle.fill"
+        }
+    }
+
+    private func color(for cause: StopEvent.Cause) -> Color {
+        switch cause {
+        case .stopSign: Theme.recording
+        case .signal: Theme.armed
+        case .trafficQueue: Theme.google
+        case .unknown: Color.secondary
         }
     }
 }

@@ -6,6 +6,7 @@ struct TripsView: View {
     @Environment(StoreService.self) private var store
     @Query(sort: \TripRecord.startedAt, order: .reverse) private var trips: [TripRecord]
     @Query private var places: [PlaceRecord]
+    @Query private var snapshots: [SnapshotRecord]
     @State private var destinationFilter: UUID?
     @State private var showPaywall = false
 
@@ -25,18 +26,23 @@ struct TripsView: View {
                     NavigationLink {
                         TripDetailView(record: record)
                     } label: {
-                        TripRowView(record: record)
+                        TripRowView(
+                            record: record,
+                            deltaSeconds: record.etaDeltaSeconds(in: snapshots)
+                        )
                     }
                 }
                 if gated.hiddenCount > 0 {
                     Button {
                         showPaywall = true
                     } label: {
-                        Label(
-                            "\(gated.hiddenCount) older trips — unlock with Pro",
-                            systemImage: "lock.fill"
-                        )
+                        Label {
+                            Text("\(gated.hiddenCount) older trips — unlock with Pro")
+                        } icon: {
+                            IconTile(symbol: "lock.fill", color: Theme.pro)
+                        }
                     }
+                    .tint(.primary)
                 }
             }
             .sheet(isPresented: $showPaywall) {

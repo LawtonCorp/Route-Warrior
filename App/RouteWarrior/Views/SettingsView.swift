@@ -12,18 +12,27 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section("Route Warrior Pro") {
-                    LabeledContent("Plan", value: store.tier == .pro ? "Pro" : "Free")
+                    LabeledContent {
+                        Text(store.tier == .pro ? "Pro" : "Free")
+                    } label: {
+                        settingsLabel("Plan", symbol: "star.fill", color: Theme.pro)
+                    }
                     if store.tier == .free {
                         Button("Unlock unlimited history and the ghost race") {
                             showPaywall = true
                         }
+                        .tint(Theme.pro)
                     }
                     Button("Restore purchases") {
                         Task { await store.restore() }
                     }
                 }
                 Section {
-                    LabeledContent("Location", value: locationLabel)
+                    LabeledContent {
+                        Text(locationLabel)
+                    } label: {
+                        settingsLabel("Location", symbol: "location.fill", color: Theme.route)
+                    }
                     if locationService.authorizationStatus == .notDetermined {
                         Button("Allow location while using the app") {
                             locationService.requestWhenInUseAuthorization()
@@ -37,10 +46,11 @@ struct SettingsView: View {
                     if locationService.authorizationStatus == .denied {
                         Link("Open system settings", destination: URL(string: UIApplication.openSettingsURLString)!)
                     }
-                    LabeledContent(
-                        "Motion",
-                        value: locationService.motionAvailable ? "Available" : "Unavailable"
-                    )
+                    LabeledContent {
+                        Text(locationService.motionAvailable ? "Available" : "Unavailable")
+                    } label: {
+                        settingsLabel("Motion", symbol: "figure.walk.motion", color: Theme.win)
+                    }
                 } header: {
                     Text("Permissions")
                 } footer: {
@@ -48,7 +58,11 @@ struct SettingsView: View {
                 }
 
                 Section("About") {
-                    LabeledContent("Version", value: appVersion)
+                    LabeledContent {
+                        Text(appVersion)
+                    } label: {
+                        settingsLabel("Version", symbol: "info.circle.fill", color: .gray)
+                    }
                     Text("Trip data never leaves your devices except the route requests sent to Google at departure.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -58,6 +72,14 @@ struct SettingsView: View {
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
             }
+        }
+    }
+
+    private func settingsLabel(_ title: String, symbol: String, color: Color) -> some View {
+        Label {
+            Text(title)
+        } icon: {
+            IconTile(symbol: symbol, color: color)
         }
     }
 
