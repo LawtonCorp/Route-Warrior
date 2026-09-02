@@ -11,6 +11,7 @@ struct RouteWarriorApp: App {
     @State private var store: StoreService
     @State private var destinationPrompt: DestinationPromptService
     @State private var mapSettings: MapSettings
+    @State private var ghostRace: GhostRaceCoordinator
 
     /// True when this process is the unit-test host. The host must not
     /// bootstrap CloudKit (the unsigned test build has no iCloud
@@ -59,6 +60,7 @@ struct RouteWarriorApp: App {
             presenter: Self.isTestHost ? nil : LiveActivityPresenter(),
             tierProvider: { store.tier }
         )
+        _ghostRace = State(initialValue: ghostRace)
         _locationService = State(initialValue: LocationService(
             pipeline: pipeline,
             ghostRace: ghostRace
@@ -81,6 +83,7 @@ struct RouteWarriorApp: App {
                 .environment(locationService)
                 .environment(store)
                 .environment(mapSettings)
+                .environment(ghostRace)
                 .modelContainer(container)
                 .task {
                     if !Self.isTestHost {
