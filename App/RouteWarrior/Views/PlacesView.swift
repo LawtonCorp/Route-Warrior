@@ -75,9 +75,12 @@ struct PlacesView: View {
             IconTile(symbol: kind.symbol, color: kind.color, size: 34)
             VStack(alignment: .leading) {
                 Text(place.name).font(.headline)
-                Text(kind.rawValue.capitalized)
+                Text(place.address.isEmpty
+                     ? kind.rawValue.capitalized
+                     : "\(kind.rawValue.capitalized) · \(place.address)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
         }
     }
@@ -86,21 +89,70 @@ struct PlacesView: View {
 struct PlaceEditView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(LocationService.self) private var locationService
     @State private var name = ""
     @State private var kind: Place.Kind = .custom
+    @State private var addressQuery = ""
+    @State private var match: AddressMatch?
     @State private var coordinate: CLLocationCoordinate2D?
-    @State private var camera: MapCameraPosition = .automatic
+    @State private var camera: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var completer = AddressCompleter()
+    @State private var resolving = false
+    @State private var lookupFailed = false
+    @State private var cameraSettled = false
+
+    /// City scale: about 12 km across — the neighbourhood and its main
+    /// roads, no pinching needed (D-021).
+    private static let citySpanMeters: Double = 12_000
+    /// After an address match: close enough to check the pin is on the
+    /// right building.
+    private static let pinSpanMeters: Double = 1_500
 
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Name", text: $name)
-                Picker("Type", selection: $kind) {
-                    ForEach(Place.Kind.allCases, id: \.self) { kind in
-                        Text(kind.rawValue.capitalized).tag(kind)
+                Section {
+                    TextField("Name", text: $name)
+                    Picker("Type", selection: $kind) {
+                        ForEach(Place.Kind.allCases, id: \.self) { kind in
+                            Text(kind.rawValue.capitalized).tag(kind)
+                        }
                     }
                 }
-                Section("Location — tap the map") {
+                Section {
+                    TextField("Search an address or place", text: $addressQuery)
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                        .submitLabel(.search)
+                        .onSubmit { resolve(addressQuery) }
+                    ForEach(completer.suggestions) { suggestion in
+                        Button {
+                            resolve(suggestion.query, title: suggestion.title)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(suggestion.title)
+                                if !suggestion.subtitle.isEmpty {
+                                    Text(suggestion.subtitle)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        .tint(.primary)
+                    }
+                    if resolving {
+                        ProgressView()
+                    }
+                } header: {
+                    Text("Address")
+                } footer: {
+                    if lookupFailed {
+                        Text("No match — try a fuller address, or tap the map.")
+                    } else if let match {
+                        Text(match.address)
+                    }
+                }
+                Section("Location — or tap the map") {
                     MapReader { proxy in
                         Map(position: $camera) {
                             if let coordinate {
@@ -110,7 +162,12 @@ struct PlaceEditView: View {
                         }
                         .frame(height: 280)
                         .onTapGesture { screenPoint in
-                            coordinate = proxy.convert(screenPoint, from: .local)
+                            if let tapped = proxy.convert(screenPoint, from: .local) {
+                                coordinate = tapped
+                                // A hand-placed pin has no verified address.
+                                match = nil
+                                lookupFailed = false
+                            }
                         }
                     }
                     .listRowInsets(EdgeInsets())
@@ -127,7 +184,65 @@ struct PlaceEditView: View {
                         .disabled(name.isEmpty || coordinate == nil)
                 }
             }
+            .onAppear { settleCamera() }
+            .onChange(of: locationService.lastKnownCoordinate == nil) { settleCamera() }
+            .onChange(of: addressQuery) { _, newValue in
+                lookupFailed = false
+                // The resolved address is written back into the field;
+                // don't re-suggest it.
+                guard newValue != match?.address else { return }
+                completer.update(query: newValue)
+            }
         }
+    }
+
+    /// Open at city scale around the user as soon as a fix exists, and
+    /// ask for one if none has arrived yet.
+    @MainActor
+    private func settleCamera() {
+        guard !cameraSettled else { return }
+        if let here = locationService.lastKnownCoordinate {
+            camera = .region(Self.region(around: here, spanMeters: Self.citySpanMeters))
+            completer.focus(on: here)
+            cameraSettled = true
+        } else {
+            locationService.requestOneShotLocation()
+        }
+    }
+
+    @MainActor
+    private func resolve(_ text: String, title: String? = nil) {
+        let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty, !resolving else { return }
+        resolving = true
+        lookupFailed = false
+        let near = locationService.lastKnownCoordinate
+        Task {
+            let found = await AddressCompleter.resolve(query, near: near)
+            resolving = false
+            guard let found else {
+                lookupFailed = true
+                return
+            }
+            match = found
+            coordinate = CLLocationCoordinate2D(
+                latitude: found.coordinate.latitude,
+                longitude: found.coordinate.longitude
+            )
+            camera = .region(Self.region(around: found.coordinate, spanMeters: Self.pinSpanMeters))
+            cameraSettled = true
+            if name.isEmpty { name = title ?? found.name }
+            addressQuery = found.address
+            completer.update(query: "")
+        }
+    }
+
+    private static func region(around center: Coordinate, spanMeters: Double) -> MKCoordinateRegion {
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: center.latitude, longitude: center.longitude),
+            latitudinalMeters: spanMeters,
+            longitudinalMeters: spanMeters
+        )
     }
 
     private func save() {
@@ -135,7 +250,8 @@ struct PlaceEditView: View {
         let place = Place(
             name: name,
             coordinate: Coordinate(latitude: coordinate.latitude, longitude: coordinate.longitude),
-            kind: kind
+            kind: kind,
+            address: match?.address ?? ""
         )
         context.insert(PlaceRecord(place))
         try? context.save()

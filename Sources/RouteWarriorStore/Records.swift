@@ -39,6 +39,7 @@ public final class PlaceRecord {
     public var longitude: Double = 0
     public var radiusM: Double = 75
     public var kindRaw: String = Place.Kind.custom.rawValue
+    public var address: String = ""
     public var createdAt: Date = Date.distantPast
 
     public init() {}
