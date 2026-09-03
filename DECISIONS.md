@@ -389,3 +389,23 @@ surface design exists to avoid); two copies of every map screen (the
 scene abstraction is the spec's §5 and the cheaper path); guessing the
 SDK's collected data types in our manifest (Apple aggregates SDK
 manifests; the report is authoritative).
+
+## D-025 — The New Place map follows the map preference too (2026-09-03)
+
+**Chosen**: the place picker's map moves behind a `PlacePickerMap` that
+switches on the same preference as every other map screen, so a Google
+user picks a place on Google's map. The screen no longer speaks MapKit;
+it hands down a provider-neutral `PlaceMapFocus` (a centre and a span in
+metres), and each surface turns that into its own camera — an
+`MKCoordinateRegion` on Apple, a fitted `GMSCoordinateBounds` on Google.
+Tapping the map still drops the pin on both surfaces (Google's through
+`mapView(_:didTapAt:)`), and a hand-placed pin still clears the resolved
+address. The focus is `Equatable` and each surface remembers the last one
+it applied, so a redraw cannot yank the camera back while the user is
+panning. **Rejected**: leaving the picker on Apple's map (the one screen
+in the app that contradicted the setting, and the screen where Google
+users are most likely to want Google's places); a centre crosshair with a
+"drop pin here" button on Google (a second interaction model for one
+surface, when the SDK's tap callback gives the same gesture as Apple's);
+converting the picker to a Google-only screen (Apple stays the default,
+and keyless builds have no Google surface at all).
