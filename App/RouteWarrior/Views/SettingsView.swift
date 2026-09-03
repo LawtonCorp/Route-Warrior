@@ -46,6 +46,12 @@ struct SettingsView: View {
                         settingsLabel("Reroute automatically", symbol: "arrow.triangle.turn.up.right.diamond.fill", color: Theme.google)
                     }
                     .disabled(!store.policy.rerouteAvailable(for: store.tier))
+                    Toggle(isOn: Binding(
+                        get: { mapSettings.navigateWithAppleMaps },
+                        set: { mapSettings.setNavigateWithAppleMaps($0) }
+                    )) {
+                        settingsLabel("Navigate with Apple Maps", symbol: "arrow.triangle.turn.up.right.circle.fill", color: Theme.win)
+                    }
                 } header: {
                     Text("Map")
                 } footer: {
@@ -128,6 +134,9 @@ struct SettingsView: View {
         lines.append(store.policy.rerouteAvailable(for: store.tier)
             ? "Automatic reroute asks for a fresh plan when you leave the one you started with. The original plan stays the baseline for the verdict."
             : "Automatic reroute is part of Pro.")
+        lines.append(mapSettings.navigateWithAppleMaps
+            ? "Go hands the destination to Apple Maps for turn-by-turn, which is what puts guidance on CarPlay. Route Rebel keeps recording in the background."
+            : "Turn on Apple Maps navigation to get turn-by-turn and CarPlay guidance at departure; Route Rebel keeps recording either way.")
         return lines.joined(separator: " ")
     }
 

@@ -41,4 +41,21 @@ final class MapSettingsTests: XCTestCase {
         // Until M8 ships the Google surface, a key alone is not enough.
         XCTAssertEqual(MapSettings.googleAvailable(hasKey: true), MapSettings.googleSurfaceAvailable)
     }
+
+    /// D-034: off until asked for. Turning it on must survive a relaunch,
+    /// or the driver re-chooses it every trip.
+    func testAppleMapsNavigationIsOffUntilChosenAndThenPersists() throws {
+        let (defaults, cleanup) = try freshDefaults()
+        defer { cleanup() }
+
+        let settings = MapSettings(defaults: defaults, googleAvailable: true)
+        XCTAssertFalse(settings.navigateWithAppleMaps)
+
+        settings.setNavigateWithAppleMaps(true)
+        XCTAssertTrue(settings.navigateWithAppleMaps)
+        XCTAssertTrue(MapSettings(defaults: defaults, googleAvailable: true).navigateWithAppleMaps)
+
+        settings.setNavigateWithAppleMaps(false)
+        XCTAssertFalse(MapSettings(defaults: defaults, googleAvailable: true).navigateWithAppleMaps)
+    }
 }

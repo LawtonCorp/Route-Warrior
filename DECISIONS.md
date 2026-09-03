@@ -564,6 +564,49 @@ in a shipped binary is a bill waiting to happen); retrying on 403 (a
 refusal is a configuration answer, not a flake); logging the raw response
 body (it is unbounded and may echo the key).
 
+## D-033 — The plan line rides on a casing (2026-09-03)
+
+**Chosen**: the provider's plan is drawn twice on both surfaces — a solid
+ribbon in the plan colour at 35% under the dashed line, both wider than
+before (11 pt casing, 6 pt line, trail up to 7). Field evidence: with
+Google's map the plan was faint on the plan screen and effectively
+invisible on the drive view. The cause is the basemap, not the plan:
+Google paints every road green, amber and red for traffic, and a thin
+orange dashed line has nothing to separate it from that — worst at
+drive-view zoom, where only a dash or two is on screen at a time. The
+ribbon also means the route stays visible if the dash pattern renders
+badly at some zoom, which is not something this project can test without
+a phone. Both surfaces share the same three widths so a drive does not
+look heavier on one map than the other. **Rejected**: turning off the
+traffic layer while a plan is drawn (traffic is why the ETA is what it
+is, and hiding it to make our line legible trades away information the
+driver wants); a white casing (it reads as a road, not as the plan);
+changing the plan colour away from Google's traffic amber (the colour
+means "the provider's plan" everywhere else in the app, and D-018 keeps
+that vocabulary fixed).
+
+## D-034 — CarPlay guidance comes from Apple Maps, not from us (2026-09-03)
+
+**Chosen**: a Settings toggle, off by default, that makes Go hand the
+destination to Apple Maps for driving directions. With CarPlay connected
+Apple Maps takes the car screen with voice, lane guidance and rerouting.
+Recording starts *before* the hand-off and continues in the background,
+and the departure snapshot is already taken, so the verdict is identical
+whether the driver navigates in Apple Maps or looks at nothing at all —
+Apple Maps suggesting a different route cannot move the goalposts. The
+in-app drive view stays exactly as it is for anyone who leaves the toggle
+off. **Rejected**: building turn-by-turn in Route Rebel and shipping it
+through CarPlay's navigation templates (Apple grants that entitlement to
+apps whose primary purpose is turn-by-turn, which this is not, and MapKit
+gives route steps but no guidance engine — maneuver display, voice,
+off-route detection and rerouting would all be ours, months of work
+behind an approval we might not get); a CarPlay "driving task" app
+showing the live delta (a real option, easier entitlement, no map allowed
+— worth revisiting, but it is a second thing to build, not this one);
+handing off automatically whenever a car is connected (CarPlay cannot be
+detected reliably without the entitlement, and silently launching another
+app is not something to do without being asked).
+
 ## D-035 — The scoreboard is one number, computed once (2026-09-03)
 
 **Chosen**: `DriveScoreboard` (kit, pure) answers "am I beating the plan

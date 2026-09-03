@@ -13,11 +13,15 @@ final class MapSettings {
 
     private(set) var provider: MapProvider
     private(set) var autoReroute: Bool
+    /// Hand the destination to Apple Maps at departure (D-034), which is
+    /// what puts turn-by-turn on CarPlay.
+    private(set) var navigateWithAppleMaps: Bool
     let availableProviders: [MapProvider]
 
     private let defaults: UserDefaults
     private static let providerKey = "mapProvider"
     private static let autoRerouteKey = "autoReroute"
+    private static let appleMapsNavigationKey = "navigateWithAppleMaps"
 
     init(defaults: UserDefaults = .standard, googleAvailable: Bool) {
         self.defaults = defaults
@@ -26,6 +30,7 @@ final class MapSettings {
             .flatMap(MapProvider.init(rawValue:)) ?? MapProvider.default
         provider = availableProviders.contains(stored) ? stored : MapProvider.default
         autoReroute = defaults.bool(forKey: MapSettings.autoRerouteKey)
+        navigateWithAppleMaps = defaults.bool(forKey: MapSettings.appleMapsNavigationKey)
     }
 
     func select(_ provider: MapProvider) {
@@ -37,6 +42,11 @@ final class MapSettings {
     func setAutoReroute(_ on: Bool) {
         autoReroute = on
         defaults.set(on, forKey: Self.autoRerouteKey)
+    }
+
+    func setNavigateWithAppleMaps(_ on: Bool) {
+        navigateWithAppleMaps = on
+        defaults.set(on, forKey: Self.appleMapsNavigationKey)
     }
 
     /// Google mode needs both a key and the Google map surface.

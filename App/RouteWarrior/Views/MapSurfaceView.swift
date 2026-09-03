@@ -36,11 +36,17 @@ struct AppleMapSurface: View {
                         .stroke(Color.secondary.opacity(0.5), lineWidth: 3)
                 }
                 MapPolyline(coordinates: Self.cl(plan.polyline.coordinates))
-                    .stroke(Theme.google, style: StrokeStyle(lineWidth: 4, dash: [8, 6]))
+                    .stroke(Theme.google.opacity(0.35), style: StrokeStyle(
+                        lineWidth: Self.planCasingWidth, lineCap: .round, lineJoin: .round
+                    ))
+                MapPolyline(coordinates: Self.cl(plan.polyline.coordinates))
+                    .stroke(Theme.google, style: StrokeStyle(
+                        lineWidth: Self.planLineWidth, lineCap: .butt, dash: [10, 8]
+                    ))
             }
             if let reroute = scene.drawableReroute(for: provider) {
                 MapPolyline(coordinates: Self.cl(reroute.polyline.coordinates))
-                    .stroke(Theme.pro, lineWidth: 4)
+                    .stroke(Theme.pro, lineWidth: Self.planLineWidth)
             }
             ForEach(scene.routes) { route in
                 MapPolyline(coordinates: Self.cl(route.polyline.coordinates))
@@ -50,7 +56,7 @@ struct AppleMapSurface: View {
             }
             if scene.trail.count >= 2 {
                 MapPolyline(coordinates: Self.cl(scene.trail))
-                    .stroke(scene.offPlan ? Theme.win : Theme.route, lineWidth: 5)
+                    .stroke(scene.offPlan ? Theme.win : Theme.route, lineWidth: Self.trailWidth)
             }
             if let end = scene.destination(for: provider) {
                 Marker(scene.destinationName ?? "Destination", coordinate: CLLocationCoordinate2D(
@@ -104,6 +110,12 @@ struct AppleMapSurface: View {
 
     /// A few miles across: the driver's neighbourhood and its main roads.
     private static let aroundDriverMeters: Double = 4_000
+
+    /// Kept in step with the Google surface so the same drive looks the
+    /// same weight on either map.
+    nonisolated static let planLineWidth: CGFloat = 6
+    nonisolated static let planCasingWidth: CGFloat = 11
+    nonisolated static let trailWidth: CGFloat = 7
 
     private static func cl(_ coordinates: [Coordinate]) -> [CLLocationCoordinate2D] {
         coordinates.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
