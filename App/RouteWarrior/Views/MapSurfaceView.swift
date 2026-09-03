@@ -62,6 +62,9 @@ struct AppleMapSurface: View {
         .onAppear { frame() }
         .onChange(of: scene.camera) { framed = false; frame() }
         .onChange(of: scene.drawablePlans(for: provider).map(\.id)) { framed = false; frame() }
+        // The first fix after an empty start is what moves the camera off
+        // the default; once framed, `frame()` ignores these.
+        .onChange(of: scene.userLocation) { frame() }
     }
 
     @MainActor
@@ -73,13 +76,27 @@ struct AppleMapSurface: View {
             guard !framed else { return }
             let coordinates = scene.allCoordinates(for: provider)
             guard !coordinates.isEmpty else {
-                camera = .automatic
+                // Nothing drawn yet: sit over the driver rather than the
+                // whole country. Staying unframed retries when the fix lands.
+                guard let here = scene.fallbackCenter(for: provider) else {
+                    camera = .automatic
+                    return
+                }
+                camera = .region(MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(latitude: here.latitude, longitude: here.longitude),
+                    latitudinalMeters: Self.aroundDriverMeters,
+                    longitudinalMeters: Self.aroundDriverMeters
+                ))
+                framed = true
                 return
             }
             camera = .region(Self.region(fitting: coordinates))
             framed = true
         }
     }
+
+    /// A few miles across: the driver's neighbourhood and its main roads.
+    private static let aroundDriverMeters: Double = 4_000
 
     private static func cl(_ coordinates: [Coordinate]) -> [CLLocationCoordinate2D] {
         coordinates.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }

@@ -46,7 +46,8 @@ struct HomeView: View {
             plans: planner.plans,
             trail: pipeline.isRecording ? pipeline.liveTrack.map(\.coordinate) : [],
             destinationName: planner.destination?.name,
-            camera: planner.plans.isEmpty ? .followUser : .fitContent
+            camera: .fitContent,
+            userLocation: locationService.lastKnownCoordinate
         )
     }
 
@@ -57,11 +58,12 @@ struct HomeView: View {
                 Section {
                     searchField
                     if showsSuggestions { suggestionRows }
-                }
-                Section {
                     MapSurfaceView(scene: scene)
-                        .frame(height: 300)
-                        .listRowInsets(EdgeInsets())
+                        .frame(height: 320)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        // A gutter each side, so a finger can scroll the
+                        // screen without landing on the map.
+                        .listRowInsets(EdgeInsets(top: 4, leading: 28, bottom: 4, trailing: 28))
                     if planner.hasDestination { planRows }
                 } header: {
                     if let destination = planner.destination {
@@ -72,6 +74,7 @@ struct HomeView: View {
                 savedPlacesSection
             }
             .navigationTitle("Route Warrior")
+            .listSectionSpacing(.compact)
             .fullScreenCover(isPresented: $showDrive) { DriveView() }
             .sheet(isPresented: $showPaywall) { PaywallView() }
             .onAppear { primeLocation() }
@@ -117,10 +120,10 @@ struct HomeView: View {
                 .accessibilityLabel("Clear the destination")
             }
         }
-        .padding(.vertical, 14)
+        .padding(.vertical, 12)
         .padding(.horizontal, 16)
         .background(Theme.route.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
         .listRowBackground(Color.clear)
     }
 
@@ -200,14 +203,6 @@ struct HomeView: View {
         } else if planner.failed {
             Text("No plan came back. Check the connection and try again, or drive anyway — the trip still records.")
                 .foregroundStyle(.secondary)
-        }
-        ForEach(planner.others(on: surface), id: \.id) { plan in
-            planRow(
-                title: "\(plan.provider.displayName)'s plan (compared, not drawn here)",
-                eta: plan.trafficDuration,
-                distance: plan.distanceM,
-                highlighted: false
-            )
         }
     }
 

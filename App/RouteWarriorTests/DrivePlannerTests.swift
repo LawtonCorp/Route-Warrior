@@ -82,15 +82,18 @@ final class DrivePlannerTests: XCTestCase {
         XCTAssertFalse(planner.loading)
     }
 
-    func testOnlyTheSurfacesOwnPlanIsDrawnAndTheRestAreListed() {
+    func testEveryProvidersPlanIsKeptButOnlyTheSurfacesOwnIsDrawn() {
         let planner = DrivePlanner()
         let work = destination("Work")
         planner.start(work)
         planner.beginFetch()
         planner.finish(with: [plan(.appleMaps), plan(.googleRoutes)], for: work)
 
+        // Both are held, so the drive is still compared against both
+        // (D-022); the surface simply draws one of them.
+        XCTAssertEqual(planner.plans.count, 2)
         XCTAssertEqual(planner.plan(on: .appleMaps)?.provider, .appleMaps)
-        XCTAssertEqual(planner.others(on: .appleMaps).map(\.provider), [.googleRoutes])
+        XCTAssertEqual(planner.plan(on: .googleRoutes)?.provider, .googleRoutes)
     }
 
     func testPromotingAnAlternateReplacesOnlyThatProvidersPlan() {

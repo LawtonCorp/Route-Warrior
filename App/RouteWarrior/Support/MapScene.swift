@@ -24,6 +24,10 @@ struct MapScene: Equatable {
     var destinationName: String?
     var showsTraffic = true
     var camera: Camera = .fitContent
+    /// Where the driver is. A scene with nothing of its own to frame
+    /// settles here instead of leaving the surface on the whole-country
+    /// view its SDK starts with.
+    var userLocation: Coordinate?
 
     /// The plans this surface may draw: only its own provider's, per D-022.
     func drawablePlans(for provider: PlanSnapshot.Provider) -> [PlanSnapshot] {
@@ -44,6 +48,12 @@ struct MapScene: Equatable {
     /// Where the primary drawable plan ends, for the destination marker.
     func destination(for provider: PlanSnapshot.Provider) -> Coordinate? {
         drawablePlans(for: provider).first?.destination
+    }
+
+    /// What a surface should frame when this provider has nothing drawn:
+    /// the driver, when their location is known, and nothing otherwise.
+    func fallbackCenter(for provider: PlanSnapshot.Provider) -> Coordinate? {
+        allCoordinates(for: provider).isEmpty ? userLocation : nil
     }
 
     /// Every coordinate a surface would show, for fit-to-content cameras.

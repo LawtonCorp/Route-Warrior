@@ -81,17 +81,34 @@ struct GoogleMapSurface: UIViewRepresentable {
     private func frame(_ view: GMSMapView, coordinator: Coordinator) {
         switch scene.camera {
         case .followUser:
-            guard let location = view.myLocation else { return }
-            let bearing = location.course >= 0 ? location.course : 0
-            let camera = GMSCameraPosition(
-                target: location.coordinate, zoom: 16, bearing: bearing, viewingAngle: 0
-            )
-            view.animate(to: camera)
+            // The SDK's own fix can lag the app's, and a nil one used to
+            // leave the camera parked on the country view.
+            if let location = view.myLocation {
+                let bearing = location.course >= 0 ? location.course : 0
+                view.animate(to: GMSCameraPosition(
+                    target: location.coordinate, zoom: 16, bearing: bearing, viewingAngle: 0
+                ))
+            } else if let here = scene.userLocation {
+                view.animate(to: GMSCameraPosition(
+                    latitude: here.latitude, longitude: here.longitude, zoom: 16
+                ))
+            }
         case .fitContent:
             let planIDs = scene.drawablePlans(for: Self.provider).map(\.id)
             guard coordinator.framedForCamera != scene.camera || coordinator.framedPlanIDs != planIDs else { return }
             let coordinates = scene.allCoordinates(for: Self.provider)
-            guard let first = coordinates.first else { return }
+            guard let first = coordinates.first else {
+                // Nothing drawn: settle over the driver instead of the
+                // country view the SDK opens on. Without a fix yet, leave
+                // the marks unset so the next one retries.
+                guard let here = scene.fallbackCenter(for: Self.provider) else { return }
+                view.animate(to: GMSCameraPosition(
+                    latitude: here.latitude, longitude: here.longitude, zoom: Self.aroundDriverZoom
+                ))
+                coordinator.framedForCamera = scene.camera
+                coordinator.framedPlanIDs = planIDs
+                return
+            }
             var bounds = GMSCoordinateBounds(
                 coordinate: CLLocationCoordinate2D(latitude: first.latitude, longitude: first.longitude),
                 coordinate: CLLocationCoordinate2D(latitude: first.latitude, longitude: first.longitude)
@@ -104,6 +121,9 @@ struct GoogleMapSurface: UIViewRepresentable {
             coordinator.framedPlanIDs = planIDs
         }
     }
+
+    /// Neighbourhood scale, matching the Apple surface's empty-scene view.
+    private static let aroundDriverZoom: Float = 13
 
     private static func path(_ coordinates: [Coordinate]) -> GMSMutablePath {
         let path = GMSMutablePath()
