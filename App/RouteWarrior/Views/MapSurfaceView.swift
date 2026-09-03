@@ -91,8 +91,8 @@ struct AppleMapSurface: View {
             guard !coordinates.isEmpty else {
                 // Nothing drawn yet: sit over the driver rather than the
                 // whole country. Staying unframed retries when the fix lands.
-                guard let here = scene.fallbackCenter(for: provider) else {
-                    camera = .automatic
+                guard let here = scene.fallbackCenter(for: provider) ?? LastMapCenter.load() else {
+                    camera = .userLocation(fallback: .automatic)
                     return
                 }
                 camera = .region(MKCoordinateRegion(
@@ -101,10 +101,12 @@ struct AppleMapSurface: View {
                     longitudinalMeters: Self.aroundDriverMeters
                 ))
                 framed = true
+                LastMapCenter.save(here)
                 return
             }
             camera = .region(Self.region(fitting: coordinates))
             framed = true
+            if let centre = coordinates.first { LastMapCenter.save(centre) }
         }
     }
 

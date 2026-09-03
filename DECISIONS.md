@@ -629,3 +629,26 @@ standing separately for the car screen (two answers to one question);
 holding the whole feature until CarPlay is approved (the number is worth
 reading on the phone regardless, and it is the part that can actually be
 tested).
+
+## D-036 — Maps open where you were, and follow at your zoom (2026-09-03)
+
+**Chosen**: every Google surface opens on the best guess available — the
+scene's own location, then the last centre any map settled on, kept in
+UserDefaults — and only falls back to the country view on a first launch
+that has never had a fix. The camera also accepts the SDK's own
+`myLocation` as a settle target: it is what puts the blue dot on screen,
+it usually lands before `LocationService` has one, and waiting only for
+ours is why a map could show the driver's dot in Denver while framing the
+hemisphere. Following now keeps the zoom the driver is at rather than
+forcing 16 every tick — a pinch used to be undone a second later, which
+reads as being locked into a keyhole — with a quarter-level tolerance so
+an animation still settling between ticks is not mistaken for a pinch.
+**Rejected**: observing `myLocation` by KVO (the fix arrives on its own
+schedule and the string-keyed observer is one more thing that can only be
+tested on a phone; re-reading it on each update costs nothing and cannot
+crash); a timer that polls until a fix appears (same result, more moving
+parts, and it has to be torn down correctly); pausing follow after a pan
+(that needs reliable interaction detection through the map delegate,
+which is worth doing when there is a device to test it on); zeroing the
+remembered centre on sign-out (there is no account, and the coordinate is
+no more sensitive than the trips already stored).
