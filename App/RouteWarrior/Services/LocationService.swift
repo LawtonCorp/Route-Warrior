@@ -21,7 +21,12 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     private var motionUpdatesActive = false
     /// The most recent fix from any source — centres the New Place map at
     /// city scale instead of the whole country (D-021).
-    private(set) var lastKnownCoordinate: Coordinate?
+    private(set) var lastKnownCoordinate: Coordinate? {
+        didSet { rememberCenter() }
+    }
+    /// The last centre written to `LastMapCenter`, so a moving car does
+    /// not rewrite UserDefaults once a second.
+    private var rememberedCenter: Coordinate?
 
     private let manager = CLLocationManager()
     private let motionManager = CMMotionActivityManager()
@@ -156,6 +161,15 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         let authorized = status == .authorizedAlways || status == .authorizedWhenInUse
         manager.allowsBackgroundLocationUpdates = authorized
         manager.showsBackgroundLocationIndicator = true
+    }
+
+    /// Persist a fix for the maps to open on (D-037): the first one ever,
+    /// then only after moving a good distance.
+    private func rememberCenter() {
+        guard let here = lastKnownCoordinate else { return }
+        if let rememberedCenter, Geo.distanceMeters(from: rememberedCenter, to: here) < 500 { return }
+        LastMapCenter.save(here)
+        rememberedCenter = here
     }
 
     // MARK: CLLocationManagerDelegate

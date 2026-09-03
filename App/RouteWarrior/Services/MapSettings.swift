@@ -16,12 +16,16 @@ final class MapSettings {
     /// Hand the destination to Apple Maps at departure (D-034), which is
     /// what puts turn-by-turn on CarPlay.
     private(set) var navigateWithAppleMaps: Bool
+    /// End a planned drive on arrival (D-038). On by default: a trip
+    /// that ends at the kerb is what the comparison wants.
+    private(set) var stopOnArrival: Bool
     let availableProviders: [MapProvider]
 
     private let defaults: UserDefaults
     private static let providerKey = "mapProvider"
     private static let autoRerouteKey = "autoReroute"
     private static let appleMapsNavigationKey = "navigateWithAppleMaps"
+    private static let stopOnArrivalKey = "stopOnArrival"
 
     init(defaults: UserDefaults = .standard, googleAvailable: Bool) {
         self.defaults = defaults
@@ -31,6 +35,9 @@ final class MapSettings {
         provider = availableProviders.contains(stored) ? stored : MapProvider.default
         autoReroute = defaults.bool(forKey: MapSettings.autoRerouteKey)
         navigateWithAppleMaps = defaults.bool(forKey: MapSettings.appleMapsNavigationKey)
+        // Unset reads as true — bool(forKey:) alone would read as false.
+        stopOnArrival = defaults.object(forKey: MapSettings.stopOnArrivalKey) == nil
+            || defaults.bool(forKey: MapSettings.stopOnArrivalKey)
     }
 
     func select(_ provider: MapProvider) {
@@ -47,6 +54,11 @@ final class MapSettings {
     func setNavigateWithAppleMaps(_ on: Bool) {
         navigateWithAppleMaps = on
         defaults.set(on, forKey: Self.appleMapsNavigationKey)
+    }
+
+    func setStopOnArrival(_ on: Bool) {
+        stopOnArrival = on
+        defaults.set(on, forKey: Self.stopOnArrivalKey)
     }
 
     /// Google mode needs both a key and the Google map surface.

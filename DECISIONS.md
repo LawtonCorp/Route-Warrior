@@ -652,3 +652,39 @@ parts, and it has to be torn down correctly); pausing follow after a pan
 which is worth doing when there is a device to test it on); zeroing the
 remembered centre on sign-out (there is no account, and the coordinate is
 no more sensitive than the trips already stored).
+
+## D-037 — Every fix is remembered, so no map opens on the country twice (2026-09-03)
+
+**Chosen**: `LocationService` writes each fix to `LastMapCenter` — the
+first ever, then only after moving 500 metres — so the remembered centre
+that D-036 opens maps on exists from the app's first minute, not only
+after some map happened to settle. Field evidence: the country view was
+still the first thing on screen after D-036, because the remembered
+centre was written only when a map framed itself, and on the screens in
+question that framing was what was failing. Persisting the fix at its
+source makes the maps' opening camera independent of any map's own
+behaviour. The very first launch on a fresh install still has nothing to
+open on; that is one screen for a second or two, once. **Rejected**:
+writing every fix (UserDefaults once a second in a moving car, for a
+value that changes meaningfully every few blocks); a placeholder instead
+of a map until a fix arrives (it would show only on that one first
+launch, and a blank tile there looks more broken than a map does).
+
+## D-038 — A planned drive ends itself at the kerb (2026-09-03)
+
+**Chosen**: a Settings toggle, on by default, ends a planned drive when
+the driver has been within 150 metres of the destination, at walking pace
+or slower, for 20 seconds. `ArrivalDetector` (kit, pure) decides it;
+leaving the radius resets the clock, and CoreLocation's "unknown" speed
+counts as slow so a GPS hiccup at the kerb cannot undo a real arrival.
+The recorder's own idle window is three minutes, so without this a trip's
+end was the kerb plus however long the phone sat in the cup holder — and
+that padding landed in the duration the drive is judged on. Drives
+without a plan are untouched: there is no destination to arrive at, and
+they end as they always did. **Rejected**: stopping on the first sample
+inside the radius (a red light beside the destination, or driving past
+it on the way somewhere else, would cut the trip short — the tests are
+mostly about *not* arriving); a geofence from CoreLocation (region
+monitoring is coarse, slow and needs its own permission story, and the
+samples are already flowing); off by default (Brian asked for the
+behaviour, and a drive that ends where it ends is the honest one).

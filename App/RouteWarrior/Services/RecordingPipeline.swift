@@ -48,6 +48,10 @@ final class RecordingPipeline {
     private let preference: @MainActor () -> MapProvider
     private let logStorage: UserDefaults?
     private var pendingSnapshots: [PlanSnapshot] = []
+    /// Whether to end a planned drive on arrival (D-038), read per sample
+    /// so a Settings change applies to the drive in progress.
+    private let arrivalStop: @MainActor () -> Bool
+    private var arrivalDetector = ArrivalDetector()
     private var samplesThisSegment = 0
 
     /// FR-6 fallback: fired when a trip starts but no destination clears
@@ -61,6 +65,7 @@ final class RecordingPipeline {
         routesProvider: (any RoutesProviding)? = nil,
         providers: [PlanSnapshot.Provider: any RoutesProviding] = [:],
         preference: @escaping @MainActor () -> MapProvider = { MapProvider.default },
+        arrivalStop: @escaping @MainActor () -> Bool = { false },
         logStorage: UserDefaults? = nil
     ) {
         self.context = context
@@ -72,6 +77,7 @@ final class RecordingPipeline {
         }
         self.providers = all
         self.preference = preference
+        self.arrivalStop = arrivalStop
         self.logStorage = logStorage
         self.recorder = TripRecorder(timezoneID: timezoneID)
         self.log = Self.loadLog(from: logStorage)
@@ -93,6 +99,17 @@ final class RecordingPipeline {
             if samplesThisSegment == 1 {
                 note("First location sample since arming (±\(Int(point.horizontalAccuracyM)) m, \(Int(max(0, point.speedMps))) m/s)")
             }
+        }
+        // Arrival ends a planned drive before the recorder's own idle
+        // window would, so the trip's end is the kerb, not the kerb plus
+        // however long the phone sat in the cup holder (D-038).
+        if recorder.state == .recording, arrivalStop(),
+           let destination = pendingSnapshots.first?.destination,
+           arrivalDetector.ingest(point, destination: destination) == .arrived {
+            note("Arrived at the destination — recording stopped")
+            arrivalDetector.reset()
+            handle(recorder.stopRecording())
+            return
         }
         handle(recorder.ingest(location: point))
     }
@@ -119,6 +136,7 @@ final class RecordingPipeline {
             samplesThisSegment = 0
         }
         pendingSnapshots = snapshots
+        arrivalDetector.reset()
         lastOutcome = "Recording (planned)"
         note("Recording started from the plan screen with \(snapshots.count) plan(s)")
     }

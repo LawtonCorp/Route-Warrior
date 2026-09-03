@@ -58,4 +58,21 @@ final class MapSettingsTests: XCTestCase {
         settings.setNavigateWithAppleMaps(false)
         XCTAssertFalse(MapSettings(defaults: defaults, googleAvailable: true).navigateWithAppleMaps)
     }
+
+    /// D-038: on until switched off — a drive that ends at the kerb is
+    /// what the comparison wants — and the switch survives a relaunch.
+    func testStopOnArrivalIsOnByDefaultAndOffPersists() throws {
+        let (defaults, cleanup) = try freshDefaults()
+        defer { cleanup() }
+
+        XCTAssertTrue(MapSettings(defaults: defaults, googleAvailable: true).stopOnArrival)
+
+        let settings = MapSettings(defaults: defaults, googleAvailable: true)
+        settings.setStopOnArrival(false)
+        XCTAssertFalse(settings.stopOnArrival)
+        XCTAssertFalse(MapSettings(defaults: defaults, googleAvailable: true).stopOnArrival)
+
+        settings.setStopOnArrival(true)
+        XCTAssertTrue(MapSettings(defaults: defaults, googleAvailable: true).stopOnArrival)
+    }
 }
