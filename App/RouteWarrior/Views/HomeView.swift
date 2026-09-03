@@ -258,7 +258,9 @@ struct HomeView: View {
             .disabled(planner.loading)
             .listRowBackground(Color.clear)
         } footer: {
-            Text("Recording starts now. Whatever plan you leave with is the baseline the drive is judged against. The live drive view and reroute are part of Pro; the trip records and compares either way.")
+            Text(mapSettings.navigateWithAppleMaps
+                 ? "Recording starts now, then Apple Maps takes over for turn-by-turn — on CarPlay too. Route Rebel keeps recording in the background, and the plan you left with stays the baseline."
+                 : "Recording starts now. Whatever plan you leave with is the baseline the drive is judged against. The live drive view and reroute are part of Pro; the trip records and compares either way.")
         }
     }
 
@@ -447,7 +449,14 @@ struct HomeView: View {
 
     @MainActor
     private func go() {
+        // Recording starts first, whatever happens next: the hand-off
+        // sends the driver to another app, and the drive still has to be
+        // recorded and compared.
         pipeline.startPlannedDrive(with: planner.plans)
+        if mapSettings.navigateWithAppleMaps, let destination = planner.destination,
+           AppleMapsHandoff.navigate(to: destination.coordinate, named: destination.name) {
+            return
+        }
         if store.policy.driveViewAvailable(for: store.tier) {
             showDrive = true
         }

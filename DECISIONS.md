@@ -563,3 +563,25 @@ telling the driver to loosen the key's restrictions (an unrestricted key
 in a shipped binary is a bill waiting to happen); retrying on 403 (a
 refusal is a configuration answer, not a flake); logging the raw response
 body (it is unbounded and may echo the key).
+
+## D-034 — CarPlay guidance comes from Apple Maps, not from us (2026-09-03)
+
+**Chosen**: a Settings toggle, off by default, that makes Go hand the
+destination to Apple Maps for driving directions. With CarPlay connected
+Apple Maps takes the car screen with voice, lane guidance and rerouting.
+Recording starts *before* the hand-off and continues in the background,
+and the departure snapshot is already taken, so the verdict is identical
+whether the driver navigates in Apple Maps or looks at nothing at all —
+Apple Maps suggesting a different route cannot move the goalposts. The
+in-app drive view stays exactly as it is for anyone who leaves the toggle
+off. **Rejected**: building turn-by-turn in Route Rebel and shipping it
+through CarPlay's navigation templates (Apple grants that entitlement to
+apps whose primary purpose is turn-by-turn, which this is not, and MapKit
+gives route steps but no guidance engine — maneuver display, voice,
+off-route detection and rerouting would all be ours, months of work
+behind an approval we might not get); a CarPlay "driving task" app
+showing the live delta (a real option, easier entitlement, no map allowed
+— worth revisiting, but it is a second thing to build, not this one);
+handing off automatically whenever a car is connected (CarPlay cannot be
+detected reliably without the entitlement, and silently launching another
+app is not something to do without being asked).
