@@ -545,3 +545,21 @@ surface (D-022 §9.2 exists so the comparison cannot be muddled); making a
 failed plan an error the driver has to dismiss (a missing plan is a
 missing comparison, never a blocked drive); a fixed larger dash (it would
 be right at one zoom and wrong at every other).
+
+## D-032 — An iOS-restricted key needs its bundle id on the Routes call (2026-09-03)
+
+**Chosen**: the Routes request sends `X-Ios-Bundle-Identifier`. Field
+evidence: Google's map rendered while every route request came back 403.
+The Maps SDK identifies the app to Google for us; a plain `URLSession`
+POST does not, so a key restricted to iOS apps accepts the map and
+refuses the route — the same key, two different answers, which is exactly
+what the recorder log showed. The header is ignored by an unrestricted
+key, so it costs nothing to always send. Alongside it, a refusal now
+carries Google's own message into the recorder log instead of a bare
+status, because "403" is not actionable and "Routes API is not on this
+key's allowed list" is. Anything key-shaped in that message is redacted
+first — the log is persisted and gets screenshotted. **Rejected**:
+telling the driver to loosen the key's restrictions (an unrestricted key
+in a shipped binary is a bill waiting to happen); retrying on 403 (a
+refusal is a configuration answer, not a flake); logging the raw response
+body (it is unbounded and may echo the key).

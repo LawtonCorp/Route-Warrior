@@ -38,11 +38,53 @@ final class PlanFailureTests: XCTestCase {
     // MARK: Why a plan is missing
 
     func testAnHTTPStatusSurvivesIntoTheRecorderLog() {
-        // 403 is the one that matters: a key restricted to iOS apps is
-        // refused by the Routes web service, which is exactly how the
-        // route goes missing while the map SDK keeps working.
-        XCTAssertEqual(RecordingPipeline.describe(RoutesClientError.badResponse(403)), "HTTP 403")
-        XCTAssertEqual(RecordingPipeline.describe(RoutesClientError.badResponse(429)), "HTTP 429")
+        // 403 is the one that matters: a key that renders Google's map can
+        // still be refused a route, and the status alone said nothing
+        // about which restriction did it.
+        XCTAssertEqual(
+            RecordingPipeline.describe(RoutesClientError.badResponse(403, detail: "")),
+            "HTTP 403"
+        )
+        XCTAssertEqual(
+            RecordingPipeline.describe(RoutesClientError.badResponse(429, detail: "")),
+            "HTTP 429"
+        )
+    }
+
+    func testGooglesOwnReasonReachesTheLog() {
+        let described = RecordingPipeline.describe(RoutesClientError.badResponse(
+            403, detail: "Requests to this API routes.googleapis.com are blocked."
+        ))
+        XCTAssertTrue(described.hasPrefix("HTTP 403 — "))
+        XCTAssertTrue(described.contains("blocked"))
+    }
+
+    // MARK: Reading Google's refusal
+
+    func testTheReasonIsLiftedOutOfGooglesErrorBody() {
+        let body = Data(#"{"error":{"code":403,"message":"Method blocked.","status":"PERMISSION_DENIED"}}"#.utf8)
+        XCTAssertEqual(GoogleRoutesClient.reason(in: body), "Method blocked.")
+    }
+
+    func testAnUnreadableBodyYieldsNoReasonRatherThanNoise() {
+        XCTAssertEqual(GoogleRoutesClient.reason(in: Data("<html>502</html>".utf8)), "")
+        XCTAssertEqual(GoogleRoutesClient.reason(in: Data()), "")
+    }
+
+    /// The log is persisted and gets screenshotted; a key must never
+    /// survive into it, whatever Google echoes back.
+    func testAnyKeyInTheMessageIsRedacted() {
+        let key = "AIza" + String(repeating: "x", count: 35)
+        let body = Data(#"{"error":{"message":"API key \#(key) is not valid"}}"#.utf8)
+        let reason = GoogleRoutesClient.reason(in: body)
+        XCTAssertFalse(reason.contains(key))
+        XCTAssertFalse(reason.contains("AIza"))
+        XCTAssertTrue(reason.contains("«key»"))
+    }
+
+    func testRedactionLeavesOrdinaryTextAlone() {
+        let plain = "Requests to this API are blocked."
+        XCTAssertEqual(GoogleRoutesClient.redactingKeys(in: plain), plain)
     }
 
     func testTheOtherRefusalsReadPlainly() {
