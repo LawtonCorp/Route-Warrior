@@ -56,6 +56,7 @@ struct RouteWarriorApp: App {
             context: ModelContext(container),
             providers: providers,
             preference: { mapSettings.provider },
+            arrivalStop: { mapSettings.stopOnArrival },
             logStorage: Self.isTestHost ? nil : UserDefaults.standard
         )
         _pipeline = State(initialValue: pipeline)

@@ -62,6 +62,55 @@ final class RecordingPipelineTests: XCTestCase {
         XCTAssertEqual(variants[0].id, trip.variantID)
     }
 
+    /// D-038: a planned drive ends itself at the kerb, well before the
+    /// recorder's own three-minute idle window — and only when asked to.
+    private func drivePlannedToSchool(stopOnArrival: Bool) throws -> RecordingPipeline {
+        let container = try RouteWarriorStoreFactory.inMemoryContainer()
+        let context = ModelContext(container)
+        let pipeline = RecordingPipeline(
+            context: context, timezoneID: "America/Chicago", arrivalStop: { stopOnArrival }
+        )
+        let target = 0.09 * metersPerDegree
+        let plan = PlanSnapshot(
+            provider: .googleRoutes,
+            requestedAt: t0,
+            polyline: Polyline(coordinates: [
+                Coordinate(latitude: 0, longitude: 0), Coordinate(latitude: 0, longitude: 0.09),
+            ]),
+            distanceM: target,
+            staticDuration: 600,
+            trafficDuration: 600
+        )
+        pipeline.startPlannedDrive(with: [plan])
+
+        var east = 0.0
+        var time = t0
+        while east < target - 30 {
+            pipeline.ingest(location: point(east: east, at: time, speed: 15))
+            east += 15
+            time = time.addingTimeInterval(1)
+        }
+        // Parked 30 m short of the school for 25 seconds: inside the
+        // radius, slow, past the dwell — and far short of the idle window.
+        for _ in 0..<25 {
+            pipeline.ingest(location: point(east: east, at: time, speed: 0))
+            time = time.addingTimeInterval(1)
+        }
+        return pipeline
+    }
+
+    func testArrivingAtThePlannedDestinationStopsRecording() throws {
+        let pipeline = try drivePlannedToSchool(stopOnArrival: true)
+        XCTAssertEqual(pipeline.recorderState, .idle)
+        XCTAssertTrue(pipeline.log.contains { $0.text.contains("Arrived") })
+    }
+
+    func testWithTheSettingOffArrivalLeavesRecordingRunning() throws {
+        let pipeline = try drivePlannedToSchool(stopOnArrival: false)
+        XCTAssertTrue(pipeline.isRecording)
+        XCTAssertFalse(pipeline.log.contains { $0.text.contains("Arrived") })
+    }
+
     func testManualRecordingPersistsWithoutPlaces() throws {
         let container = try RouteWarriorStoreFactory.inMemoryContainer()
         let context = ModelContext(container)

@@ -59,6 +59,19 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle(isOn: Binding(
+                        get: { mapSettings.stopOnArrival },
+                        set: { mapSettings.setStopOnArrival($0) }
+                    )) {
+                        settingsLabel("Stop on arrival", symbol: "flag.checkered", color: Theme.win)
+                    }
+                } header: {
+                    Text("Recording")
+                } footer: {
+                    Text("A planned drive ends itself once you have been within about 150 metres of the destination, moving at walking pace or slower, for 20 seconds. Driving past on the way somewhere else does not count. Drives without a plan still end on their own when the car stops.")
+                }
+
+                Section {
                     LabeledContent {
                         Text(locationLabel)
                     } label: {
