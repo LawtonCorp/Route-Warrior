@@ -29,6 +29,17 @@ struct DriveView: View {
 
     private var rerouteAllowed: Bool { store.policy.rerouteAvailable(for: store.tier) }
 
+    /// Where the drive stands against the plan, right now (D-035).
+    private var board: DriveScoreboard {
+        DriveScoreboard.board(
+            elapsed: pipeline.recordingStartedAt.map { Date.now.timeIntervalSince($0) } ?? 0,
+            position: pipeline.liveTrack.last?.coordinate ?? Coordinate(latitude: 0, longitude: 0),
+            plan: pipeline.liveTrack.isEmpty ? nil : plan,
+            ghost: ghostRace.status,
+            offPlan: isOffPlan
+        )
+    }
+
     private var scene: MapScene {
         MapScene(
             plans: pipeline.plansForCurrentDrive,
@@ -77,6 +88,11 @@ struct DriveView: View {
                         .font(.title3.monospacedDigit().bold())
                         .foregroundStyle(status.aheadSeconds >= 0 ? Theme.win : Theme.google)
                 }
+            }
+            if let ahead = board.aheadOfPlanSeconds {
+                Text(ScoreboardText.headline(board, provider: surfaceProvider.displayName))
+                    .font(.title3.monospacedDigit().bold())
+                    .foregroundStyle(ahead >= 0 ? Theme.win : Theme.google)
             }
             Text(detail)
                 .font(.caption)

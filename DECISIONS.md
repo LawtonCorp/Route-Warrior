@@ -563,3 +563,26 @@ telling the driver to loosen the key's restrictions (an unrestricted key
 in a shipped binary is a bill waiting to happen); retrying on 403 (a
 refusal is a configuration answer, not a flake); logging the raw response
 body (it is unbounded and may echo the key).
+
+## D-035 — The scoreboard is one number, computed once (2026-09-03)
+
+**Chosen**: `DriveScoreboard` (kit, pure) answers "am I beating the plan
+right now?" by projecting the driver's position onto the plan's line and
+comparing elapsed time against the pace that would arrive exactly at the
+provider's ETA — a straight line from the start of the route to its end.
+That reference is deliberately crude: a provider gives one number for the
+whole trip, not a curve, and pretending otherwise would invent precision
+that is not there. It reuses `GhostRace.status`, so the plan race and the
+ghost race are the same arithmetic with different references rather than
+two implementations that can disagree. `ScoreboardText` turns it into
+words once, and the drive banner reads it today; the car screen will read
+the same rows, so the phone and the dashboard cannot contradict each
+other. Gaps under five seconds read as "level" — below that the sign
+flips every few seconds, which at a glance looks like a broken app.
+**Rejected**: shipping the CarPlay scene now (the entitlement is Apple's
+to grant and the build cannot carry it before approval — adding it early
+would break `device-build.sh`, the only path to the phone); computing the
+standing separately for the car screen (two answers to one question);
+holding the whole feature until CarPlay is approved (the number is worth
+reading on the phone regardless, and it is the part that can actually be
+tested).
