@@ -117,3 +117,42 @@ extension Place.Kind {
         }
     }
 }
+
+/// A rounded-square glyph in the style of the system Settings app.
+struct IconTile: View {
+    let symbol: String
+    let color: Color
+    var size: CGFloat = 28
+    var pulsing = false
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: size * 0.5, weight: .semibold))
+            .foregroundStyle(.white)
+            .symbolEffect(.pulse, isActive: pulsing)
+            .frame(width: size, height: size)
+            .background(
+                color.gradient,
+                in: RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
+            )
+    }
+}
+
+extension View {
+    /// A soft wash of `color` behind a list row — for the one card per
+    /// screen that carries state (recording status, a verdict). Layered
+    /// over the grouped cell background so the wash reads as a tint, not
+    /// as a hole in the list, in light and dark mode alike.
+    func tintedRow(_ color: Color) -> some View {
+        listRowBackground(
+            ZStack {
+                Color(uiColor: .secondarySystemGroupedBackground)
+                LinearGradient(
+                    colors: [color.opacity(0.22), color.opacity(0.06)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        )
+    }
+}
