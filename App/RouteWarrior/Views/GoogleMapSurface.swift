@@ -43,8 +43,20 @@ struct GoogleMapSurface: UIViewRepresentable {
                 line.map = view
             }
             let path = Self.path(plan.polyline.coordinates)
+            // A solid ribbon under the dashes. Google's own traffic layer
+            // paints every road green, amber and red, and a thin dashed
+            // line disappears into it — worst at drive-view zoom, where
+            // only a dash or two is on screen at once. The ribbon also
+            // means the whole route stays visible even if the dash
+            // pattern renders badly at some zoom.
+            let casing = GMSPolyline(path: path)
+            casing.strokeColor = UIColor(Theme.google).withAlphaComponent(0.35)
+            casing.strokeWidth = Self.planCasingWidth
+            casing.zIndex = 1
+            casing.map = view
+
             let line = GMSPolyline(path: path)
-            line.strokeWidth = 4
+            line.strokeWidth = Self.planLineWidth
             line.zIndex = 2
             // Dashed, like the Apple surface: alternating plan-orange and
             // gap. The lengths are metres on the ground, so they are scaled
@@ -62,7 +74,7 @@ struct GoogleMapSurface: UIViewRepresentable {
         if let reroute = scene.drawableReroute(for: Self.provider) {
             let line = GMSPolyline(path: Self.path(reroute.polyline.coordinates))
             line.strokeColor = UIColor(Theme.pro)
-            line.strokeWidth = 4
+            line.strokeWidth = Self.planLineWidth
             line.zIndex = 3
             line.map = view
         }
@@ -76,7 +88,7 @@ struct GoogleMapSurface: UIViewRepresentable {
         if scene.trail.count >= 2 {
             let line = GMSPolyline(path: Self.path(scene.trail))
             line.strokeColor = UIColor(scene.offPlan ? Theme.win : Theme.route)
-            line.strokeWidth = 5
+            line.strokeWidth = Self.trailWidth
             line.zIndex = 4
             line.map = view
         }
@@ -135,6 +147,14 @@ struct GoogleMapSurface: UIViewRepresentable {
 
     /// Neighbourhood scale, matching the Apple surface's empty-scene view.
     private static let aroundDriverZoom: Float = 13
+
+    /// The plan's dashes, and the ribbon beneath them. The ribbon has to
+    /// be wider than the line or it is not a casing.
+    nonisolated static let planLineWidth: CGFloat = 6
+    nonisolated static let planCasingWidth: CGFloat = 11
+    /// The driven trail sits above both and should still read as the
+    /// heavier line.
+    nonisolated static let trailWidth: CGFloat = 7
 
     /// Dash lengths in metres for a route of `length` metres: about forty
     /// dashes along the whole line, so the pattern stays visible whether

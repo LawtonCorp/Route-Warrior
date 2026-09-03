@@ -563,3 +563,24 @@ telling the driver to loosen the key's restrictions (an unrestricted key
 in a shipped binary is a bill waiting to happen); retrying on 403 (a
 refusal is a configuration answer, not a flake); logging the raw response
 body (it is unbounded and may echo the key).
+
+## D-033 — The plan line rides on a casing (2026-09-03)
+
+**Chosen**: the provider's plan is drawn twice on both surfaces — a solid
+ribbon in the plan colour at 35% under the dashed line, both wider than
+before (11 pt casing, 6 pt line, trail up to 7). Field evidence: with
+Google's map the plan was faint on the plan screen and effectively
+invisible on the drive view. The cause is the basemap, not the plan:
+Google paints every road green, amber and red for traffic, and a thin
+orange dashed line has nothing to separate it from that — worst at
+drive-view zoom, where only a dash or two is on screen at a time. The
+ribbon also means the route stays visible if the dash pattern renders
+badly at some zoom, which is not something this project can test without
+a phone. Both surfaces share the same three widths so a drive does not
+look heavier on one map than the other. **Rejected**: turning off the
+traffic layer while a plan is drawn (traffic is why the ETA is what it
+is, and hiding it to make our line legible trades away information the
+driver wants); a white casing (it reads as a road, not as the plan);
+changing the plan colour away from Google's traffic amber (the colour
+means "the provider's plan" everywhere else in the app, and D-018 keeps
+that vocabulary fixed).
