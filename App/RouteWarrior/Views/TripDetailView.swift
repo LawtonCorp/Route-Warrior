@@ -9,8 +9,12 @@ struct TripDetailView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(MapSettings.self) private var mapSettings
+    @Environment(StoreService.self) private var store
     let record: TripRecord
     @Query private var allSnapshots: [SnapshotRecord]
+    @Query private var allTrips: [TripRecord]
+    @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
+    @State private var showPaywall = false
 
     private var trip: Trip? { try? record.trip() }
 
@@ -69,6 +73,7 @@ struct TripDetailView: View {
                     comparisonCard(snapshot: snapshot)
                 }
             }
+            destinationSection
             statsSection
             if let trip, !trip.stopEvents.isEmpty {
                 stopsSection(trip.stopEvents)
@@ -77,6 +82,64 @@ struct TripDetailView: View {
         }
         .navigationTitle(record.startedAt.formatted(date: .abbreviated, time: .shortened))
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
+    }
+
+    // MARK: All drives to the same place
+
+    private var destinationPlace: PlaceRecord? {
+        guard let id = record.destinationPlaceID else { return nil }
+        return places.first { $0.id == id }
+    }
+
+    /// This trip is one of many to the same place; the destination screen
+    /// is where those are compared with each other, so offer the way in
+    /// from here rather than only from the Places tab.
+    @ViewBuilder
+    private var destinationSection: some View {
+        if let place = destinationPlace {
+            let rank = DestinationAnalytics.rank(of: place.id, in: places.map(\.id)) ?? 0
+            let allowed = store.policy.canAnalyzeDestination(atRank: rank, tier: store.tier)
+            Section {
+                if allowed {
+                    NavigationLink {
+                        DestinationDetailView(place: place)
+                    } label: {
+                        destinationLabel(place, locked: false)
+                    }
+                } else {
+                    Button {
+                        showPaywall = true
+                    } label: {
+                        destinationLabel(place, locked: true)
+                    }
+                    .tint(.primary)
+                }
+            } footer: {
+                Text(allowed
+                     ? "Every drive to \(place.name), with each route you have taken and how they compare."
+                     : "Analyzing more destinations is part of Pro.")
+            }
+        }
+    }
+
+    private func tripsHereCount(_ place: PlaceRecord) -> Int {
+        allTrips.filter { $0.destinationPlaceID == place.id }.count
+    }
+
+    private func destinationLabel(_ place: PlaceRecord, locked: Bool) -> some View {
+        HStack(spacing: 12) {
+            IconTile(symbol: locked ? "lock.fill" : "chart.bar.xaxis", color: locked ? Theme.pro : Theme.route)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("All drives to \(place.name)")
+                Text("\(tripsHereCount(place)) recorded")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
     }
 
     private func routeMap(for trip: Trip) -> some View {
