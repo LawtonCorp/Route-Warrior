@@ -1,5 +1,4 @@
 import CoreLocation
-import MapKit
 import RouteWarriorKit
 import RouteWarriorStore
 import SwiftData
@@ -95,7 +94,7 @@ struct PlaceEditView: View {
     @State private var addressQuery = ""
     @State private var match: AddressMatch?
     @State private var coordinate: CLLocationCoordinate2D?
-    @State private var camera: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var focus: PlaceMapFocus?
     @State private var completer = AddressCompleter()
     @State private var resolving = false
     @State private var lookupFailed = false
@@ -153,23 +152,17 @@ struct PlaceEditView: View {
                     }
                 }
                 Section("Location — or tap the map") {
-                    MapReader { proxy in
-                        Map(position: $camera) {
-                            if let coordinate {
-                                Marker(name.isEmpty ? "Place" : name, coordinate: coordinate)
-                            }
-                            UserAnnotation()
-                        }
-                        .frame(height: 280)
-                        .onTapGesture { screenPoint in
-                            if let tapped = proxy.convert(screenPoint, from: .local) {
-                                coordinate = tapped
-                                // A hand-placed pin has no verified address.
-                                match = nil
-                                lookupFailed = false
-                            }
-                        }
+                    PlacePickerMap(
+                        focus: focus,
+                        coordinate: coordinate,
+                        markerTitle: name.isEmpty ? "Place" : name
+                    ) { tapped in
+                        coordinate = tapped
+                        // A hand-placed pin has no verified address.
+                        match = nil
+                        lookupFailed = false
                     }
+                    .frame(height: 280)
                     .listRowInsets(EdgeInsets())
                 }
             }
@@ -202,7 +195,7 @@ struct PlaceEditView: View {
     private func settleCamera() {
         guard !cameraSettled else { return }
         if let here = locationService.lastKnownCoordinate {
-            camera = .region(Self.region(around: here, spanMeters: Self.citySpanMeters))
+            focus = PlaceMapFocus(center: here, spanMeters: Self.citySpanMeters)
             completer.focus(on: here)
             cameraSettled = true
         } else {
@@ -229,20 +222,12 @@ struct PlaceEditView: View {
                 latitude: found.coordinate.latitude,
                 longitude: found.coordinate.longitude
             )
-            camera = .region(Self.region(around: found.coordinate, spanMeters: Self.pinSpanMeters))
+            focus = PlaceMapFocus(center: found.coordinate, spanMeters: Self.pinSpanMeters)
             cameraSettled = true
             if name.isEmpty { name = title ?? found.name }
             addressQuery = found.address
             completer.update(query: "")
         }
-    }
-
-    private static func region(around center: Coordinate, spanMeters: Double) -> MKCoordinateRegion {
-        MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: center.latitude, longitude: center.longitude),
-            latitudinalMeters: spanMeters,
-            longitudinalMeters: spanMeters
-        )
     }
 
     private func save() {
