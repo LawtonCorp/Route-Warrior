@@ -35,7 +35,9 @@ struct DriveView: View {
             reroute: monitor?.reroute,
             trail: pipeline.liveTrack.map(\.coordinate),
             offPlan: isOffPlan,
-            camera: .followUser
+            camera: .followUser,
+            // A fallback for the moment before the map SDK has its own fix.
+            userLocation: pipeline.liveTrack.last?.coordinate
         )
     }
 
