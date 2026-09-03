@@ -409,3 +409,28 @@ users are most likely to want Google's places); a centre crosshair with a
 surface, when the SDK's tap callback gives the same gesture as Apple's);
 converting the picker to a Google-only screen (Apple stays the default,
 and keyless builds have no Google surface at all).
+
+## D-026 — The Home screen plans the drive; Trips owns the history (2026-09-03)
+
+**Chosen**: "Where to?" becomes a full-width typed field at the top of
+Home — a search box the driver types an address or a place name into,
+not a button that opens a sheet. The map sits directly beneath it and
+draws the plan as soon as a destination is chosen; the saved places sit
+beneath the map as one-tap destinations, and typing also matches them, so
+a saved place is reachable either way. The plan sheet (`PlanView`) is
+deleted: its plan rows, alternate promotion and "Go" now live under
+Home's map, which removes the sheet-dismissal handoff that used to be
+needed before the drive view could be presented. Planning state moves to
+a `DrivePlanner`, where a new destination drops the old plans at once and
+a late answer is discarded unless it matches the destination still on
+screen. Today's trips leave Home entirely for the Trips tab, which now
+pins a "Today" section above the rest and offers sorting (newest, oldest,
+longest, farthest, biggest win vs. ETA) and filtering (destination,
+beat/lost the ETA, excluded), all decided by a pure `TripOrganizer`.
+**Rejected**: keeping the sheet and merely enlarging the button (the ask
+was to type in place, and the sheet was the thing in the way); leaving a
+"Today" list on Home as well as in Trips (the same trips in two places,
+and Home is now a planning screen); sorting and filtering inline in the
+view (untestable without a simulator — the organizer is checked by unit
+tests instead); dropping the recording status card from Home (it is how
+the driver sees that a drive is being recorded, and it is small).
