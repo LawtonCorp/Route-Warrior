@@ -42,6 +42,12 @@ struct AppleMapSurface: View {
                 MapPolyline(coordinates: Self.cl(reroute.polyline.coordinates))
                     .stroke(Theme.pro, lineWidth: 4)
             }
+            ForEach(scene.routes) { route in
+                MapPolyline(coordinates: Self.cl(route.polyline.coordinates))
+                    .stroke(Theme.routeColor(rank: route.rank), style: StrokeStyle(
+                        lineWidth: 4, lineCap: .round, lineJoin: .round
+                    ))
+            }
             if scene.trail.count >= 2 {
                 MapPolyline(coordinates: Self.cl(scene.trail))
                     .stroke(scene.offPlan ? Theme.win : Theme.route, lineWidth: 5)
@@ -62,6 +68,7 @@ struct AppleMapSurface: View {
         .onAppear { frame() }
         .onChange(of: scene.camera) { framed = false; frame() }
         .onChange(of: scene.drawablePlans(for: provider).map(\.id)) { framed = false; frame() }
+        .onChange(of: scene.routes.map(\.id)) { framed = false; frame() }
         // The first fix after an empty start is what moves the camera off
         // the default; once framed, `frame()` ignores these.
         .onChange(of: scene.userLocation) { frame() }

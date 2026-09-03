@@ -37,8 +37,11 @@ public struct RouteVariant: Sendable, Equatable, Codable, Identifiable {
     /// The line the variant is recognized and raced against — the shape of
     /// the trip that founded the variant.
     public var representativePolyline: Polyline
-    /// Auto-generated label, e.g. "via Maple Ave"; user-renamable.
+    /// Auto-generated label, e.g. "via Maple Ave".
     public var autoName: String
+    /// What the driver called it — "the back way" beats "via Maple Ave"
+    /// when they are choosing between routes. Empty means unnamed.
+    public var customName: String
     public var tripCount: Int
     public var intersections: IntersectionInventory?
 
@@ -48,6 +51,7 @@ public struct RouteVariant: Sendable, Equatable, Codable, Identifiable {
         destinationPlaceID: UUID,
         representativePolyline: Polyline,
         autoName: String = "",
+        customName: String = "",
         tripCount: Int = 0,
         intersections: IntersectionInventory? = nil
     ) {
@@ -56,7 +60,17 @@ public struct RouteVariant: Sendable, Equatable, Codable, Identifiable {
         self.destinationPlaceID = destinationPlaceID
         self.representativePolyline = representativePolyline
         self.autoName = autoName
+        self.customName = customName
         self.tripCount = tripCount
         self.intersections = intersections
+    }
+
+    /// What to call this route on screen: the driver's name for it, then
+    /// the generated one, then a plain fallback.
+    public var displayName: String {
+        for candidate in [customName, autoName] where !candidate.isEmpty {
+            return candidate
+        }
+        return "Route"
     }
 }

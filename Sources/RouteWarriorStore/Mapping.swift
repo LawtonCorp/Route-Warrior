@@ -109,6 +109,7 @@ public extension VariantRecord {
         destinationPlaceID = variant.destinationPlaceID
         polylineEncoded = variant.representativePolyline.encoded()
         autoName = variant.autoName
+        customName = variant.customName
         tripCount = variant.tripCount
         signalCount = variant.intersections?.signalCount
         stopSignCount = variant.intersections?.stopSignCount
@@ -138,6 +139,7 @@ public extension VariantRecord {
             destinationPlaceID: destination,
             representativePolyline: polyline,
             autoName: autoName,
+            customName: customName,
             tripCount: tripCount,
             intersections: inventory
         )
