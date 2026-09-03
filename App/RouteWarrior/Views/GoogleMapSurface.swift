@@ -169,10 +169,10 @@ struct GoogleMapSurface: UIViewRepresentable {
     /// Neighbourhood scale, matching the Apple surface's empty-scene view.
     static let aroundDriverZoom: Float = 13
     /// Close enough to read the next turn, when following.
-    static let drivingZoom: Float = 16
+    nonisolated static let drivingZoom: Float = 16
     /// A pinch is far larger than this; anything smaller is an animation
     /// still settling between ticks, not the driver.
-    static let zoomDriftTolerance: Float = 0.25
+    nonisolated static let zoomDriftTolerance: Float = 0.25
 
     /// The zoom to follow at: the driver's, once they have chosen one.
     nonisolated static func followZoom(applied: Float?, current: Float) -> Float {
