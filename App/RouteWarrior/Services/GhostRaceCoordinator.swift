@@ -129,7 +129,7 @@ final class GhostRaceCoordinator {
             let destinationName = places.first { $0.id == variant.destinationPlaceID }?.name ?? "destination"
             presenter?.startRace(
                 destinationName: destinationName,
-                routeName: variant.autoName,
+                routeName: variant.displayName,
                 referenceLabel: referenceLabel
             )
         } catch {

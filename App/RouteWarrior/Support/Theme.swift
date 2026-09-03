@@ -21,6 +21,16 @@ enum Theme {
     /// Recording.
     static let recording = Color(red: 0.88, green: 0.30, blue: 0.28)
 
+    /// Strokes for the driver's own routes when several are drawn on one
+    /// map. Ordered so the fastest wears the win colour and the rest stay
+    /// distinguishable — meaning first, decoration never.
+    static let routePalette: [Color] = [win, route, google, pro, armed, recording]
+
+    /// The stroke for the route ranked `rank` (0 = fastest).
+    static func routeColor(rank: Int) -> Color {
+        routePalette[abs(rank) % routePalette.count]
+    }
+
     /// Tint for the Home status card, by recorder state.
     static func statusTint(for state: TripRecorder.State) -> Color {
         switch state {

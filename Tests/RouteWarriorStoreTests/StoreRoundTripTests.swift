@@ -92,6 +92,15 @@ struct StoreRoundTripTests {
         var bare = variant
         bare.intersections = nil
         #expect(try VariantRecord(bare).variant() == bare)
+
+        // The name the driver gave the route survives the store, and it
+        // is what the app shows in place of the generated one.
+        var renamed = variant
+        renamed.customName = "the back way"
+        let restored = try VariantRecord(renamed).variant()
+        #expect(restored == renamed)
+        #expect(restored.displayName == "the back way")
+        #expect(variant.displayName == "Route A")
     }
 
     @Test func variantRecordWithoutEndpointsIsCorrupt() {

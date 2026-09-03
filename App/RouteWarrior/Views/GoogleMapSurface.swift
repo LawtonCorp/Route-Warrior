@@ -62,6 +62,13 @@ struct GoogleMapSurface: UIViewRepresentable {
             line.zIndex = 3
             line.map = view
         }
+        for route in scene.routes {
+            let line = GMSPolyline(path: Self.path(route.polyline.coordinates))
+            line.strokeColor = UIColor(Theme.routeColor(rank: route.rank))
+            line.strokeWidth = 4
+            line.zIndex = 3
+            line.map = view
+        }
         if scene.trail.count >= 2 {
             let line = GMSPolyline(path: Self.path(scene.trail))
             line.strokeColor = UIColor(scene.offPlan ? Theme.win : Theme.route)
@@ -94,7 +101,7 @@ struct GoogleMapSurface: UIViewRepresentable {
                 ))
             }
         case .fitContent:
-            let planIDs = scene.drawablePlans(for: Self.provider).map(\.id)
+            let planIDs = scene.drawablePlans(for: Self.provider).map(\.id) + scene.routes.map(\.id)
             guard coordinator.framedForCamera != scene.camera || coordinator.framedPlanIDs != planIDs else { return }
             let coordinates = scene.allCoordinates(for: Self.provider)
             guard let first = coordinates.first else {

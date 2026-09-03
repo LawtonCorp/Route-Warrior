@@ -13,8 +13,20 @@ struct MapScene: Equatable {
         case followUser
     }
 
+    /// One of the driver's own routes, drawn so several can be told
+    /// apart. Unlike a provider's plan these are the driver's own tracks,
+    /// so every surface draws them (D-022 governs providers, not you).
+    struct DrawnRoute: Equatable, Identifiable {
+        var id: UUID
+        var polyline: Polyline
+        /// Position in the route palette; 0 is the fastest.
+        var rank: Int
+    }
+
     /// Departure plans (primary and alternate), any provider.
     var plans: [PlanSnapshot] = []
+    /// The driver's own routes to a destination, for comparing them.
+    var routes: [DrawnRoute] = []
     /// A mid-drive reroute, drawn as a second line, never a baseline.
     var reroute: PlanSnapshot?
     /// The driven track, oldest first.
@@ -59,6 +71,7 @@ struct MapScene: Equatable {
     /// Every coordinate a surface would show, for fit-to-content cameras.
     func allCoordinates(for provider: PlanSnapshot.Provider) -> [Coordinate] {
         var all = trail
+        for route in routes { all += route.polyline.coordinates }
         for plan in drawablePlans(for: provider) {
             all += plan.polyline.coordinates
             for alternate in plan.alternates { all += alternate.polyline.coordinates }

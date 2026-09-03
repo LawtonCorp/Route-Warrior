@@ -474,3 +474,27 @@ comparison onto the trip screen (one screen owns it, and it needs every
 trip to that place, not this one); a plain link with no count (the count
 is what tells you whether a comparison exists yet); ignoring the tier gate
 here (the same place would be free in one place and Pro in another).
+
+## D-029 — Your own routes race each other (2026-09-03)
+
+**Chosen**: a destination's Routes section becomes the head-to-head the
+driver actually wants. `RouteRaceEngine` (kit, pure) ranks every route
+they have driven there by median duration and calls a winner — "the back
+way beats via the highway by 4m, median across 4 and 5 drives, medium
+confidence" — with a floor of three drives per route before it will
+commit, a 30-second tie margin, and eight drives a side for high
+confidence. The floor is lower than the provider verdict's five because
+both sides are the same driver in the same car; the only noise is traffic
+and the day. `StatsEngine` already drops passenger rides, so an excluded
+trip can never decide a route. Every route is drawn on one map in a
+palette ordered so the fastest wears the win colour, and each row opens a
+route screen with its drives, its signal and stop-sign counts, and a name
+field: a route carries the driver's `customName` beside its generated
+`autoName`, and `displayName` prefers theirs — the ghost race calls it
+that too. **Rejected**: comparing means rather than medians (one bad
+traffic day would decide a route); racing routes with a single drive each
+(a comparison of two anecdotes); overwriting `autoName` on rename (the
+generated name says which street, and it becomes the placeholder, so
+clearing the field restores it); a separate colour vocabulary for routes
+(the palette reuses the app's existing meanings — the fastest is green
+because green already means winning).

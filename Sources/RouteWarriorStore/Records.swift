@@ -54,6 +54,8 @@ public final class VariantRecord {
     public var destinationPlaceID: UUID?
     public var polylineEncoded: String = ""
     public var autoName: String = ""
+    /// The driver's own name for this route; empty until they set one.
+    public var customName: String = ""
     public var tripCount: Int = 0
     public var signalCount: Int?
     public var stopSignCount: Int?

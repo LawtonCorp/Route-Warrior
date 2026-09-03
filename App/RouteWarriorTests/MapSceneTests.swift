@@ -29,6 +29,21 @@ final class MapSceneTests: XCTestCase {
         XCTAssertEqual(scene.undrawnPlans(for: .googleRoutes).map(\.id), [apple.id])
     }
 
+    /// The per-provider rule covers a provider's plans. The driver's own
+    /// routes are theirs, so every surface draws all of them — that is
+    /// the whole point of putting several on one map.
+    func testTheDriversOwnRoutesAreDrawnOnEverySurface() {
+        let line = Polyline(coordinates: [
+            Coordinate(latitude: 1, longitude: 1), Coordinate(latitude: 1, longitude: 1.01),
+        ])
+        let scene = MapScene(routes: [
+            MapScene.DrawnRoute(id: UUID(), polyline: line, rank: 0),
+            MapScene.DrawnRoute(id: UUID(), polyline: line, rank: 1),
+        ])
+        XCTAssertEqual(scene.allCoordinates(for: .appleMaps).count, 4)
+        XCTAssertEqual(scene.allCoordinates(for: .googleRoutes).count, 4)
+    }
+
     func testAnEmptySceneFramesTheDriverInsteadOfTheWholeCountry() {
         let here = Coordinate(latitude: 39.74, longitude: -104.98)
         let empty = MapScene(userLocation: here)

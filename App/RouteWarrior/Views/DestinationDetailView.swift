@@ -147,51 +147,134 @@ struct DestinationDetailView: View {
         }
     }
 
-    // MARK: Variants
+    // MARK: Your own routes, raced against each other
+
+    private var kitVariants: [RouteVariant] {
+        variants.compactMap { try? $0.variant() }
+    }
+
+    private var recordsByID: [UUID: VariantRecord] {
+        Dictionary(variants.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    /// "Which of my own ways here is faster?" — answered from this
+    /// destination's history (D-029).
+    private var race: RouteRaceEngine.Race {
+        RouteRaceEngine.race(variants: kitVariants, trips: trips)
+    }
 
     private var variantsSection: some View {
-        Section("Routes") {
-            ForEach(variants) { variant in
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Image(systemName: "point.topleft.down.curvedto.point.bottomright.up")
-                            .foregroundStyle(Theme.route)
-                        Text(variant.autoName.isEmpty ? "Route" : variant.autoName)
-                            .font(.headline)
-                        Spacer()
-                        if let stats = StatsEngine.durationStats(
-                            for: trips.filter { $0.variantID == variant.id }
-                        ) {
-                            Text("median \(Format.duration(stats.median))")
-                                .font(.subheadline.monospacedDigit())
-                                .foregroundStyle(.secondary)
-                        }
+        let race = self.race
+        return Section {
+            if race.routes.count >= 2 {
+                routesMap(race)
+            }
+            headToHead(race)
+            ForEach(Array(race.routes.enumerated()), id: \.element.id) { rank, route in
+                if let record = recordsByID[route.id] {
+                    NavigationLink {
+                        VariantDetailView(variant: record)
+                    } label: {
+                        routeRow(route, rank: rank)
                     }
-                    intersectionLine(for: variant)
                 }
+            }
+            if race.routes.isEmpty {
+                Text("No routes yet. They appear once a drive here is matched to one.")
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text("Your routes")
+        } footer: {
+            if race.routes.count >= 2 {
+                Text("Each route is coloured to match its line on the map. Tap one to name it and see its drives.")
             }
         }
     }
 
-    private func intersectionLine(for variant: VariantRecord) -> some View {
-        HStack(spacing: 6) {
-            if let signals = variant.signalCount, let stops = variant.stopSignCount {
-                Image(systemName: "circle.fill")
-                    .foregroundStyle(Theme.armed)
-                Text("\(signals) signals")
-                Image(systemName: "octagon.fill")
-                    .foregroundStyle(Theme.recording)
-                Text("\(stops) stop signs")
-                if let coverage = variant.coverageRaw {
-                    Text("(map coverage: \(coverage))")
-                        .foregroundStyle(.secondary)
-                }
+    /// Every route on one map, coloured by rank, so the difference
+    /// between them is visible rather than described.
+    private func routesMap(_ race: RouteRaceEngine.Race) -> some View {
+        var drawn: [MapScene.DrawnRoute] = []
+        for (rank, route) in race.routes.enumerated() {
+            guard let record = recordsByID[route.id],
+                  let polyline = Polyline.decode(record.polylineEncoded)
+            else { continue }
+            drawn.append(MapScene.DrawnRoute(id: route.id, polyline: polyline, rank: rank))
+        }
+        return MapSurfaceView(scene: MapScene(routes: drawn, showsTraffic: false, camera: .fitContent))
+            .frame(height: 240)
+            .listRowInsets(EdgeInsets())
+    }
+
+    @ViewBuilder
+    private func headToHead(_ race: RouteRaceEngine.Race) -> some View {
+        switch race.outcome {
+        case .oneRouteOnly:
+            if race.routes.isEmpty {
+                EmptyView()
             } else {
-                Text("Counting signals and stop signs…")
-                    .foregroundStyle(.secondary)
+                verdictCard(
+                    symbol: "arrow.triangle.branch",
+                    color: .gray,
+                    title: "Only one way so far",
+                    detail: "Drive here another way and Route Warrior will race the two."
+                )
+            }
+        case let .collecting(drivesNeeded):
+            verdictCard(
+                symbol: "hourglass",
+                color: .gray,
+                title: "Too early to call it",
+                detail: "\(drivesNeeded) more drive\(drivesNeeded == 1 ? "" : "s") on the thinner route"
+            )
+        case let .tie(gapSeconds):
+            verdictCard(
+                symbol: "equal.circle",
+                color: Theme.route,
+                title: "Dead heat",
+                detail: "\(Format.duration(gapSeconds)) apart \(sampleLine(race))"
+            )
+        case let .winner(gapSeconds, confidence):
+            verdictCard(
+                symbol: "trophy.fill",
+                color: Theme.win,
+                title: "\(race.fastest?.name ?? "One route") beats \(race.runnerUp?.name ?? "the other") by \(Format.duration(gapSeconds))",
+                detail: "median \(sampleLine(race)) · \(confidence.rawValue) confidence"
+            )
+        }
+    }
+
+    /// "across 4 and 5 drives" — how much history the call rests on.
+    private func sampleLine(_ race: RouteRaceEngine.Race) -> String {
+        guard let fastest = race.fastest, let runnerUp = race.runnerUp else { return "" }
+        return "across \(fastest.stats.count) and \(runnerUp.stats.count) drives"
+    }
+
+    private func routeRow(_ route: RouteRaceEngine.Route, rank: Int) -> some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Theme.routeColor(rank: rank))
+                .frame(width: 4, height: 34)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack {
+                    Text(route.name)
+                        .font(.headline)
+                    Spacer()
+                    Text(Format.duration(route.stats.median))
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(rank == 0 ? Theme.win : .secondary)
+                }
+                HStack(spacing: 8) {
+                    Text("\(route.stats.count) drive\(route.stats.count == 1 ? "" : "s")")
+                    if let signals = route.signalCount, let stops = route.stopSignCount {
+                        Text("· \(signals) signals, \(stops) stop signs")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
-        .font(.caption)
     }
 
     // MARK: Heatmap
