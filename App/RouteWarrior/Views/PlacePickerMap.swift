@@ -123,8 +123,15 @@ struct GooglePlacePicker: UIViewRepresentable {
 
     func makeUIView(context: Context) -> GMSMapView {
         let options = GMSMapViewOptions()
-        // The country view lasts only until the first focus arrives.
-        options.camera = GMSCameraPosition(latitude: 39.5, longitude: -98.35, zoom: 3)
+        // Wherever the maps were last looking, until the focus arrives.
+        // The country view is for a first launch that has never had a fix.
+        if let start = LastMapCenter.load() {
+            options.camera = GMSCameraPosition(
+                latitude: start.latitude, longitude: start.longitude, zoom: 13
+            )
+        } else {
+            options.camera = GMSCameraPosition(latitude: 39.5, longitude: -98.35, zoom: 3)
+        }
         let view = GMSMapView(options: options)
         view.isMyLocationEnabled = true
         view.settings.myLocationButton = true
@@ -159,5 +166,6 @@ struct GooglePlacePicker: UIViewRepresentable {
         )
         view.animate(with: GMSCameraUpdate.fit(bounds, withPadding: 24))
         coordinator.appliedFocus = focus
+        LastMapCenter.save(focus.center)
     }
 }

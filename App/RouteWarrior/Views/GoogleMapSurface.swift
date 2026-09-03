@@ -16,13 +16,25 @@ struct GoogleMapSurface: UIViewRepresentable {
     final class Coordinator {
         var framedForCamera: MapScene.Camera?
         var framedPlanIDs: [UUID] = []
+        /// The zoom this surface last set. If the map sits at a different
+        /// one, the driver changed it and it is theirs to keep.
+        var appliedZoom: Float?
     }
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> GMSMapView {
         let options = GMSMapViewOptions()
-        options.camera = GMSCameraPosition(latitude: 39.5, longitude: -98.35, zoom: 3)
+        // Best guess first: this scene's location, then wherever the maps
+        // were last looking. The country view is the last resort, for a
+        // first launch that has never had a fix.
+        if let start = scene.userLocation ?? LastMapCenter.load() {
+            options.camera = GMSCameraPosition(
+                latitude: start.latitude, longitude: start.longitude, zoom: Self.aroundDriverZoom
+            )
+        } else {
+            options.camera = GMSCameraPosition(latitude: 39.5, longitude: -98.35, zoom: 3)
+        }
         let view = GMSMapView(options: options)
         view.isMyLocationEnabled = true
         view.settings.myLocationButton = true
@@ -104,30 +116,39 @@ struct GoogleMapSurface: UIViewRepresentable {
     private func frame(_ view: GMSMapView, coordinator: Coordinator) {
         switch scene.camera {
         case .followUser:
-            // The SDK's own fix can lag the app's, and a nil one used to
-            // leave the camera parked on the country view.
-            if let location = view.myLocation {
-                let bearing = location.course >= 0 ? location.course : 0
-                view.animate(to: GMSCameraPosition(
-                    target: location.coordinate, zoom: 16, bearing: bearing, viewingAngle: 0
-                ))
-            } else if let here = scene.userLocation {
-                view.animate(to: GMSCameraPosition(
-                    latitude: here.latitude, longitude: here.longitude, zoom: 16
-                ))
-            }
+            // The SDK's own fix usually lands before the app's, and a nil
+            // one used to leave the camera parked on the country view.
+            guard let target = view.myLocation?.coordinate ?? scene.userLocation.map({
+                CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+            }) else { return }
+            // Follow at the zoom the driver is actually using. Forcing a
+            // zoom every tick undid any pinch a second later, which reads
+            // as being locked into a keyhole.
+            let zoom = Self.followZoom(applied: coordinator.appliedZoom, current: view.camera.zoom)
+            let course = view.myLocation.map { $0.course >= 0 ? $0.course : view.camera.bearing }
+            view.animate(to: GMSCameraPosition(
+                target: target, zoom: zoom, bearing: course ?? view.camera.bearing, viewingAngle: 0
+            ))
+            coordinator.appliedZoom = zoom
+            LastMapCenter.save(Coordinate(latitude: target.latitude, longitude: target.longitude))
         case .fitContent:
             let planIDs = scene.drawablePlans(for: Self.provider).map(\.id) + scene.routes.map(\.id)
             guard coordinator.framedForCamera != scene.camera || coordinator.framedPlanIDs != planIDs else { return }
             let coordinates = scene.allCoordinates(for: Self.provider)
             guard let first = coordinates.first else {
-                // Nothing drawn: settle over the driver instead of the
-                // country view the SDK opens on. Without a fix yet, leave
-                // the marks unset so the next one retries.
-                guard let here = scene.fallbackCenter(for: Self.provider) else { return }
+                // Nothing drawn: settle over the driver. The SDK's own
+                // fix counts — it is what puts the blue dot on screen, and
+                // it often lands before the app's. Without either, leave
+                // the marks unset so the next update retries.
+                let mine = scene.fallbackCenter(for: Self.provider).map {
+                    CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+                }
+                guard let here = mine ?? view.myLocation?.coordinate else { return }
                 view.animate(to: GMSCameraPosition(
                     latitude: here.latitude, longitude: here.longitude, zoom: Self.aroundDriverZoom
                 ))
+                coordinator.appliedZoom = Self.aroundDriverZoom
+                LastMapCenter.save(Coordinate(latitude: here.latitude, longitude: here.longitude))
                 coordinator.framedForCamera = scene.camera
                 coordinator.framedPlanIDs = planIDs
                 return
@@ -146,7 +167,18 @@ struct GoogleMapSurface: UIViewRepresentable {
     }
 
     /// Neighbourhood scale, matching the Apple surface's empty-scene view.
-    private static let aroundDriverZoom: Float = 13
+    static let aroundDriverZoom: Float = 13
+    /// Close enough to read the next turn, when following.
+    nonisolated static let drivingZoom: Float = 16
+    /// A pinch is far larger than this; anything smaller is an animation
+    /// still settling between ticks, not the driver.
+    nonisolated static let zoomDriftTolerance: Float = 0.25
+
+    /// The zoom to follow at: the driver's, once they have chosen one.
+    nonisolated static func followZoom(applied: Float?, current: Float) -> Float {
+        guard let applied else { return drivingZoom }
+        return abs(current - applied) < zoomDriftTolerance ? applied : current
+    }
 
     /// The plan's dashes, and the ribbon beneath them. The ribbon has to
     /// be wider than the line or it is not a casing.
