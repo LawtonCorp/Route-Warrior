@@ -163,7 +163,8 @@ final class RecordingPipeline {
         switch routes {
         case .noAPIKey: return "no API key"
         case .noRoutes: return "no route between those points"
-        case let .badResponse(status): return "HTTP \(status)"
+        case let .badResponse(status, detail):
+            return detail.isEmpty ? "HTTP \(status)" : "HTTP \(status) — \(detail)"
         }
     }
 
