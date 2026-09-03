@@ -2,10 +2,21 @@ import Foundation
 
 /// A saved destination or origin: home, work, the school, the coffee shop.
 public struct Place: Sendable, Equatable, Codable, Identifiable {
+    /// What a saved place is. Order is the order the picker offers them;
+    /// raw values are persisted, so cases may be added but never renamed.
     public enum Kind: String, Sendable, Codable, CaseIterable {
         case home
         case work
         case school
+        case gym
+        case coffee
+        case restaurant
+        case grocery
+        case store
+        case church
+        case fuel
+        case friend
+        case family
         case custom
     }
 

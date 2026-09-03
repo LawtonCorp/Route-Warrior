@@ -1,14 +1,14 @@
-# Route Warrior Privacy Policy
+# Route Rebel Privacy Policy
 
 _Draft — host at a public URL before submission and set the effective date._
 
-Route Warrior is built so that we — LawtonCorp — cannot see your data at
+Route Rebel is built so that we — LawtonCorp — cannot see your data at
 all. There are no accounts, no analytics SDKs, no advertising identifiers,
 and no LawtonCorp servers.
 
 ## What the app records
 
-When you drive, Route Warrior records your route (GPS track), timing,
+When you drive, Route Rebel records your route (GPS track), timing,
 detected stops, and derived statistics. This data exists in exactly two
 places, both under your control:
 
@@ -59,7 +59,7 @@ chosen map; it is not data we ever see.
 
 ## Children
 
-Route Warrior is a driving app and is not directed at children under 13.
+Route Rebel is a driving app and is not directed at children under 13.
 
 ## Contact
 

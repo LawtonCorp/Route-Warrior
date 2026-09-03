@@ -36,7 +36,7 @@ struct OnboardingView: View {
             icon: "map.fill",
             color: Theme.route,
             title: "Whose routes do you want to beat?",
-            body: "Pick the map and routes you see inside Route Warrior. Both providers' plans are compared on every drive; this only chooses the map you look at. Change it any time in Settings."
+            body: "Pick the map and routes you see inside Route Rebel. Both providers' plans are compared on every drive; this only chooses the map you look at. Change it any time in Settings."
         ) {
             VStack(spacing: 12) {
                 ForEach(mapSettings.availableProviders, id: \.self) { provider in
@@ -67,7 +67,7 @@ struct OnboardingView: View {
             icon: "flag.checkered",
             color: Theme.route,
             title: "Beat the nav. Prove it.",
-            body: "Route Warrior records the routes you actually drive and compares them against Google's plan — every trip, hands-free. Find out when your shortcut really is faster."
+            body: "Route Rebel records the routes you actually drive and compares them against Google's plan — every trip, hands-free. Find out when your shortcut really is faster."
         ) {
             Button("Continue") { page = 1 }
                 .buttonStyle(.borderedProminent)
@@ -112,7 +112,7 @@ struct OnboardingView: View {
                 case .askAlways, .openSettingsForAlways:
                     Button("Keep While Using — I'll record manually") { finish() }
                 case .done:
-                    Button("Start using Route Warrior") { finish() }
+                    Button("Start using Route Rebel") { finish() }
                         .buttonStyle(.borderedProminent)
                         .tint(Theme.win)
                 case .openSettingsForLocation:
@@ -151,15 +151,15 @@ struct OnboardingView: View {
     private var permissionBody: String {
         switch step {
         case .askWhileUsing:
-            "Route Warrior records drives in the background, so iPhone must allow location Always. With only While Using, it can't follow a drive once the phone locks. iPhone asks in two steps: While Using first, then Always."
+            "Route Rebel records drives in the background, so iPhone must allow location Always. With only While Using, it can't follow a drive once the phone locks. iPhone asks in two steps: While Using first, then Always."
         case .askAlways:
             "You allowed While Using. That records only drives you start with the Record button while the app is open. Tap Change to Always, then choose \"Change to Always Allow\" so drives record themselves."
         case .openSettingsForAlways:
-            "iPhone asks about Always only once. To record hands-free, open Settings → Route Warrior → Location and choose Always. You can do this any time from the Settings tab."
+            "iPhone asks about Always only once. To record hands-free, open Settings → Route Rebel → Location and choose Always. You can do this any time from the Settings tab."
         case .done:
-            "Location is set to Always, so drives record themselves. Next, iPhone asks for Motion & Fitness — that's how Route Warrior notices a drive starting without running GPS all day."
+            "Location is set to Always, so drives record themselves. Next, iPhone asks for Motion & Fitness — that's how Route Rebel notices a drive starting without running GPS all day."
         case .openSettingsForLocation:
-            "Route Warrior cannot record without location. Open Settings → Route Warrior → Location and choose Always."
+            "Route Rebel cannot record without location. Open Settings → Route Rebel → Location and choose Always."
         }
     }
 

@@ -92,7 +92,7 @@ struct TripsView: View {
                 ContentUnavailableView(
                     "No trips recorded",
                     systemImage: "car",
-                    description: Text("Drive somewhere — Route Warrior records automatically.")
+                    description: Text("Drive somewhere — Route Rebel records automatically.")
                 )
             }
         }

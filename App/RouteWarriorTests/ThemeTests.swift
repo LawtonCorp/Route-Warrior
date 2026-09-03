@@ -1,5 +1,6 @@
 import RouteWarriorKit
 import RouteWarriorStore
+import SwiftUI
 import XCTest
 
 @testable import RouteWarrior
@@ -23,11 +24,29 @@ final class ThemeTests: XCTestCase {
         XCTAssertNotEqual(TripTone.faster.symbol, TripTone.slower.symbol)
     }
 
-    func testEveryPlaceKindHasItsOwnGlyphAndColour() {
+    func testEveryPlaceKindHasItsOwnGlyph() {
         let symbols = Place.Kind.allCases.map(\.symbol)
-        let colours = Place.Kind.allCases.map(\.color)
-        XCTAssertEqual(Set(symbols).count, symbols.count)
-        XCTAssertEqual(Set(colours).count, colours.count)
+        XCTAssertEqual(Set(symbols).count, symbols.count, "two kinds share a glyph")
+        XCTAssertFalse(symbols.contains(where: \.isEmpty))
+    }
+
+    /// D-018: nothing outside Theme picks a raw colour. There are more
+    /// kinds than meanings, so kinds may share a colour — but never
+    /// invent one.
+    func testEveryPlaceKindDrawsFromTheAppsPalette() {
+        let vocabulary: Set<Color> = [
+            Theme.route, Theme.google, Theme.win, Theme.pro, Theme.armed, Theme.recording,
+        ]
+        for kind in Place.Kind.allCases {
+            XCTAssertTrue(vocabulary.contains(kind.color), "\(kind.rawValue) uses a colour outside Theme")
+        }
+    }
+
+    /// The three the app has always had keep their own colours, so a
+    /// glance at Home still separates home from work from school.
+    func testTheDailyThreeStayVisuallyDistinct() {
+        let daily: [Place.Kind] = [.home, .work, .school]
+        XCTAssertEqual(Set(daily.map(\.color)).count, daily.count)
     }
 
     func testRecorderStatesAreVisuallyDistinct() {

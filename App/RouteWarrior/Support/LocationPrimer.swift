@@ -37,9 +37,9 @@ enum LocationPrimer {
         case .authorizedAlways:
             nil
         case .authorizedWhenInUse:
-            "Location is set to While Using, so Route Warrior can only record a drive you start with the Record button while the app is open. Choose Always for hands-free recording."
+            "Location is set to While Using, so Route Rebel can only record a drive you start with the Record button while the app is open. Choose Always for hands-free recording."
         case .denied, .restricted:
-            "Location is off, so Route Warrior cannot record drives. Turn it on in Settings and choose Always."
+            "Location is off, so Route Rebel cannot record drives. Turn it on in Settings and choose Always."
         default:
             "Location permission is needed to record drives — choose Always for hands-free recording."
         }

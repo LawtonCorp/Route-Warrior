@@ -64,6 +64,9 @@ struct HomeView: View {
                         // A gutter each side, so a finger can scroll the
                         // screen without landing on the map.
                         .listRowInsets(EdgeInsets(top: 4, leading: 28, bottom: 4, trailing: 28))
+                        // The map draws its own edges; the row's card
+                        // would only frame it in white.
+                        .listRowBackground(Color.clear)
                     if planner.hasDestination { planRows }
                 } header: {
                     if let destination = planner.destination {
@@ -73,7 +76,7 @@ struct HomeView: View {
                 if planner.hasDestination, !pipeline.isRecording { goSection }
                 savedPlacesSection
             }
-            .navigationTitle("Route Warrior")
+            .navigationTitle("Route Rebel")
             .listSectionSpacing(.compact)
             .fullScreenCover(isPresented: $showDrive) { DriveView() }
             .sheet(isPresented: $showPaywall) { PaywallView() }
@@ -203,6 +206,22 @@ struct HomeView: View {
         } else if planner.failed {
             Text("No plan came back. Check the connection and try again, or drive anyway — the trip still records.")
                 .foregroundStyle(.secondary)
+        } else if let other = planner.plans.first {
+            // Plans arrived, but not from the provider whose map is on
+            // screen. Say so instead of showing an empty map, and show
+            // what did come back.
+            Label(
+                "\(surface.displayName) returned no plan for this trip. Settings → Recorder log says why.",
+                systemImage: "exclamationmark.triangle.fill"
+            )
+            .font(.footnote)
+            .foregroundStyle(Theme.google)
+            planRow(
+                title: "\(other.provider.displayName)'s plan",
+                eta: other.trafficDuration,
+                distance: other.distanceM,
+                highlighted: false
+            )
         }
     }
 

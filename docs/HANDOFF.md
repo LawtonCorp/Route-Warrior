@@ -1,4 +1,4 @@
-# Route Warrior — Human handoff checklist
+# Route Rebel — Human handoff checklist
 
 Everything below requires accounts, hardware, or judgment that only Brian
 has. The code side of v1 is complete and CI-green without these; each item
@@ -60,7 +60,7 @@ Work top to bottom — later items depend on earlier ones.
 
 ## 4. StoreKit / monetization (M5)
 
-1. In App Store Connect create the subscription group "Route Warrior Pro"
+1. In App Store Connect create the subscription group "Route Rebel Pro"
    and two auto-renewable products matching
    `App/RouteWarrior/RouteWarrior.storekit` exactly:
    `com.lawtoncorp.routewarrior.pro.monthly` and

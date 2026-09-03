@@ -7,7 +7,7 @@ struct ContentView: View {
         if onboardingComplete {
             TabView {
                 HomeView()
-                    .tabItem { Label("Home", systemImage: "car.fill") }
+                    .tabItem { Label("Plan", systemImage: "car.fill") }
                 TripsView()
                     .tabItem { Label("Trips", systemImage: "map") }
                 PlacesView()

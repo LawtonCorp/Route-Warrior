@@ -12,7 +12,7 @@ struct PaywallView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 12) {
                             IconTile(symbol: "star.fill", color: Theme.pro, size: 40)
-                            Text("Route Warrior Pro")
+                            Text("Route Rebel Pro")
                                 .font(.title2.bold())
                         }
                         featureRow("infinity", Theme.route, "Unlimited trip history")
