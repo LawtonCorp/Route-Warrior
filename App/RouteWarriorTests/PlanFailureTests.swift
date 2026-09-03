@@ -35,6 +35,27 @@ final class PlanFailureTests: XCTestCase {
         }
     }
 
+    /// A casing that is not wider than its line is not a casing — the
+    /// plan would go back to disappearing into Google's traffic ribbons.
+    func testThePlanRidesOnACasingWiderThanItself() {
+        XCTAssertGreaterThan(GoogleMapSurface.planCasingWidth, GoogleMapSurface.planLineWidth)
+        XCTAssertGreaterThan(AppleMapSurface.planCasingWidth, AppleMapSurface.planLineWidth)
+    }
+
+    /// Both maps draw the same drive; the same drive should not look
+    /// heavier on one of them.
+    func testBothSurfacesDrawTheSameWeights() {
+        XCTAssertEqual(GoogleMapSurface.planLineWidth, AppleMapSurface.planLineWidth)
+        XCTAssertEqual(GoogleMapSurface.planCasingWidth, AppleMapSurface.planCasingWidth)
+        XCTAssertEqual(GoogleMapSurface.trailWidth, AppleMapSurface.trailWidth)
+    }
+
+    /// The trail is what the driver actually did; it must not be thinner
+    /// than the plan it is being judged against.
+    func testTheTrailIsNeverThinnerThanThePlan() {
+        XCTAssertGreaterThanOrEqual(GoogleMapSurface.trailWidth, GoogleMapSurface.planLineWidth)
+    }
+
     // MARK: Why a plan is missing
 
     func testAnHTTPStatusSurvivesIntoTheRecorderLog() {
