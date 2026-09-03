@@ -1,8 +1,8 @@
-# App Store listing — Route Warrior
+# App Store listing — Route Rebel
 
 ## Name
 
-Route Warrior
+Route Rebel
 
 ## Subtitle (30 chars max)
 
@@ -10,16 +10,16 @@ Beat the nav. Prove it.
 
 ## Promotional text (170 chars)
 
-Your shortcut vs. Google's plan — settled with data. Route Warrior records
+Your shortcut vs. Google's plan — settled with data. Route Rebel records
 every drive and shows which way is actually faster, hour by hour, day by
 day.
 
 ## Description
 
-You know your streets. The nav app knows its algorithm. Route Warrior
+You know your streets. The nav app knows its algorithm. Route Rebel
 settles the argument.
 
-Drive like you always do — Route Warrior records your actual route
+Drive like you always do — Route Rebel records your actual route
 hands-free and snapshots what Google Maps planned at the moment you left.
 Then it answers the questions you've argued about at dinner:
 
@@ -37,7 +37,7 @@ driving history lives on your iPhone and in your private iCloud — nowhere
 else. The only thing that ever leaves your phone is the route request that
 makes the comparison possible.
 
-**Route Warrior Pro** unlocks unlimited history, unlimited destinations,
+**Route Rebel Pro** unlocks unlimited history, unlimited destinations,
 full analytics, and the ghost race. Recording is always free — your data
 keeps building from day one.
 

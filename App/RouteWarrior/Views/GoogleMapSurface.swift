@@ -46,11 +46,15 @@ struct GoogleMapSurface: UIViewRepresentable {
             let line = GMSPolyline(path: path)
             line.strokeWidth = 4
             line.zIndex = 2
-            // Dashed, like the Apple surface: alternating plan-orange and gap.
+            // Dashed, like the Apple surface: alternating plan-orange and
+            // gap. The lengths are metres on the ground, so they are scaled
+            // to the route — a fixed short dash is sub-pixel on anything
+            // longer than a few blocks and reads as no line at all.
+            let dash = Self.dashMeters(for: plan.polyline.lengthMeters)
             line.spans = GMSStyleSpans(
                 path,
                 [GMSStrokeStyle.solidColor(UIColor(Theme.google)), GMSStrokeStyle.solidColor(.clear)],
-                [12, 8],
+                [NSNumber(value: dash.on), NSNumber(value: dash.off)],
                 .rhumb
             )
             line.map = view
@@ -131,6 +135,14 @@ struct GoogleMapSurface: UIViewRepresentable {
 
     /// Neighbourhood scale, matching the Apple surface's empty-scene view.
     private static let aroundDriverZoom: Float = 13
+
+    /// Dash lengths in metres for a route of `length` metres: about forty
+    /// dashes along the whole line, so the pattern stays visible whether
+    /// the drive is a mile or fifty, with a floor for very short hops.
+    nonisolated static func dashMeters(for length: Double) -> (on: Double, off: Double) {
+        let segment = max(40, length / 40)
+        return (on: segment * 0.6, off: segment * 0.4)
+    }
 
     private static func path(_ coordinates: [Coordinate]) -> GMSMutablePath {
         let path = GMSMutablePath()

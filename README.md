@@ -1,7 +1,7 @@
-# Route Warrior
+# Route Rebel
 
 An iPhone app for drivers who think they know better than Google Maps — and
-want the data to prove it. Route Warrior auto-records the route you actually
+want the data to prove it. Route Rebel auto-records the route you actually
 drove, snapshots Google's planned route and traffic-aware ETA at the moment
 you departed, and turns your history into answers: how long trips really
 take, how many stop signs and signals you hit, how traffic compared to

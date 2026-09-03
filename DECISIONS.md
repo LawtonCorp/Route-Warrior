@@ -498,3 +498,50 @@ generated name says which street, and it becomes the placeholder, so
 clearing the field restores it); a separate colour vocabulary for routes
 (the palette reuses the app's existing meanings — the fastest is green
 because green already means winning).
+
+## D-030 — Route Rebel, the Plan tab, and twelve kinds of place (2026-09-03)
+
+**Chosen**: the app is called Route Rebel. The rename covers everything a
+user or reviewer sees — `CFBundleDisplayName` on both targets, every
+string in the app, the permission prompts, the privacy policy, the App
+Store listing and review notes, the README and the handoff checklist. It
+deliberately stops there: the bundle identifier
+(`com.lawtoncorp.routewarrior`), the CloudKit container
+(`iCloud.com.lawtoncorp.routewarrior`), the Swift module names, the
+folder names and the repository keep their old spelling. Changing the
+container would orphan every synced trip already on the phone, and
+changing the bundle id would install a second, empty app beside the
+first; neither is worth a tidier internal name. The specs, build plan and
+this log keep the old name where they record what was decided at the
+time. The first tab becomes **Plan**, which is what it does now that it
+holds the search field, the map and the plan (D-026). Saved places grow
+from four kinds to thirteen — home, work, school, gym, coffee,
+restaurant, grocery, store, church, fuel, friend, family, custom — each
+with its own glyph. **Rejected**: renaming the modules and directories
+too (a large diff whose only reward is consistency in code nobody sees,
+and it would have to be done in the same breath as the container change
+to be worth anything); a unique colour per kind (thirteen kinds, six
+meanings in the palette — the glyph separates them and the colour groups
+them, rather than inventing seven new colours and breaking D-018);
+dropping `custom` (existing records carry that raw value).
+
+## D-031 — Google's plan was drawn as a hairline, and its absence was silent (2026-09-03)
+
+**Chosen**: two defects behind "the route doesn't appear on Google's
+map". First, the plan's dashes were a fixed 12 metres on, 8 off, in
+metres on the ground — sub-pixel at any camera that frames a whole drive,
+so the line was drawn and read as an empty map. Dash lengths are now
+scaled to the route, about forty dashes along it whatever its length,
+with a floor for short hops. Second, `computePlans` swallowed every
+provider failure in a `try?`, so a plan that never arrived left the
+chosen surface with nothing to draw and nothing to say. Failures are now
+written to the recorder log with their reason — an HTTP status above all,
+since a key restricted to iOS apps is refused by the Routes web service
+while the Maps SDK keeps working, which is exactly how Google's route
+goes missing while Google's map still renders — and the Plan screen says
+which provider returned nothing and shows the other's numbers instead of
+an empty map. **Rejected**: drawing the other provider's line on this
+surface (D-022 §9.2 exists so the comparison cannot be muddled); making a
+failed plan an error the driver has to dismiss (a missing plan is a
+missing comparison, never a blocked drive); a fixed larger dash (it would
+be right at one zoom and wrong at every other).

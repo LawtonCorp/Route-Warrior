@@ -12,7 +12,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Route Warrior Pro") {
+                Section("Route Rebel Pro") {
                     LabeledContent {
                         Text(store.tier == .pro ? "Pro" : "Free")
                     } label: {

@@ -14,7 +14,7 @@ enum Theme {
     static let google = Color(red: 0.93, green: 0.55, blue: 0.18)
     /// Ahead, faster, a win.
     static let win = Color(red: 0.22, green: 0.64, blue: 0.42)
-    /// Route Warrior Pro.
+    /// Route Rebel Pro.
     static let pro = Color(red: 0.48, green: 0.40, blue: 0.85)
     /// Armed — motion looks like a drive, not yet confirmed.
     static let armed = Color(red: 0.92, green: 0.70, blue: 0.20)
@@ -90,16 +90,30 @@ extension Place.Kind {
         case .home: "house.fill"
         case .work: "briefcase.fill"
         case .school: "graduationcap.fill"
+        case .gym: "dumbbell.fill"
+        case .coffee: "cup.and.saucer.fill"
+        case .restaurant: "fork.knife"
+        case .grocery: "cart.fill"
+        case .store: "bag.fill"
+        case .church: "building.columns.fill"
+        case .fuel: "fuelpump.fill"
+        case .friend: "person.fill"
+        case .family: "person.2.fill"
         case .custom: "mappin"
         }
     }
 
+    /// Identity, not state: the glyph tells the kinds apart, and the
+    /// colour groups them — errands warm, people purple, the daily three
+    /// keep the colours they have always had.
     var color: Color {
         switch self {
-        case .home: Theme.win
-        case .work: Theme.route
-        case .school: Theme.google
-        case .custom: Theme.pro
+        case .home, .grocery, .family: Theme.win
+        case .work, .church: Theme.route
+        case .school, .restaurant: Theme.google
+        case .gym: Theme.recording
+        case .coffee, .fuel: Theme.armed
+        case .store, .friend, .custom: Theme.pro
         }
     }
 }

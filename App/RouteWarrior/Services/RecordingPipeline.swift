@@ -130,8 +130,10 @@ final class RecordingPipeline {
     // MARK: Plans on demand (FR-20 preview, FR-22 reroute)
 
     /// Every available provider's plan from `origin` to `destination`.
-    /// Failures are silent: a missing plan is a missing comparison, never
-    /// an error the driver has to handle.
+    /// A failure never interrupts the driver — a missing plan is only a
+    /// missing comparison — but it is written to the recorder log, so
+    /// "the route never appeared" is answerable after the fact instead of
+    /// vanishing into a `try?`.
     func computePlans(
         from origin: Coordinate,
         to destination: Coordinate,
@@ -140,13 +142,29 @@ final class RecordingPipeline {
         var plans: [PlanSnapshot] = []
         for provider in availableProviders {
             guard let client = providers[provider] else { continue }
-            if let plan = try? await client.computeSnapshot(
-                from: origin, to: destination, destinationPlaceID: destinationPlaceID
-            ) {
-                plans.append(plan)
+            do {
+                plans.append(try await client.computeSnapshot(
+                    from: origin, to: destination, destinationPlaceID: destinationPlaceID
+                ))
+            } catch {
+                note("\(provider.displayName) returned no plan — \(Self.describe(error))")
             }
         }
         return plans
+    }
+
+    /// A short, human reason for the recorder log. An HTTP status is the
+    /// one that matters most: 403 means the key is refused for this API
+    /// (a key restricted to iOS apps cannot call the Routes web service).
+    nonisolated static func describe(_ error: Error) -> String {
+        guard let routes = error as? RoutesClientError else {
+            return (error as NSError).localizedDescription
+        }
+        switch routes {
+        case .noAPIKey: return "no API key"
+        case .noRoutes: return "no route between those points"
+        case let .badResponse(status): return "HTTP \(status)"
+        }
     }
 
     func computePlan(

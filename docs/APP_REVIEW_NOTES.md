@@ -1,10 +1,10 @@
-# App Review notes — Route Warrior
+# App Review notes — Route Rebel
 
 _Paste into App Store Connect's review notes; attach the demo video._
 
 ## What the app does
 
-Route Warrior records the routes a driver actually takes to their frequent
+Route Rebel records the routes a driver actually takes to their frequent
 destinations, snapshots Google's planned route and traffic-aware ETA at the
 moment of departure, and shows whether the driver's own routes beat
 Google's — including stop-sign/signal counts and time-of-day analytics. A
@@ -45,6 +45,6 @@ change monitoring only, full-rate GPS only while a drive is on).
 - Without a Google API key configured the comparison row reads "no
   comparison" — recording and analytics still work (reviewer builds have
   the key baked in).
-- Subscription (Route Warrior Pro) gates history depth, analyzed
+- Subscription (Route Rebel Pro) gates history depth, analyzed
   destinations, and the ghost race; recording itself is never gated.
   Sandbox account works normally.

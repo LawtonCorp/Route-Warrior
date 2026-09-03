@@ -68,22 +68,22 @@ targets:
     info:
       path: App/RouteWarrior/Info.plist
       properties:
-        CFBundleDisplayName: Route Warrior
+        CFBundleDisplayName: Route Rebel
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         ITSAppUsesNonExemptEncryption: false
         NSSupportsLiveActivities: true
         NSLocationWhenInUseUsageDescription: >-
-          Route Warrior records the routes you drive so you can compare them
+          Route Rebel records the routes you drive so you can compare them
           against Google's plan. Location is used only for recording your
           drives.
         NSLocationAlwaysAndWhenInUseUsageDescription: >-
-          Always-on access lets Route Warrior start recording automatically
+          Always-on access lets Route Rebel start recording automatically
           when you begin driving — no taps needed. Your location history
           stays on your device and in your private iCloud.
         NSMotionUsageDescription: >-
-          Motion activity tells Route Warrior when a drive starts and ends,
+          Motion activity tells Route Rebel when a drive starts and ends,
           so recording is hands-free.
         UIBackgroundModes:
           - location
@@ -122,7 +122,7 @@ targets:
     info:
       path: App/RouteWarriorWidgets/Info.plist
       properties:
-        CFBundleDisplayName: Route Warrior
+        CFBundleDisplayName: Route Rebel
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:

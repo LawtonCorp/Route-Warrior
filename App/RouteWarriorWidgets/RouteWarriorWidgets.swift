@@ -87,9 +87,9 @@ struct PlaceholderWidget: Widget {
             kind: "RouteWarriorPlaceholder",
             provider: PlaceholderProvider()
         ) { _ in
-            Text("Route Warrior")
+            Text("Route Rebel")
         }
-        .configurationDisplayName("Route Warrior")
+        .configurationDisplayName("Route Rebel")
         .description("The ghost race appears live during repeat drives.")
     }
 }

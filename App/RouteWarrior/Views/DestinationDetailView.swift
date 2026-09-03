@@ -218,7 +218,7 @@ struct DestinationDetailView: View {
                     symbol: "arrow.triangle.branch",
                     color: .gray,
                     title: "Only one way so far",
-                    detail: "Drive here another way and Route Warrior will race the two."
+                    detail: "Drive here another way and Route Rebel will race the two."
                 )
             }
         case let .collecting(drivesNeeded):
