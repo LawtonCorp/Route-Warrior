@@ -434,3 +434,19 @@ and Home is now a planning screen); sorting and filtering inline in the
 view (untestable without a simulator — the organizer is checked by unit
 tests instead); dropping the recording status card from Home (it is how
 the driver sees that a drive is being recorded, and it is small).
+
+## D-028 — A trip links to every other drive to the same place (2026-09-03)
+
+**Chosen**: the trip detail screen carries a row into that destination's
+analytics — "All drives to Home", with how many are recorded — so the
+comparison between your own routes is reachable from the trip you are
+looking at, not only by remembering to open the Places tab and tap the
+place. The row ranks the place exactly as the Places tab does
+(`DestinationAnalytics.rank`, tested against `TierPolicy`), so a
+destination that is free in one screen is never locked in the other; past
+the free limit the row opens the paywall instead. Trips that ended
+somewhere unsaved show no row. **Rejected**: duplicating the route
+comparison onto the trip screen (one screen owns it, and it needs every
+trip to that place, not this one); a plain link with no count (the count
+is what tells you whether a comparison exists yet); ignoring the tier gate
+here (the same place would be free in one place and Pro in another).
