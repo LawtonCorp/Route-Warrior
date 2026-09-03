@@ -99,3 +99,31 @@ Work top to bottom — later items depend on earlier ones.
 - No automatic passenger detection — riders use "exclude from stats".
 - Stop-sign counts inherit OSM coverage gaps (the confidence label says so).
 - Destination prediction is cold for a new user until history accrues.
+
+## CarPlay scoreboard — requesting the entitlement
+
+The scoreboard's numbers and wording ship today and show on the drive
+banner. Putting them on the car screen needs an entitlement Apple grants
+by application, and nothing in the app can be enabled until it arrives.
+
+1. Go to **developer.apple.com/contact/carplay/**.
+2. Choose the app (Route Rebel, bundle id `com.lawtoncorp.routewarrior`).
+3. For the app type, choose **Driving task** — *not* Navigation. Driving
+   task is for apps that do one focused thing while driving, which is
+   what a live scoreboard is; Navigation is for turn-by-turn apps and
+   would be declined.
+4. Describe it as: a read-only display of how the current drive compares
+   with the navigation ETA the driver departed with — a few rows of text,
+   updated as the drive progresses, no interaction required.
+5. Submit and wait. Apple's review takes weeks and can ask questions.
+
+When it is granted, the remaining work is small and is one pull request:
+add `com.apple.developer.carplay-driving-task` to the app's entitlements
+in `project.yml`, add the CarPlay scene to the scene manifest, and wire a
+`CPTemplateApplicationSceneDelegate` that renders
+`ScoreboardText.rows(_:provider:)` into a `CPInformationTemplate`.
+
+**Do not add the entitlement before approval.** `scripts/device-build.sh`
+signs with `-allowProvisioningUpdates`, and Apple refuses to issue a
+profile carrying an entitlement the account has not been granted — the
+build to your phone would start failing.

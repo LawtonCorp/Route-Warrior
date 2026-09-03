@@ -20,6 +20,12 @@ public enum GhostRace {
             }
         }
 
+        /// A curve built directly from samples — used for references
+        /// that are not a driven trip, such as a provider's flat ETA pace.
+        public init(samples: [Sample]) {
+            self.samples = samples
+        }
+
         /// Profile of a single reference trip (the personal best, say)
         /// against the variant's line. Nil when the trip cannot be
         /// projected (too few points).
