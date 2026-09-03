@@ -29,6 +29,24 @@ final class MapSceneTests: XCTestCase {
         XCTAssertEqual(scene.undrawnPlans(for: .googleRoutes).map(\.id), [apple.id])
     }
 
+    func testAnEmptySceneFramesTheDriverInsteadOfTheWholeCountry() {
+        let here = Coordinate(latitude: 39.74, longitude: -104.98)
+        let empty = MapScene(userLocation: here)
+        // Nothing to draw on either surface, so both settle over the driver.
+        XCTAssertEqual(empty.fallbackCenter(for: .appleMaps), here)
+        XCTAssertEqual(empty.fallbackCenter(for: .googleRoutes), here)
+
+        // Once a plan exists for a surface, that surface frames the route
+        // and ignores the driver's location.
+        let planned = MapScene(plans: [plan(.appleMaps)], userLocation: here)
+        XCTAssertNil(planned.fallbackCenter(for: .appleMaps))
+        XCTAssertEqual(planned.fallbackCenter(for: .googleRoutes), here)
+    }
+
+    func testWithNoLocationYetThereIsNothingToFallBackTo() {
+        XCTAssertNil(MapScene().fallbackCenter(for: .appleMaps))
+    }
+
     func testFitContentGathersOnlyWhatTheSurfaceDraws() {
         let apple = plan(.appleMaps)
         let scene = MapScene(plans: [apple], trail: [Coordinate(latitude: 1, longitude: 1)])

@@ -434,3 +434,27 @@ and Home is now a planning screen); sorting and filtering inline in the
 view (untestable without a simulator — the organizer is checked by unit
 tests instead); dropping the recording status card from Home (it is how
 the driver sees that a drive is being recorded, and it is small).
+
+## D-027 — A map with nothing to draw frames the driver, not the country (2026-09-03)
+
+**Chosen**: `MapScene` carries the driver's location, and a surface with
+nothing of its own to draw settles over it (about four kilometres across)
+instead of leaving the camera where its SDK opened. This was a real bug on
+Home: the Google surface centred only on `GMSMapView.myLocation`, which is
+nil on the first render and never triggers a redraw when it fills in, so
+the map sat on the whole-country view indefinitely. Both surfaces now take
+the coordinate from the app's own `LocationService`, which is `@Observable`
+and therefore does re-render the map when the fix lands; Google's
+follow-user camera keeps `myLocation` (it carries heading) and falls back
+to the app's fix when it is nil. Home's map also stopped asking for a
+follow-user camera it never wanted. Home's layout tightens with it: the
+search field, the map and the plan share one section (the gap between
+sections was most of the space around the field), the map is inset a
+finger's width on each side so the screen can be scrolled without
+dragging the map, and the other provider's ETA row is gone from under the
+map — the same comparison is already on the trip detail screen.
+**Rejected**: observing `myLocation` with KVO (a second source of truth
+for a location the app already has); a new camera case for "sit near the
+driver" (fit-content with nothing to fit already means exactly that);
+keeping the other provider's row under the map (it explained a rule the
+driver never asked about, at the cost of a line of screen).

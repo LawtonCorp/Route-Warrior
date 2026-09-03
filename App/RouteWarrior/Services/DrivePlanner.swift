@@ -58,12 +58,6 @@ final class DrivePlanner {
         plans.first { $0.provider == surface }
     }
 
-    /// The other providers' plans — compared, listed as numbers, never
-    /// drawn on this surface.
-    func others(on surface: PlanSnapshot.Provider) -> [PlanSnapshot] {
-        plans.filter { $0.provider != surface }
-    }
-
     /// Promote one of the drawn plan's alternates to be the plan.
     func promote(alternate index: Int, on surface: PlanSnapshot.Provider) {
         guard let shown = plan(on: surface) else { return }
