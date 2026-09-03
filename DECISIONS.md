@@ -584,3 +584,25 @@ driver wants); a white casing (it reads as a road, not as the plan);
 changing the plan colour away from Google's traffic amber (the colour
 means "the provider's plan" everywhere else in the app, and D-018 keeps
 that vocabulary fixed).
+
+## D-034 — CarPlay guidance comes from Apple Maps, not from us (2026-09-03)
+
+**Chosen**: a Settings toggle, off by default, that makes Go hand the
+destination to Apple Maps for driving directions. With CarPlay connected
+Apple Maps takes the car screen with voice, lane guidance and rerouting.
+Recording starts *before* the hand-off and continues in the background,
+and the departure snapshot is already taken, so the verdict is identical
+whether the driver navigates in Apple Maps or looks at nothing at all —
+Apple Maps suggesting a different route cannot move the goalposts. The
+in-app drive view stays exactly as it is for anyone who leaves the toggle
+off. **Rejected**: building turn-by-turn in Route Rebel and shipping it
+through CarPlay's navigation templates (Apple grants that entitlement to
+apps whose primary purpose is turn-by-turn, which this is not, and MapKit
+gives route steps but no guidance engine — maneuver display, voice,
+off-route detection and rerouting would all be ours, months of work
+behind an approval we might not get); a CarPlay "driving task" app
+showing the live delta (a real option, easier entitlement, no map allowed
+— worth revisiting, but it is a second thing to build, not this one);
+handing off automatically whenever a car is connected (CarPlay cannot be
+detected reliably without the entitlement, and silently launching another
+app is not something to do without being asked).
