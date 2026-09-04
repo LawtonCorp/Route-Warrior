@@ -13,11 +13,21 @@ public struct Place: Sendable, Equatable, Codable, Identifiable {
         case restaurant
         case grocery
         case store
-        case church
+        case faith
         case fuel
         case friend
         case family
         case custom
+
+        /// Decodes a stored kind, including names a kind used to have.
+        /// `church` shipped in D-030 and became `faith` in D-039; a place
+        /// saved between the two must not silently turn into `custom`.
+        public init(stored raw: String) {
+            switch raw {
+            case "church": self = .faith
+            default: self = Kind(rawValue: raw) ?? .custom
+            }
+        }
     }
 
     public var id: UUID

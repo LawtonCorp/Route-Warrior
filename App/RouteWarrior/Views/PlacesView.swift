@@ -69,7 +69,7 @@ struct PlacesView: View {
     }
 
     private func placeRow(_ place: PlaceRecord) -> some View {
-        let kind = Place.Kind(rawValue: place.kindRaw) ?? .custom
+        let kind = Place.Kind(stored: place.kindRaw)
         return HStack(spacing: 12) {
             IconTile(symbol: kind.symbol, color: kind.color, size: 34)
             VStack(alignment: .leading) {

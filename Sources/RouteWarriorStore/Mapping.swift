@@ -90,7 +90,7 @@ public extension PlaceRecord {
             name: name,
             coordinate: Coordinate(latitude: latitude, longitude: longitude),
             radiusM: radiusM,
-            kind: Place.Kind(rawValue: kindRaw) ?? .custom,
+            kind: Place.Kind(stored: kindRaw),
             address: address,
             createdAt: createdAt
         )

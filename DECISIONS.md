@@ -688,3 +688,17 @@ mostly about *not* arriving); a geofence from CoreLocation (region
 monitoring is coarse, slow and needs its own permission story, and the
 samples are already flowing); off by default (Brian asked for the
 behaviour, and a drive that ends where it ends is the honest one).
+
+## D-039 — The kind is faith, not church (2026-09-03)
+
+**Chosen**: the place kind `church` is renamed `faith`, with the glyph
+changed from a columned building to hands with sparkles so it reads as
+worship of any kind rather than one building type. Raw values are
+persisted, so the rename comes with a decoder, `Kind(stored:)`, that maps
+the old name to the new kind; every site that reads a stored kind goes
+through it, and a place saved as `church` between D-030 and now keeps its
+kind instead of silently becoming `custom`. **Rejected**: keeping the raw
+value `church` behind a `faith` label (the code would lie about what it
+stores, and the next person would trip on it); a one-off data migration
+(the decoder is smaller, cannot be forgotten on a device that has not
+launched yet, and costs nothing per read).

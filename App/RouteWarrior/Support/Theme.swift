@@ -95,7 +95,7 @@ extension Place.Kind {
         case .restaurant: "fork.knife"
         case .grocery: "cart.fill"
         case .store: "bag.fill"
-        case .church: "building.columns.fill"
+        case .faith: "hands.sparkles.fill"
         case .fuel: "fuelpump.fill"
         case .friend: "person.fill"
         case .family: "person.2.fill"
@@ -109,7 +109,7 @@ extension Place.Kind {
     var color: Color {
         switch self {
         case .home, .grocery, .family: Theme.win
-        case .work, .church: Theme.route
+        case .work, .faith: Theme.route
         case .school, .restaurant: Theme.google
         case .gym: Theme.recording
         case .coffee, .fuel: Theme.armed
