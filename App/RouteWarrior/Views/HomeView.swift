@@ -153,15 +153,16 @@ struct HomeView: View {
             .tint(.primary)
         }
         ForEach(completer.suggestions) { suggestion in
+            let detail = SuggestionDetail.detailLine(for: suggestion)
             Button {
-                resolve(suggestion.query, title: suggestion.title)
+                choose(suggestion)
             } label: {
                 HStack(spacing: 12) {
                     IconTile(symbol: "mappin", color: Theme.route, size: 30)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(suggestion.title)
-                        if !suggestion.subtitle.isEmpty {
-                            Text(suggestion.subtitle)
+                        if !detail.isEmpty {
+                            Text(detail)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
@@ -404,6 +405,17 @@ struct HomeView: View {
             coordinate: Coordinate(latitude: place.latitude, longitude: place.longitude),
             placeID: place.id
         ))
+    }
+
+    /// A row that already knows where it is goes straight to the plan;
+    /// a bare completion is looked up first (D-040).
+    @MainActor
+    private func choose(_ suggestion: AddressSuggestion) {
+        if let coordinate = suggestion.coordinate {
+            select(DrivePlanner.Destination(name: suggestion.title, coordinate: coordinate, placeID: nil))
+        } else {
+            resolve(suggestion.query, title: suggestion.title)
+        }
     }
 
     @MainActor

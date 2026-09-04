@@ -702,3 +702,22 @@ value `church` behind a `faith` label (the code would lie about what it
 stores, and the next person would trip on it); a one-off data migration
 (the decoder is smaller, cannot be forgotten on a device that has not
 launched yet, and costs nothing per read).
+
+## D-040 — A chain's branches are listed as places, not as a name (2026-09-04)
+
+**Chosen**: when the address completer answers a search with a bare
+business name — no address, and usually the same name several times over,
+which is what Apple's completer does for a chain — the completer looks
+that name up as a place near the driver and puts the nearest five
+locations in the bare rows' place, each with its street and town and how
+far away it is, nearest first. Identical bare rows collapse to one while
+the lookup is out, so the list never shows the same unaddressed name
+twice, and a row that knows where it is goes straight to the plan when
+tapped instead of being looked up again. Rows the completer already
+addressed are untouched. **Rejected**: asking the completer for
+addresses only (a driver types "Costco", not Costco's street); resolving
+every bare row on tap and letting the driver guess (the tap was the
+problem — there was nothing to choose between); one lookup for the whole
+query rather than per name (the completer's own ranking of which
+businesses match is better than a raw place search, and it is only the
+bare rows that lack detail).
