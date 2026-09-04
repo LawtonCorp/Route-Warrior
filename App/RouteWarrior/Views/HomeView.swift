@@ -133,7 +133,7 @@ struct HomeView: View {
     @ViewBuilder
     private var suggestionRows: some View {
         ForEach(matchingPlaces) { place in
-            let kind = Place.Kind(rawValue: place.kindRaw) ?? .custom
+            let kind = Place.Kind(stored: place.kindRaw)
             Button {
                 choose(place)
             } label: {
@@ -274,7 +274,7 @@ struct HomeView: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(places) { place in
-                    let kind = Place.Kind(rawValue: place.kindRaw) ?? .custom
+                    let kind = Place.Kind(stored: place.kindRaw)
                     Button {
                         choose(place)
                     } label: {

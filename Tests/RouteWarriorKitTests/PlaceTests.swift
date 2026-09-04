@@ -34,4 +34,14 @@ struct PlaceTests {
         #expect(moved.contains(home.coordinate))
         #expect(!moved.contains(Coordinate(latitude: 0, longitude: 0)))
     }
+
+    /// D-039: `church` became `faith`. A place saved under the old name
+    /// keeps its kind; an unknown name still falls back to custom.
+    @Test func aStoredChurchIsNowFaith() {
+        #expect(Place.Kind(stored: "church") == .faith)
+        #expect(Place.Kind(stored: "faith") == .faith)
+        #expect(Place.Kind(stored: "home") == .home)
+        #expect(Place.Kind(stored: "cathedral") == .custom)
+        #expect(Place.Kind(rawValue: "church") == nil, "the old raw value must not survive as a case")
+    }
 }
