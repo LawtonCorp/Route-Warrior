@@ -5,8 +5,8 @@ checklist lives in `docs/HANDOFF.md`; this file is everything else — what
 exists, why, and what the previous session learned the hard way. Read
 `CLAUDE.md` first; it is binding. Product rationale is in
 `docs/REQUIREMENTS.md`, `docs/SPEC.md`, `docs/BUILD_PLAN.md`, and every
-behaviour choice is logged in `DECISIONS.md` (D-001…D-040; continue from
-D-041)._
+behaviour choice is logged in `DECISIONS.md` (D-001…D-042; continue from
+D-043)._
 
 ## Where things stand
 

@@ -721,3 +721,31 @@ problem — there was nothing to choose between); one lookup for the whole
 query rather than per name (the completer's own ranking of which
 businesses match is better than a raw place search, and it is only the
 bare rows that lack detail).
+
+## D-041 — A finished drive takes its plan off the Plan tab (2026-09-04)
+
+**Chosen**: when the recording ends while a destination is on the Plan
+tab, the destination, its route and the Go button clear, and the field is
+empty again. Brian arrived home and the tab still said "To Home" over the
+route he had just driven, with a Go button under it; the next drive the
+phone detected was then framed against a plan for where he already was.
+The rule is the end of a recording, whatever ended it — arrival (D-038),
+the driver's own Stop, or the idle window — because in every case the
+trip is saved and the plan has been judged. **Rejected**: clearing only
+on detected arrival (a drive stopped short would keep a plan the driver
+has already been scored against); keeping the plan so it can be re-driven
+(retyping a name is one tap on a saved place, and a stale plan under a
+fresh drive is the worse failure).
+
+## D-042 — Apple's plan is a solid line on Apple's map (2026-09-04)
+
+**Chosen**: the plan on the Apple surface is drawn solid, in its own
+colour over the translucent casing, instead of dashed. At the zoom a
+7-mile plan needs, MapKit renders a dashed `MapPolyline` as a row of
+oversized blocks several times the line's width, and the route reads as
+blobs rather than a road. The Google surface keeps its dashes: that SDK
+measures them in metres and draws them at every zoom. **Rejected**: a
+shorter dash pattern (the blocks are the renderer scaling the pattern,
+not the pattern's size); drawing the plan as an overlay in UIKit
+(`MKMapView`) to control the stroke (a second map stack for one line
+style).

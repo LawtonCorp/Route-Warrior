@@ -114,6 +114,16 @@ final class DrivePlannerTests: XCTestCase {
         XCTAssertEqual(planner.plan(on: .googleRoutes)?.trafficDuration, 900)
     }
 
+    func testOnlyTheEndOfARecordingTakesThePlanOffTheScreen() {
+        // The trip was saved: the plan it was driven against goes.
+        XCTAssertTrue(DrivePlanner.planEnds(recordingWas: true, now: false, hasDestination: true))
+        // Recording starting, or the recorder already idle, changes nothing.
+        XCTAssertFalse(DrivePlanner.planEnds(recordingWas: false, now: true, hasDestination: true))
+        XCTAssertFalse(DrivePlanner.planEnds(recordingWas: false, now: false, hasDestination: true))
+        // Nothing to clear.
+        XCTAssertFalse(DrivePlanner.planEnds(recordingWas: true, now: false, hasDestination: false))
+    }
+
     func testClearingLeavesNothingBehind() {
         let planner = DrivePlanner()
         let work = destination("Work")
