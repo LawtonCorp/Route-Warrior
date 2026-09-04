@@ -39,9 +39,12 @@ struct AppleMapSurface: View {
                     .stroke(Theme.google.opacity(0.35), style: StrokeStyle(
                         lineWidth: Self.planCasingWidth, lineCap: .round, lineJoin: .round
                     ))
+                // Solid on purpose: MapKit draws a dashed MapPolyline as
+                // oversized blocks at planning zooms (D-042). The colour
+                // and the casing already say "plan, not trail".
                 MapPolyline(coordinates: Self.cl(plan.polyline.coordinates))
                     .stroke(Theme.google, style: StrokeStyle(
-                        lineWidth: Self.planLineWidth, lineCap: .butt, dash: [10, 8]
+                        lineWidth: Self.planLineWidth, lineCap: .round, lineJoin: .round
                     ))
             }
             if let reroute = scene.drawableReroute(for: provider) {

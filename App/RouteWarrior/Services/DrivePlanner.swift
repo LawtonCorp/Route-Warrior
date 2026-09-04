@@ -53,6 +53,14 @@ final class DrivePlanner {
         failed = false
     }
 
+    /// The plan belongs to the drive; when the recording that carried it
+    /// ends, the destination and its route leave the screen with it
+    /// (D-041). Only the end of a recording counts — the start of one,
+    /// and a recorder that was already idle, leave the plan alone.
+    nonisolated static func planEnds(recordingWas was: Bool, now: Bool, hasDestination: Bool) -> Bool {
+        was && !now && hasDestination
+    }
+
     /// The plan drawn on the chosen map surface (D-022 §9.2).
     func plan(on surface: PlanSnapshot.Provider) -> PlanSnapshot? {
         plans.first { $0.provider == surface }

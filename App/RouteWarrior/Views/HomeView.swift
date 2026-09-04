@@ -86,6 +86,13 @@ struct HomeView: View {
                 // The fix arrived after the destination was chosen.
                 if planner.hasDestination, planner.plans.isEmpty, !planner.loading { fetchPlans() }
             }
+            .onChange(of: pipeline.isRecording) { was, now in
+                // The trip is saved; the route it was driven against has
+                // nothing left to say on the Plan tab (D-041).
+                if DrivePlanner.planEnds(recordingWas: was, now: now, hasDestination: planner.hasDestination) {
+                    clearSearch()
+                }
+            }
             .onChange(of: query) { _, newValue in
                 // Writing the chosen name back into the field is not a
                 // new search.
