@@ -1,146 +1,193 @@
-# Session handoff — state of Route Warrior as of 2026-09-02
+# Session handoff — state of Route Rebel as of 2026-09-04
 
 _Audience: the next AI coding session (and future Brian). The human-only
 checklist lives in `docs/HANDOFF.md`; this file is everything else — what
-exists, why, and what the previous session learned the hard way. Read
+exists, why, and what the previous sessions learned the hard way. Read
 `CLAUDE.md` first; it is binding. Product rationale is in
-`docs/REQUIREMENTS.md`, `docs/SPEC.md`, `docs/BUILD_PLAN.md`, and every
-behaviour choice is logged in `DECISIONS.md` (D-001…D-042; continue from
-D-043)._
+`docs/REQUIREMENTS.md`, `docs/SPEC.md`, `docs/SPEC_IN_APP_MAP.md`,
+`docs/BUILD_PLAN.md`, and every behaviour choice is logged in
+`DECISIONS.md` (D-001…D-042; continue from D-043)._
 
 ## Where things stand
 
-**v1 is code-complete and on Brian's phone.** All milestones M0–M6 from
-`docs/BUILD_PLAN.md` are implemented, tested, and merged; `main` is green.
-Fourteen PRs landed (#1 planning docs, #2–#13 the build, #14 app icon +
-Pro override). Brian built to his device ("Brown Chicken Brown Cow") with
-`./scripts/device-build.sh` after a one-time provisioning fix, and has the
-app icon and a forced-Pro personal build.
+**The app is called Route Rebel** (display name only, D-030). The repo,
+modules, bundle id `com.lawtoncorp.routewarrior` and CloudKit container
+`iCloud.com.lawtoncorp.routewarrior` keep the old name on purpose: a
+bundle-id change would orphan the App Store record, the provisioning and
+every user's CloudKit data. Do not rename them unless Brian asks.
 
-What v1 does: auto-records drives hands-free (CoreMotion arm →
-CoreLocation record), snapshots Google's planned route + traffic-aware ETA
-at departure via the Routes API, counts stop signs/signals from
-OpenStreetMap, computes actual-vs-predicted verdicts and day×hour
-patterns per destination, races a lock-screen ghost (Live Activity)
-against the personal best on repeat routes, syncs via the user's private
-CloudKit, and gates history depth / analyzed destinations / ghost race
-behind a StoreKit 2 Pro subscription — recording itself is never gated.
+**v1 (M0–M6) and v2's in-app map (M7 + M8) are merged, and Brian is
+field-testing daily.** Forty PRs have landed; `main` is green at #40;
+there are no open PRs, no unpushed work and no scheduled check-ins. Brian
+builds to his phone with `./scripts/device-build.sh` from
+`/Users/roar/Route-Warrior` (CLI directory: that path; the script is
+`scripts/device-build.sh` inside it).
+
+What the app does today: auto-records drives hands-free, or from a plan;
+the **Plan tab** (was Home) has a big "Where to?" field the driver types
+into, the map under it, saved places under the map; both providers'
+plans are snapshotted at departure; Google's Routes API and Apple's
+MKDirections are compared against what was driven; stop signs/signals
+from OpenStreetMap; per-destination verdicts, patterns, and a
+head-to-head race between the driver's own routes; a lock-screen ghost
+race; a live scoreboard on the drive view; Apple Maps hand-off for
+CarPlay guidance; private CloudKit sync; StoreKit 2 Pro gating of
+analysis surfaces only.
 
 ## Layout (the 30-second map)
 
 - `Sources/RouteWarriorKit/` — ALL logic, UI-framework-free (enforced by
-  `scripts/kit-purity-gate.sh`; per D-009 also no CoreLocation/SwiftData/
-  MapKit/WidgetKit/ActivityKit). Geo/Polyline (E5), TripRecorder (state
-  machine), StopDetector, RouteMatcher, DestinationPredictor, StatsEngine,
-  VerdictEngine, GhostRace, LiveMatch, TierPolicy, RoutesProviding
-  (protocol + Google response parser), Overpass (+StopClassifier).
+  `scripts/kit-purity-gate.sh`; also no CoreLocation/SwiftData/MapKit/
+  WidgetKit/ActivityKit). Geo/Polyline (E5), TripRecorder, StopDetector,
+  RouteMatcher, DestinationPredictor, StatsEngine, VerdictEngine,
+  GhostRace, LiveMatch, TierPolicy, RoutesProviding, Overpass, and from
+  this session: `RouteRaceEngine` (head-to-head between the driver's
+  routes), `DriveScoreboard` (ahead/behind the plan and the ghost),
+  `ArrivalDetector` (150 m / 20 s dwell / ≤2.5 m/s), `Place.Kind`
+  (twelve kinds + custom, with `Kind(stored:)` decoder).
 - `Sources/RouteWarriorStore/` — SwiftData @Model records + mapping +
-  `StoreFactory` (CloudKit container `iCloud.com.lawtoncorp.routewarrior`).
-- `App/RouteWarrior/` — thin SwiftUI layer. `Services/` wires kit to OS
-  frameworks: RecordingPipeline, LocationService (power tiering),
-  GoogleRoutesClient (key from Info.plist `GoogleRoutesAPIKey`),
-  OverpassService, GhostRaceCoordinator, LiveActivityPresenter,
-  StoreService (tier authority; D-017 override), DestinationPromptService
-  (FR-6 notification fallback). `Views/` Home/Trips/TripDetail/Places/
-  DestinationDetail/Settings/Onboarding/Paywall.
-- `App/RouteWarriorWidgets/` — Live Activity; `App/Shared/` — the
-  ActivityAttributes contract compiled into both targets.
-- `App/RouteWarriorTests/` — app-target wiring tests (one per kit/app
-  boundary feature; CLAUDE.md requires this).
-- `project.yml` — the only source of project truth (XcodeGen); the
-  `.xcodeproj` is generated and gitignored. Entitlements (App Group +
-  iCloud container) are declared there for BOTH app and widget targets.
+  `StoreFactory`. `VariantRecord.customName` for renamed routes.
+- `App/RouteWarrior/Services/` — RecordingPipeline (arrival stop, plan
+  failure logging), LocationService (persists the last fix to
+  `LastMapCenter`), GoogleRoutesClient (sends `X-Ios-Bundle-Identifier`,
+  logs Google's reason with keys redacted), DrivePlanner (destination +
+  plans state machine), AddressSearch (`AddressCompleter`, chain-branch
+  lookup), MapSettings (provider, autoReroute, navigateWithAppleMaps,
+  stopOnArrival), AppleMapsHandoff.
+- `App/RouteWarrior/Support/` — MapScene (one scene for both map
+  surfaces), SuggestionDetail (pure autocomplete merge), TripOrganizer
+  (sort/filter), ScoreboardText, LastMapCenter, DestinationAnalytics,
+  Format, Theme.
+- `App/RouteWarrior/Views/` — HomeView (the Plan tab), DriveView (turn-
+  by-turn with the scoreboard banner), TripsView (Today/Earlier + sort +
+  filter), TripDetailView, DestinationDetailView (routes map, head-to-
+  head card), VariantDetailView (rename, coloured multi-route map),
+  PlacesView, PlacePickerMap, MapSurfaceView (Apple), GoogleMapSurface,
+  Settings/Onboarding/Paywall.
+- `App/RouteWarriorTests/` — app-target wiring tests, one per boundary
+  feature (CLAUDE.md requires this; 25 files now).
+- `project.yml` — the only project truth. `CFBundleDisplayName: Route
+  Rebel` on both targets. The Maps SDK for iOS is a Swift Package here.
 
 ## Decisions with teeth (details in DECISIONS.md)
 
-Google Routes API is the comparison source (D-001); snapshot once at
-departure against the *predicted* destination — no retroactive ETA exists,
-so a misprediction means "no comparison", with the FR-6 notification
-one-tap fallback (D-010, D-016). Keyless builds degrade gracefully.
-Privacy: no accounts, no LawtonCorp server, on-device + private CloudKit
-only (D-006) — the privacy label is "Data Not Collected"; don't add
-network calls casually. Free tier records everything forever; Pro gates
-analysis surfaces only (D-008, D-015). D-017: `ROUTEWARRIOR_FORCE_PRO=1`
-in `scripts/signing.local` forces Pro on personal device builds via an
-Info.plist value injected by `device-build.sh`; empty everywhere else, an
-app-target test proves unforced builds start free.
+- **D-022 rule**: a provider's plan is drawn only on that provider's map
+  surface (`MapScene.drawablePlans(for:)`); the driver's own recorded
+  routes draw on every surface. The departure snapshot is never replaced
+  by a reroute; both providers are snapshotted at every departure.
+- **D-026**: the Plan tab *is* the planning surface — no plan sheet.
+  Trips owns all history (Today at top, sort + outcome filter).
+- **D-032**: the Google key is restricted to iOS apps, so every Routes
+  call carries the bundle id header. A 403 here means a key/API/quota
+  restriction in Google Cloud, and the Recorder log now says which.
+- **D-034**: CarPlay guidance is Apple Maps via hand-off (a Settings
+  toggle). Apple's navigation entitlement is not attainable for us; the
+  *driving-task* entitlement is requested per `docs/HANDOFF.md` and the
+  CarPlay scoreboard scene waits on it. Do not add the entitlement to
+  `project.yml` before Apple grants it: `-allowProvisioningUpdates`
+  would fail the device build.
+- **D-036/D-037**: maps open on the last known fix (`LastMapCenter`,
+  saved by LocationService on the first fix and every ≥500 m), never on
+  the country view; follow mode keeps the driver's own zoom.
+- **D-038**: a planned drive ends itself at the kerb (on by default).
+- **D-040**: a chain's bare autocomplete rows are looked up as places and
+  replaced by the nearest five branches with address and distance.
+- **D-041**: when the recording ends with a destination on the Plan tab,
+  the plan clears. **D-042**: the Apple surface draws the plan solid
+  (MapKit renders dashed `MapPolyline` as blocks at planning zooms).
+- Privacy (D-006) still holds: no accounts, no LawtonCorp server; the
+  privacy label is "Data Not Collected"; do not add network calls
+  casually. Pro gates analysis only (D-008, D-015); D-017 forces Pro on
+  Brian's personal build via `ROUTEWARRIOR_FORCE_PRO=1` in
+  `scripts/signing.local`.
 
 ## How to work here (environment truths)
 
-- **GitHub Actions is the only compiler** from the cloud session. Gates
-  runnable locally: `./scripts/kit-purity-gate.sh`, YAML/JSON validation,
-  brace-balance, `bash -n`, and an adversarial diff read. Everything else
-  is proven by CI.
-- Flow: branch `claude/<topic>` from fresh `origin/main` → PR → **squash-
-  merge yourself when CI is green** (Brian's standing "merge when ready");
-  never merge red, never push to main. Subscribe to PR events
-  (`subscribe_pr_activity`) and use a background `sleep` as a wake timer;
-  never poll in a loop.
-- Reading CI failures: fetch job *logs* through the GitHub MCP tool
-  (`get_job_logs`, tail) — the raw-log URL redirects to a blob host the
-  proxy blocks. `ci.yml`'s last step greps the real errors to the tail.
-  Check-run status lags; a 404 from get_job_logs means "still running".
-- Run at most ~2 PRs' CI in parallel — the macOS runners saturate.
+- **GitHub Actions is the only compiler** from the cloud session. Local
+  gates: `./scripts/kit-purity-gate.sh`, brace/paren balance on every
+  edited Swift file (a three-line Python count is enough), and an
+  adversarial read of the diff. Everything else is proven by CI.
+- Flow: branch `claude/<topic>` from fresh `origin/main` → draft PR →
+  when CI is green, mark ready and **squash-merge yourself** (Brian's
+  standing "merge when green") → sync local main. Never merge red, never
+  push to main. Use the GitHub MCP tools: `actions_list`
+  (`list_workflow_runs`, `ci.yml`, branch filter, event `pull_request`),
+  `get_job_logs` (`failed_only`, tail) for failures, `update_pull_request`
+  (`draft: false`), `merge_pull_request` (squash, `expectedHeadSha`).
+  Use `send_later` (≈9 min) as the wake timer for a CI check; never poll.
+- CI takes 5–7 minutes per run. Two in-flight PRs that both touch
+  `DECISIONS.md` will conflict; resolve by keeping both entries in
+  numeric order.
+- Commit footer and PR footer formats are given by the session harness;
+  never put a model identifier in a commit, PR or code comment.
+- Secrets: the Google key lives only in gitignored `scripts/signing.local`
+  / environment and is injected by `device-build.sh` into Info.plist.
+  Never paste it into chat; redact anything key-shaped in logs (the
+  client already does, «key»).
 
 ## Scar tissue (bugs the next session should not re-earn)
 
-- **Swift 6 strict concurrency**: `Self` is illegal in stored-property
-  initializers (name the type); statics on a `@MainActor` class are
-  isolated (`nonisolated static let` where needed); a nonisolated deinit
-  cannot touch isolated state; keep non-Sendable ObjC objects
-  (UNUserNotificationCenter) inside one `Task.detached` region and call
-  completion handlers before hopping actors; don't read a `self` property
-  inside a closure passed to a mutating call on `self` (hoist to a local).
-- **CloudKit + tests**: creating a CloudKit `ModelContainer` without the
-  entitlement (unsigned CI builds!) raises an uncatchable ObjC exception —
-  `try?` will not save you; the app detects a test host
-  (`NSClassFromString("XCTestCase")`) and uses in-memory storage. A
-  SIGTRAP "before starting test execution" in CI is this class of bug.
-- **SwiftData + CloudKit**: every `@Model` property defaulted or optional,
-  no `#Unique`; kit types cross as Codable JSON blobs / E5 polylines.
-- **Provisioning**: `-allowProvisioningUpdates` registers bundle IDs but
-  not App Groups/iCloud containers; the one-time fix is Xcode →
-  target → Signing & Capabilities → "Try Again" (portal registration
-  persists; GUI-set signing is disposable — never commit it).
-- Never `killall CoreSimulatorService`; never put signing in
-  `project.yml`; regeneration discards anything Xcode's UI wrote.
-- Verification: fixtures must be external (Google's documented polyline
-  example, Movable Type haversine, equator geometry) — a fixture generated
-  by the code under test proves nothing. Say plainly which claims are
-  machine-checked and which need a phone in hand.
+- **Statics on a SwiftUI `View` are MainActor-isolated.** Anything read
+  from a `nonisolated` helper or a test must be `nonisolated static`.
+  This bit three PRs this session (`GoogleMapSurface.drivingZoom`,
+  width constants, `dashMeters`). Same for `@MainActor` classes
+  (`DrivePlanner.planEnds` is `nonisolated static` for this reason).
+- Do not shadow with `let race = race` inside a closure; write
+  `let race = self.race` or rename. Enumerated tuple destructuring with an
+  explicit closure return type fails to type-check; use a `for` loop.
+  Avoid `count(where:)` (stdlib availability) and regex literals.
+- `PlaceTests` uses swift-testing (`@Test`/`#expect`); every other test
+  file is XCTest. Match the file you are appending to.
+- A struct with a custom `init` loses its memberwise init
+  (`GhostRace.ReferenceProfile` needed `public init(samples:)`).
+- Never replace a file region by slicing from an index — a
+  `s[s.index("extension …"):]` edit deleted `IconTile` and `tintedRow`
+  from `Theme.swift`. Bounded exact-match replacements only.
+- Google's plan "not appearing" had three stacked causes: 12 m dashes
+  (sub-pixel), a silent 403 (iOS-restricted key without the bundle-id
+  header), and a thin dashed line lost under traffic colouring (needed a
+  casing). If a route is invisible again, check the Recorder log first.
+- The country-view-at-launch bug needed three rounds (D-027, D-036,
+  D-037): the fix that held was persisting the centre *at the source*
+  (LocationService), not when a map happened to frame itself.
+- Earlier scars still apply: `Self` in stored-property initializers,
+  CloudKit `ModelContainer` in unsigned CI builds (in-memory under a test
+  host), SwiftData+CloudKit model rules, `-allowProvisioningUpdates` not
+  registering App Groups/iCloud containers (Xcode → Signing → Try Again),
+  never `killall CoreSimulatorService`, never sign in `project.yml`.
 
-## v2: in-app map (docs/SPEC_IN_APP_MAP.md)
+## What Brian has been asked to do (outside the repo)
 
-Approved 2026-09-02 (D-022): FR-19…FR-24. **M7 (Apple map) merged** (#21
-engine D-023, #22 screens). **M8 (Google map) is in PR** (D-024): the
-Maps SDK for iOS as a Swift Package in project.yml, `MapScene` +
-`MapSurfaceView` with Apple and Google surfaces, the onboarding provider
-page, privacy manifest/policy/HANDOFF updates. Brian's steps after it
-merges: enable "Maps SDK for iOS" on the key (HANDOFF §2.7) and answer
-the App Privacy questionnaire from Xcode's Generate Privacy Report
-(HANDOFF §5.2). Rules with teeth: a provider's plan line is drawn only on
-that provider's map surface (`MapScene.drawablePlans(for:)`); the
-departure snapshot is never replaced by a reroute; both providers are
-snapshotted at every departure; drive view and reroute are Pro, plan
-preview is free. M9 (guidance) is optional and unscheduled.
+1. **Google Cloud**: the key's API restriction list should include Routes
+   API, Maps SDK for iOS, Places API (New), Geocoding, Roads, Directions,
+   Distance Matrix, Time Zone, Elevation, Address Validation, Geolocation
+   (the "sky is the limit" list he asked for). He has already raised the
+   Routes API quotas; a daily cap of ~500 was advised.
+2. **CarPlay driving-task entitlement**: request per `docs/HANDOFF.md`
+   (choose *Driving task*, not Navigation). When granted, one PR adds the
+   entitlement, the scene manifest and a
+   `CPTemplateApplicationSceneDelegate` rendering `ScoreboardText.rows`.
+3. App Privacy questionnaire, App Store checklist (`docs/HANDOFF.md` §5).
 
-## What's next
+## What's next (likely session work)
 
-1. **Brian's checklist** (`docs/HANDOFF.md`, in order): Google Routes API
-   key → field tests (M2 recording week, M3 comparison sanity, M4 ghost
-   race, CloudKit two-device sync) → App Store Connect subscription
-   products → privacy-policy hosting, demo video, screenshots, TestFlight,
-   submission.
-2. **Likely follow-up work for a session**: tuning `TripRecorder.Config`
-   thresholds when field tests disagree with reality (record the change in
-   DECISIONS.md); OSM count corrections; any App Review feedback.
-3. Nothing is currently red, pending, or half-merged. There are no open
-   PRs and no unpushed work.
+1. Phone-in-hand confirmation of #39 and #40: chain searches ("Extra")
+   expand into addressed branches; the Plan tab clears when a drive ends;
+   Apple's plan draws as a line, not blocks.
+2. Field-test findings arrive as screenshots with one-line reports; the
+   pattern is diagnose → small PR → merge on green → "pull and rebuild".
+3. Possible follow-ups mentioned, not requested: pausing follow-on-pan
+   with a "resume" control on the Google drive view (needs the map
+   delegate); a full internal rename only if Brian asks.
+4. Nothing is red, pending or half-merged.
 
 ## Working with Brian
 
-Substance over ceremony — a plan that is "a plan to create a plan" gets
-rejected. He delegates thresholds and technical choices ("merge when
-ready") but decides product questions; ask with concrete options. For
-anything on his Mac, give exact screen-click instructions. He reads
-DECISIONS.md — keep writing the "rejected" half of every entry.
+Substance over ceremony. He delegates thresholds and technical choices
+("merge when green") but decides product questions; ask with concrete
+options (AskUserQuestion worked well for the CarPlay direction). For
+anything on his Mac, give exact commands or click steps — he pastes
+terminal output back verbatim. He reads DECISIONS.md — keep writing the
+"rejected" half of every entry. Reports come as screenshots; read them
+closely, they often show a second defect he did not mention (the block
+dashes in #40).
