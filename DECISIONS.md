@@ -807,3 +807,24 @@ provider's problem); starting the drive with no plan and letting the
 late answer go to waste (the comparison is why the destination was typed
 in); replacing an existing plan with a later answer (D-010's rule — the
 plan you left with is the baseline — is the whole comparison).
+
+## D-045 — One way to start a drive, and Record predicts too (2026-09-09)
+
+**Chosen**: the status card's Record button is shown only while no
+destination is chosen; the moment one is, Go under the plans is the only
+start button on the Plan tab. Stop stays on the card whenever a drive is
+recording, whatever the field says. Brian read the two buttons as one
+action twice, and they were not: Record started a bare recording with no
+destination and no plan — it did not even run the departure prediction
+that an auto-detected drive runs, so a Record trip could never be
+compared. Now a manual Record predicts its destination the way an
+auto-detected drive does, as soon as its first GPS point arrives (the
+prediction needs an origin, and the buffer is empty at the tap), and
+falls back to the FR-6 notification when the prediction is not confident.
+A planned drive never predicts: its destination is on screen. **Rejected**:
+one state-driven button in the status card (it takes the button away from
+under the plans, where the eye is after choosing one); moving Record to
+the Trips tab (the missed-detection fallback belongs beside the recorder
+status it is a fallback for); predicting at the tap instead of the first
+point (there is nothing to predict from yet, and the first sample lands
+within a second).

@@ -347,7 +347,11 @@ struct HomeView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                recordButton
+                if DrivePlanner.showsRecordButton(
+                    hasDestination: planner.hasDestination, recording: pipeline.isRecording
+                ) {
+                    recordButton
+                }
             }
             if pipeline.isRecording {
                 Button {

@@ -142,6 +142,15 @@ final class DrivePlannerTests: XCTestCase {
         XCTAssertEqual(planner.goTitle, "Go")
     }
 
+    /// D-045: never two ways to start a drive on one screen. Stop must
+    /// stay reachable while recording whatever the field says.
+    func testRecordHidesOnceADestinationIsChosenButStopNeverDoes() {
+        XCTAssertTrue(DrivePlanner.showsRecordButton(hasDestination: false, recording: false))
+        XCTAssertFalse(DrivePlanner.showsRecordButton(hasDestination: true, recording: false))
+        XCTAssertTrue(DrivePlanner.showsRecordButton(hasDestination: true, recording: true))
+        XCTAssertTrue(DrivePlanner.showsRecordButton(hasDestination: false, recording: true))
+    }
+
     func testClearingLeavesNothingBehind() {
         let planner = DrivePlanner()
         let work = destination("Work")

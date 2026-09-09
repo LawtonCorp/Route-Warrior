@@ -53,6 +53,10 @@ final class RecordingPipeline {
     private let arrivalStop: @MainActor () -> Bool
     private var arrivalDetector = ArrivalDetector()
     private var samplesThisSegment = 0
+    /// D-045: a manual Record has no plan, so it predicts its destination
+    /// the way an auto-detected drive does — as soon as it has a first
+    /// point to predict from.
+    private var predictOnFirstSample = false
 
     /// FR-6 fallback: fired when a trip starts but no destination clears
     /// the confidence bar. The app answers with a one-tap picker
@@ -112,6 +116,11 @@ final class RecordingPipeline {
             return
         }
         handle(recorder.ingest(location: point))
+        if predictOnFirstSample, recorder.state == .recording, let first = recorder.liveTrack.first {
+            predictOnFirstSample = false
+            note("Predicting the destination of the manual recording")
+            beginSnapshotFetch(departure: first.timestamp)
+        }
     }
 
     func ingest(motion sample: TripRecorder.MotionSample) {
@@ -122,6 +131,7 @@ final class RecordingPipeline {
         recorder.startManualRecording(at: .now)
         recorderState = recorder.state
         samplesThisSegment = 0
+        predictOnFirstSample = true
         lastOutcome = "Recording (manual)"
         note("Recording started by the Record button")
     }
@@ -136,6 +146,7 @@ final class RecordingPipeline {
             samplesThisSegment = 0
         }
         pendingSnapshots = snapshots
+        predictOnFirstSample = false
         arrivalDetector.reset()
         lastOutcome = "Recording (planned)"
         note("Recording started from the plan screen with \(snapshots.count) plan(s)")
@@ -374,6 +385,7 @@ final class RecordingPipeline {
     private func clearPendingSnapshots() {
         pendingSnapshots.removeAll()
         snapshotFetch = nil
+        predictOnFirstSample = false
     }
 
     /// A plan belongs to a finished drive when it was made for the place

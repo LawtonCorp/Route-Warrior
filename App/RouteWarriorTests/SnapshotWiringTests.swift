@@ -116,6 +116,69 @@ final class SnapshotWiringTests: XCTestCase {
         XCTAssertEqual(snapshots[0].destinationPlaceID, school.id)
     }
 
+    /// D-045: the Record button predicts the destination the way an
+    /// auto-detected drive does, so a manual recording still gets its
+    /// comparison. Same history and drive as above; only the start differs.
+    func testAManualRecordingPredictsAndSnapshotsToo() async throws {
+        let container = try RouteWarriorStoreFactory.inMemoryContainer()
+        let context = ModelContext(container)
+        let home = Place(name: "Home", coordinate: Coordinate(latitude: 0, longitude: 0))
+        let school = Place(name: "School", coordinate: Coordinate(latitude: 0, longitude: 0.09))
+        context.insert(PlaceRecord(home))
+        context.insert(PlaceRecord(school))
+        let t0 = Date(timeIntervalSince1970: 1_700_000_000)
+        for week in 0..<3 {
+            let start = t0.addingTimeInterval(Double(week) * 7 * 86_400)
+            context.insert(try TripRecord(Trip(
+                startedAt: start,
+                endedAt: start.addingTimeInterval(700),
+                timezoneID: "America/Chicago",
+                points: [
+                    point(east: 0, at: start, speed: 12),
+                    point(east: 600, at: start.addingTimeInterval(50), speed: 12),
+                ],
+                originPlaceID: home.id,
+                destinationPlaceID: school.id
+            )))
+        }
+        try context.save()
+
+        let plan = Polyline(coordinates: [
+            Coordinate(latitude: 0, longitude: 0),
+            Coordinate(latitude: 0, longitude: 0.09),
+        ])
+        let pipeline = RecordingPipeline(
+            context: context,
+            timezoneID: "America/Chicago",
+            routesProvider: StubRoutes(plan: plan)
+        )
+
+        let departure = t0.addingTimeInterval(3 * 7 * 86_400)
+        pipeline.startManualRecording()
+        // No point yet: nothing to predict from.
+        XCTAssertNil(pipeline.snapshotFetch)
+        var east = 0.0
+        var time = departure
+        let target = 0.09 * metersPerDegree
+        while east < target {
+            pipeline.ingest(location: point(east: east, at: time, speed: 15))
+            east += 15
+            time = time.addingTimeInterval(1)
+        }
+        XCTAssertNotNil(pipeline.snapshotFetch)
+        await pipeline.snapshotFetch?.value
+        XCTAssertEqual(pipeline.plansForCurrentDrive.count, 1)
+        pipeline.stopManualRecording()
+
+        let trips = try context.fetch(FetchDescriptor<TripRecord>())
+            .filter { $0.startedAt >= departure }
+        XCTAssertEqual(trips.count, 1)
+        let trip = try trips[0].trip()
+        XCTAssertEqual(trip.source, .manual)
+        XCTAssertNotNil(trip.snapshotID)
+        XCTAssertEqual(trip.followedPlan, true)
+    }
+
     func testManualPickFallbackFetchesAndAttaches() async throws {
         // No history: the predictor advises nothing, the unknown-destination
         // hook fires, and the one-tap pick fetches the comparison (FR-6).
