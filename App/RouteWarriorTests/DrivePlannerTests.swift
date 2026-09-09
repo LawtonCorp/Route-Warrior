@@ -124,6 +124,24 @@ final class DrivePlannerTests: XCTestCase {
         XCTAssertFalse(DrivePlanner.planEnds(recordingWas: true, now: false, hasDestination: false))
     }
 
+    /// D-044: the button under the plans is never greyed out. It says
+    /// Go while the providers are being asked, and "without a plan" only
+    /// once they have answered with nothing.
+    func testTheGoButtonSaysGoUntilTheProvidersHaveSaidNo() {
+        let planner = DrivePlanner()
+        let home = destination("Home")
+        planner.start(home)
+        XCTAssertEqual(planner.goTitle, "Drive without a plan")
+        planner.beginFetch()
+        XCTAssertEqual(planner.goTitle, "Go")
+        planner.finish(with: [], for: home)
+        XCTAssertEqual(planner.goTitle, "Drive without a plan")
+        planner.start(home)
+        planner.beginFetch()
+        planner.finish(with: [plan(.appleMaps)], for: home)
+        XCTAssertEqual(planner.goTitle, "Go")
+    }
+
     func testClearingLeavesNothingBehind() {
         let planner = DrivePlanner()
         let work = destination("Work")

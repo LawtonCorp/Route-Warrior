@@ -21,6 +21,14 @@ final class DrivePlanner {
 
     var hasDestination: Bool { destination != nil }
 
+    /// What the button under the plans says. "Drive without a plan" only
+    /// once the providers have answered with nothing; while they are
+    /// still being asked the drive is a planned one whose plan is on its
+    /// way (D-044), so the button says Go and stays tappable.
+    var goTitle: String {
+        plans.isEmpty && !loading ? "Drive without a plan" : "Go"
+    }
+
     /// A new destination clears the last one's plans immediately, so the
     /// map can never show one place's route under another's name. It does
     /// not start loading: the caller may still be waiting for a location

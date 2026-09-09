@@ -786,3 +786,24 @@ plus a backfill, to cache something cheaper to recompute); a U-turn
 threshold low enough to catch a wide-median reversal (a 110° swing is a
 sharp left more often than a U-turn, and a wide U-turn reading as a left is
 the honest error).
+
+## D-044 — Go never waits for the providers (2026-09-09)
+
+**Chosen**: the button under the plans is tappable the moment a
+destination is chosen, including while "Asking for plans…" is spinning.
+It reads "Go" until the providers have actually answered with nothing,
+and only then "Drive without a plan"; the footer says, while loading,
+that the plans will become the baseline when they arrive. A plan asked
+for from the departure point before the drive began is still this
+departure's plan when it lands a few seconds after Go, so the pipeline
+adopts it into a drive that has none (`adoptDeparturePlans`); a drive
+already carrying plans keeps them, and a fetch begun mid-drive is never
+adopted, because its origin is not the departure. Field evidence: a
+greyed "Drive without a plan" beside a spinner read as the app refusing
+to let the driver leave, which is the one thing recording must never do
+(FR-3). **Rejected**: leaving the button disabled until the answer
+arrives (the driver is already in the car; a slow provider is the
+provider's problem); starting the drive with no plan and letting the
+late answer go to waste (the comparison is why the destination was typed
+in); replacing an existing plan with a later answer (D-010's rule — the
+plan you left with is the baseline — is the whole comparison).

@@ -141,6 +141,18 @@ final class RecordingPipeline {
         note("Recording started from the plan screen with \(snapshots.count) plan(s)")
     }
 
+    /// D-044: the driver tapped Go while the plans were still loading.
+    /// A plan requested from the departure point before the drive began
+    /// is still the departure snapshot when it lands a few seconds later,
+    /// so it is adopted — but only into a drive that has none. A drive
+    /// that already carries plans keeps them (D-010: never replaced).
+    func adoptDeparturePlans(_ snapshots: [PlanSnapshot]) {
+        guard isRecording, pendingSnapshots.isEmpty, !snapshots.isEmpty else { return }
+        pendingSnapshots = snapshots
+        arrivalDetector.reset()
+        note("\(snapshots.count) plan(s) arrived after departure and became the baseline")
+    }
+
     func stopManualRecording() {
         handle(recorder.stopRecording())
     }

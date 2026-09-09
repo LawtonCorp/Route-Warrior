@@ -271,20 +271,28 @@ struct HomeView: View {
             } label: {
                 HStack {
                     Spacer()
-                    Label(planner.plans.isEmpty ? "Drive without a plan" : "Go", systemImage: "car.fill")
+                    Label(planner.goTitle, systemImage: "car.fill")
                         .font(.headline)
                     Spacer()
                 }
             }
             .buttonStyle(.borderedProminent)
             .tint(Theme.route)
-            .disabled(planner.loading)
             .listRowBackground(Color.clear)
         } footer: {
-            Text(mapSettings.navigateWithAppleMaps
-                 ? "Recording starts now, then Apple Maps takes over for turn-by-turn — on CarPlay too. Route Rebel keeps recording in the background, and the plan you left with stays the baseline."
-                 : "Recording starts now. Whatever plan you leave with is the baseline the drive is judged against. The live drive view and reroute are part of Pro; the trip records and compares either way.")
+            Text(goFooter)
         }
+    }
+
+    /// The Go button never waits for the providers (D-044): while they
+    /// are still being asked, the footer says the plan will catch up.
+    private var goFooter: String {
+        let base = mapSettings.navigateWithAppleMaps
+            ? "Recording starts now, then Apple Maps takes over for turn-by-turn — on CarPlay too. Route Rebel keeps recording in the background, and the plan you left with stays the baseline."
+            : "Recording starts now. Whatever plan you leave with is the baseline the drive is judged against. The live drive view and reroute are part of Pro; the trip records and compares either way."
+        return planner.loading
+            ? "Plans are still loading. Go now and they become the baseline when they arrive. " + base
+            : base
     }
 
     // MARK: Saved places, under the map
@@ -473,11 +481,18 @@ struct HomeView: View {
             return
         }
         planner.beginFetch()
+        // Asked from the departure point, before the drive began: if Go is
+        // tapped before the answer lands, the answer is still this
+        // departure's plan (D-044). A fetch begun mid-drive is not.
+        let askedBeforeDeparture = !pipeline.isRecording
         Task {
             let fetched = await pipeline.computePlans(
                 from: origin, to: destination.coordinate, destinationPlaceID: destination.placeID
             )
             planner.finish(with: fetched, for: destination)
+            if askedBeforeDeparture, planner.destination == destination {
+                pipeline.adoptDeparturePlans(fetched)
+            }
         }
     }
 
