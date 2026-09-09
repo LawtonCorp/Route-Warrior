@@ -749,3 +749,40 @@ shorter dash pattern (the blocks are the renderer scaling the pattern,
 not the pattern's size); drawing the plan as an overlay in UIKit
 (`MKMapView`) to control the stroke (a second map stack for one line
 style).
+
+## D-043 — Turns are counted from the line, lefts first (2026-09-09)
+
+**Chosen**: `TurnCounter` (kit, pure) counts the turns along any line —
+a driven track, a provider's plan, a plan's alternates — from its shape
+alone. The line is resampled every 5 m and, at each sample, the heading
+over the next 20 m is compared with the heading over the previous 20 m; a
+change of 45° opens a turn, falling back under 20° closes it, and the
+sharpest point is the turn. The window is what separates a corner from a
+bend: a 90° corner at an intersection swings the heading by most of 90°
+within 20 m either side, while a highway curve of radius 100 m changes it
+by about 23°, so a road that bends is not counted as a road that turns
+(a 90° corner counts up to a radius of about 25 m, a long bend up to about
+50 m). Lefts and rights are kept apart because in America the left is the
+turn that waits for a gap and costs time the way a stop sign does; a
+reversal past 135° is a U-turn. Trips are counted after dropping halted
+(< 1 m/s) and poorly fixed (> 50 m) samples, because a phone at a red
+light wanders a few metres in every direction and that scribble reads as
+turning without going anywhere. The count is surfaced where the stop-sign
+count already is: on the trip ("2 left · 3 right"), on the route as the
+median over its drives, on the destination's race rows as "3 lefts", and
+on the Plan tab under each plan's ETA and distance, so two plans can be
+weighed by how many lefts each asks for. Nothing is persisted: the count
+is a few milliseconds over lines the screens already hold, and old trips
+get it for free. **Rejected**: counting turns from the variant's
+representative polyline (it is resampled to 64 points, D-023 — coarser
+than a city block); asking the provider for its step list (Google's steps
+are a per-request field that would double the payload, Apple's are
+MapKit-only, and neither exists for a drive that had no plan); OSM
+intersection data (it says where roads meet, not which way the car went);
+a fixed heading-change per vertex without a distance window (GPS tracks
+have a vertex every 15 m and a highway curve would count once per vertex);
+a column on `TripRecord` and `VariantRecord` (a CloudKit schema change
+plus a backfill, to cache something cheaper to recompute); a U-turn
+threshold low enough to catch a wide-median reversal (a 110° swing is a
+sharp left more often than a U-turn, and a wide U-turn reading as a left is
+the honest error).

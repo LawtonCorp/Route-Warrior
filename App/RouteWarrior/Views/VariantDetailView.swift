@@ -82,8 +82,30 @@ struct VariantDetailView: View {
         }
     }
 
+    /// The typical turns over this route's drives, from their own tracks
+    /// (D-043). Nil until a drive with a shape has been recorded.
+    private var turns: TurnCount? {
+        TurnCounter.typical(for: trips)
+    }
+
     private var intersectionsSection: some View {
         Section {
+            if let turns {
+                LabeledContent("Left turns") {
+                    Label("\(turns.left)", systemImage: "arrow.turn.up.left")
+                        .foregroundStyle(Theme.google)
+                }
+                LabeledContent("Right turns") {
+                    Label("\(turns.right)", systemImage: "arrow.turn.up.right")
+                        .foregroundStyle(.secondary)
+                }
+                if turns.uTurn > 0 {
+                    LabeledContent("U-turns") {
+                        Label("\(turns.uTurn)", systemImage: "arrow.uturn.down")
+                            .foregroundStyle(Theme.google)
+                    }
+                }
+            }
             if let signals = variant.signalCount, let stops = variant.stopSignCount {
                 LabeledContent("Signals") {
                     Label("\(signals)", systemImage: "circle.fill")
@@ -103,7 +125,7 @@ struct VariantDetailView: View {
         } header: {
             Text("What it costs you")
         } footer: {
-            Text("Counted from OpenStreetMap along this route. More intersections explain a slower median more often than distance does.")
+            Text("Turns are counted from the shape of your drives; signals and stop signs from OpenStreetMap along this route. Left turns wait for a gap, so they cost time the way a stop sign does — more of either explains a slower median more often than distance does.")
         }
     }
 

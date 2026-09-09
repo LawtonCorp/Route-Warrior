@@ -6,7 +6,7 @@ exists, why, and what the previous sessions learned the hard way. Read
 `CLAUDE.md` first; it is binding. Product rationale is in
 `docs/REQUIREMENTS.md`, `docs/SPEC.md`, `docs/SPEC_IN_APP_MAP.md`,
 `docs/BUILD_PLAN.md`, and every behaviour choice is logged in
-`DECISIONS.md` (D-001…D-042; continue from D-043)._
+`DECISIONS.md` (D-001…D-043; continue from D-044)._
 
 ## Where things stand
 
@@ -28,7 +28,8 @@ the **Plan tab** (was Home) has a big "Where to?" field the driver types
 into, the map under it, saved places under the map; both providers'
 plans are snapshotted at departure; Google's Routes API and Apple's
 MKDirections are compared against what was driven; stop signs/signals
-from OpenStreetMap; per-destination verdicts, patterns, and a
+from OpenStreetMap; turns counted from the line itself, lefts apart
+(D-043), on trips, routes and each plan; per-destination verdicts, patterns, and a
 head-to-head race between the driver's own routes; a lock-screen ghost
 race; a live scoreboard on the drive view; Apple Maps hand-off for
 CarPlay guidance; private CloudKit sync; StoreKit 2 Pro gating of
@@ -95,6 +96,9 @@ analysis surfaces only.
 - **D-041**: when the recording ends with a destination on the Plan tab,
   the plan clears. **D-042**: the Apple surface draws the plan solid
   (MapKit renders dashed `MapPolyline` as blocks at planning zooms).
+- **D-043**: `TurnCounter` counts turns from a line's shape (20 m
+  heading windows, 45° in / 20° out); nothing persisted, computed where
+  shown. Tune `TurnCounter.Config` if field tests disagree.
 - Privacy (D-006) still holds: no accounts, no LawtonCorp server; the
   privacy label is "Data Not Collected"; do not add network calls
   casually. Pro gates analysis only (D-008, D-015); D-017 forces Pro on

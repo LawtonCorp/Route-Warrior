@@ -76,6 +76,10 @@ with enough recorded trips. These come verbatim from the product brief:
 - **FR-10**: Count traffic signals and stop signs along each variant from
   OpenStreetMap data (Overpass), cached per variant; show a coverage
   confidence note (OSM stop-sign mapping is patchy).
+- **FR-10a**: Count the turns along a drive, a route and each plan from
+  the line's own shape, left and right apart (a left turn waits for a gap
+  and costs time the way a stop sign does); show the count beside the
+  stop-sign count and under each plan on the Plan tab.
 - **FR-11**: Detect actual stop events from the track (halt clusters),
   classify them (stop sign / signal / traffic / unknown) using duration
   heuristics + proximity to OSM nodes; report both "on this route" and

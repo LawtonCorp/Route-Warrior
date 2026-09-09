@@ -48,6 +48,29 @@ final class RouteRaceEngineTests: XCTestCase {
         }
     }
 
+    /// The race rows read "3 lefts" beside "5 signals": the count comes
+    /// from the drives' own tracks, not from any map data.
+    func testARouteCarriesTheTurnsItsDrivesTook() {
+        var track = TurtleTrack(spacing: 10)
+        track.straight(200)
+        track.curve(radius: 10, degrees: -90)
+        track.straight(200)
+        track.curve(radius: 10, degrees: 90)
+        track.straight(200)
+        var driven = drives(backWay, count: 3, minutes: 10)
+        for index in driven.indices {
+            driven[index].points = track.trackPoints(from: driven[index].startedAt, speedMps: 12)
+        }
+        let shapeless = drives(highway, count: 3, minutes: 12)
+
+        let race = RouteRaceEngine.race(
+            variants: [variant(backWay), variant(highway)],
+            trips: driven + shapeless
+        )
+        XCTAssertEqual(race.fastest?.turns, TurnCount(left: 1, right: 1))
+        XCTAssertNil(race.runnerUp?.turns)
+    }
+
     func testOneRouteHasNothingToRaceAgainst() {
         let race = RouteRaceEngine.race(
             variants: [variant(backWay)],
