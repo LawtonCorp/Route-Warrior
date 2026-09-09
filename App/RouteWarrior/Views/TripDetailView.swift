@@ -201,6 +201,7 @@ struct TripDetailView: View {
             LabeledContent("Idle", value: Format.duration(record.idleTime))
             if let trip {
                 LabeledContent("Stops", value: "\(trip.stopEvents.count)")
+                LabeledContent("Turns", value: TurnText.summary(TurnCounter.count(for: trip)))
             }
             LabeledContent("Recorded", value: record.sourceRaw == "manual" ? "Manually" : "Automatically")
             if plans.isEmpty {

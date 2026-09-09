@@ -26,19 +26,25 @@ public enum RouteRaceEngine {
         public var stats: StatsEngine.DurationStats
         public var signalCount: Int?
         public var stopSignCount: Int?
+        /// The typical turns on this route, counted from the drives'
+        /// own tracks (`TurnCounter.typical`). Nil until a drive has a
+        /// shape to count.
+        public var turns: TurnCount?
 
         public init(
             id: UUID,
             name: String,
             stats: StatsEngine.DurationStats,
             signalCount: Int? = nil,
-            stopSignCount: Int? = nil
+            stopSignCount: Int? = nil,
+            turns: TurnCount? = nil
         ) {
             self.id = id
             self.name = name
             self.stats = stats
             self.signalCount = signalCount
             self.stopSignCount = stopSignCount
+            self.turns = turns
         }
 
         /// Signals plus stop signs: what explains a slower route more
@@ -82,7 +88,8 @@ public enum RouteRaceEngine {
                 name: variant.displayName,
                 stats: stats,
                 signalCount: variant.intersections?.signalCount,
-                stopSignCount: variant.intersections?.stopSignCount
+                stopSignCount: variant.intersections?.stopSignCount,
+                turns: TurnCounter.typical(for: mine)
             ))
         }
         // Fastest median wins the ranking; more drives break a tie, then

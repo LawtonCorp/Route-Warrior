@@ -190,6 +190,7 @@ struct HomeView: View {
                 title: "\(shown.provider.displayName)'s plan",
                 eta: shown.trafficDuration,
                 distance: shown.distanceM,
+                turns: TurnCounter.count(along: shown.polyline),
                 highlighted: true
             )
             ForEach(Array(shown.alternates.enumerated()), id: \.offset) { index, alternate in
@@ -200,6 +201,7 @@ struct HomeView: View {
                         title: "Alternate \(index + 1)",
                         eta: alternate.trafficDuration,
                         distance: alternate.polyline.lengthMeters,
+                        turns: TurnCounter.count(along: alternate.polyline),
                         highlighted: false
                     )
                 }
@@ -228,12 +230,22 @@ struct HomeView: View {
                 title: "\(other.provider.displayName)'s plan",
                 eta: other.trafficDuration,
                 distance: other.distanceM,
+                turns: TurnCounter.count(along: other.polyline),
                 highlighted: false
             )
         }
     }
 
-    private func planRow(title: String, eta: TimeInterval, distance: Double, highlighted: Bool) -> some View {
+    /// ETA, distance and turns per plan: the turns are counted from the
+    /// plan's own line (D-043), so two plans can be weighed by how many
+    /// lefts each asks for, not only by the minutes the provider claims.
+    private func planRow(
+        title: String,
+        eta: TimeInterval,
+        distance: Double,
+        turns: TurnCount,
+        highlighted: Bool
+    ) -> some View {
         HStack {
             Text(title)
                 .font(highlighted ? .headline : .body)
@@ -243,6 +255,9 @@ struct HomeView: View {
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(highlighted ? Theme.route : .primary)
                 Text(Format.distance(distance))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(TurnText.summary(turns))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

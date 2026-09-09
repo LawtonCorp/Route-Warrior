@@ -92,6 +92,15 @@ stopSign; of `highway=traffic_signals` → signal; duration > 90 s with a
 creep pattern → trafficQueue; else classified by duration prior (2–8 s →
 stop-sign-like, 8–90 s → signal-like) and reported as inferred.
 
+### TurnCounter (FR-10a)
+
+Resample the line every 5 m; at each sample compare the heading over the
+next 20 m with the heading over the previous 20 m. A change ≥ 45° opens a
+turn, < 20° closes it, the sharpest point is the turn; ≥ 135° is a
+U-turn, otherwise the sign says left or right. Trips are counted after
+dropping halted (< 1 m/s) and poorly fixed (> 50 m) samples. Works on any
+polyline — track, plan, alternate — with no map data (D-043).
+
 ### StatsEngine (FR-12, FR-13)
 
 Per variant and destination: avg/median/best/worst, day-of-week ×

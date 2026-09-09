@@ -4,7 +4,7 @@ An iPhone app for drivers who think they know better than Google Maps — and
 want the data to prove it. Route Rebel auto-records the route you actually
 drove, snapshots Google's planned route and traffic-aware ETA at the moment
 you departed, and turns your history into answers: how long trips really
-take, how many stop signs and signals you hit, how traffic compared to
+take, how many stop signs, signals and left turns you hit, how traffic compared to
 Google's assumption, and whether your route beats Google's — by time of day
 and day of week. A live "ghost race" on the lock screen scores a repeat drive
 against your personal best.

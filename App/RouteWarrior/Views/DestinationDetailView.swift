@@ -270,6 +270,9 @@ struct DestinationDetailView: View {
                     if let signals = route.signalCount, let stops = route.stopSignCount {
                         Text("· \(signals) signals, \(stops) stop signs")
                     }
+                    if let turns = route.turns {
+                        Text("· \(TurnText.lefts(turns))")
+                    }
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
