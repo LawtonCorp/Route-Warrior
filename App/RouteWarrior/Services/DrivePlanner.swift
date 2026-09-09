@@ -21,6 +21,14 @@ final class DrivePlanner {
 
     var hasDestination: Bool { destination != nil }
 
+    /// What the button under the plans says. "Drive without a plan" only
+    /// once the providers have answered with nothing; while they are
+    /// still being asked the drive is a planned one whose plan is on its
+    /// way (D-044), so the button says Go and stays tappable.
+    var goTitle: String {
+        plans.isEmpty && !loading ? "Drive without a plan" : "Go"
+    }
+
     /// A new destination clears the last one's plans immediately, so the
     /// map can never show one place's route under another's name. It does
     /// not start loading: the caller may still be waiting for a location
@@ -59,6 +67,14 @@ final class DrivePlanner {
     /// and a recorder that was already idle, leave the plan alone.
     nonisolated static func planEnds(recordingWas was: Bool, now: Bool, hasDestination: Bool) -> Bool {
         was && !now && hasDestination
+    }
+
+    /// D-045: one way to start a drive at a time. Record stays on the
+    /// status card while there is no destination (and as Stop while
+    /// recording); once a destination is chosen, Go under the plans is
+    /// the only start button.
+    nonisolated static func showsRecordButton(hasDestination: Bool, recording: Bool) -> Bool {
+        recording || !hasDestination
     }
 
     /// The plan drawn on the chosen map surface (D-022 §9.2).

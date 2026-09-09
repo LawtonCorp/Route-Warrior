@@ -6,7 +6,7 @@ exists, why, and what the previous sessions learned the hard way. Read
 `CLAUDE.md` first; it is binding. Product rationale is in
 `docs/REQUIREMENTS.md`, `docs/SPEC.md`, `docs/SPEC_IN_APP_MAP.md`,
 `docs/BUILD_PLAN.md`, and every behaviour choice is logged in
-`DECISIONS.md` (D-001…D-043; continue from D-044)._
+`DECISIONS.md` (D-001…D-045; continue from D-046)._
 
 ## Where things stand
 
@@ -99,6 +99,11 @@ analysis surfaces only.
 - **D-043**: `TurnCounter` counts turns from a line's shape (20 m
   heading windows, 45° in / 20° out); nothing persisted, computed where
   shown. Tune `TurnCounter.Config` if field tests disagree.
+- **D-044**: Go is never disabled while plans load; plans that land
+  after Go are adopted into a plan-less drive (`adoptDeparturePlans`).
+- **D-045**: Record hides once a destination is chosen (Go is the one
+  start button); a manual Record predicts its destination on its first
+  GPS point, like an auto-detected drive.
 - Privacy (D-006) still holds: no accounts, no LawtonCorp server; the
   privacy label is "Data Not Collected"; do not add network calls
   casually. Pro gates analysis only (D-008, D-015); D-017 forces Pro on

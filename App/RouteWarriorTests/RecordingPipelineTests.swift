@@ -111,6 +111,39 @@ final class RecordingPipelineTests: XCTestCase {
         XCTAssertFalse(pipeline.log.contains { $0.text.contains("Arrived") })
     }
 
+    /// D-044: Go was tapped before the plans arrived. The plan that
+    /// lands next is this departure's, so the drive adopts it — once.
+    func testPlansThatArriveAfterGoBecomeTheBaselineButNeverReplaceOne() throws {
+        let container = try RouteWarriorStoreFactory.inMemoryContainer()
+        let context = ModelContext(container)
+        let pipeline = RecordingPipeline(context: context, timezoneID: "America/Chicago")
+        let plan = PlanSnapshot(
+            provider: .appleMaps,
+            requestedAt: t0,
+            polyline: Polyline(coordinates: [
+                Coordinate(latitude: 0, longitude: 0), Coordinate(latitude: 0, longitude: 0.02),
+            ]),
+            distanceM: 2_224,
+            staticDuration: 600,
+            trafficDuration: 600
+        )
+        var later = plan
+        later.trafficDuration = 900
+
+        // Not recording: nothing to adopt into.
+        pipeline.adoptDeparturePlans([plan])
+        XCTAssertTrue(pipeline.plansForCurrentDrive.isEmpty)
+
+        pipeline.startPlannedDrive(with: [])
+        XCTAssertTrue(pipeline.plansForCurrentDrive.isEmpty)
+        pipeline.adoptDeparturePlans([plan])
+        XCTAssertEqual(pipeline.plansForCurrentDrive, [plan])
+        // The departure snapshot is never replaced (D-010).
+        pipeline.adoptDeparturePlans([later])
+        XCTAssertEqual(pipeline.plansForCurrentDrive, [plan])
+        XCTAssertTrue(pipeline.log.contains { $0.text.contains("became the baseline") })
+    }
+
     func testManualRecordingPersistsWithoutPlaces() throws {
         let container = try RouteWarriorStoreFactory.inMemoryContainer()
         let context = ModelContext(container)

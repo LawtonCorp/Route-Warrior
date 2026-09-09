@@ -124,6 +124,33 @@ final class DrivePlannerTests: XCTestCase {
         XCTAssertFalse(DrivePlanner.planEnds(recordingWas: true, now: false, hasDestination: false))
     }
 
+    /// D-044: the button under the plans is never greyed out. It says
+    /// Go while the providers are being asked, and "without a plan" only
+    /// once they have answered with nothing.
+    func testTheGoButtonSaysGoUntilTheProvidersHaveSaidNo() {
+        let planner = DrivePlanner()
+        let home = destination("Home")
+        planner.start(home)
+        XCTAssertEqual(planner.goTitle, "Drive without a plan")
+        planner.beginFetch()
+        XCTAssertEqual(planner.goTitle, "Go")
+        planner.finish(with: [], for: home)
+        XCTAssertEqual(planner.goTitle, "Drive without a plan")
+        planner.start(home)
+        planner.beginFetch()
+        planner.finish(with: [plan(.appleMaps)], for: home)
+        XCTAssertEqual(planner.goTitle, "Go")
+    }
+
+    /// D-045: never two ways to start a drive on one screen. Stop must
+    /// stay reachable while recording whatever the field says.
+    func testRecordHidesOnceADestinationIsChosenButStopNeverDoes() {
+        XCTAssertTrue(DrivePlanner.showsRecordButton(hasDestination: false, recording: false))
+        XCTAssertFalse(DrivePlanner.showsRecordButton(hasDestination: true, recording: false))
+        XCTAssertTrue(DrivePlanner.showsRecordButton(hasDestination: true, recording: true))
+        XCTAssertTrue(DrivePlanner.showsRecordButton(hasDestination: false, recording: true))
+    }
+
     func testClearingLeavesNothingBehind() {
         let planner = DrivePlanner()
         let work = destination("Work")
