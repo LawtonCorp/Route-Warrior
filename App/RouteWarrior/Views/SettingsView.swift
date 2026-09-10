@@ -113,7 +113,13 @@ struct SettingsView: View {
                     } label: {
                         settingsLabel("Version", symbol: "info.circle.fill", color: .gray)
                     }
-                    Text("Trip data never leaves your devices except the route requests sent to Google at departure.")
+                    Link(destination: Legal.termsURL) {
+                        settingsLabel("Terms of Use", symbol: "doc.text.fill", color: .gray)
+                    }
+                    Link(destination: Legal.privacyURL) {
+                        settingsLabel("Privacy Policy", symbol: "hand.raised.fill", color: .gray)
+                    }
+                    Text("Trip data never leaves your devices except the route requests sent to the mapping providers at departure.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

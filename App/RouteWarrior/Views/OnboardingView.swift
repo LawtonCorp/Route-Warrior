@@ -9,6 +9,7 @@ struct OnboardingView: View {
     @Environment(LocationService.self) private var locationService
     @Environment(MapSettings.self) private var mapSettings
     @AppStorage("onboardingComplete") private var onboardingComplete = false
+    @AppStorage(Legal.acceptedTermsKey) private var acceptedTerms = ""
     @State private var page = 0
 
     /// The provider page exists only when there is a choice (FR-19): a
@@ -69,9 +70,18 @@ struct OnboardingView: View {
             title: "Beat the nav. Prove it.",
             body: "Route Rebel records the routes you actually drive and compares them against Google's plan — every trip, hands-free. Find out when your shortcut really is faster."
         ) {
-            Button("Continue") { page = 1 }
-                .buttonStyle(.borderedProminent)
-                .tint(Theme.route)
+            VStack(spacing: 10) {
+                Button("Continue") { page = 1 }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Theme.route)
+                // Continuing is the acceptance (D-051); the two names open
+                // the documents.
+                Text(.init(Legal.acceptanceLine))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .tint(Theme.route)
+            }
         }
     }
 
@@ -165,6 +175,7 @@ struct OnboardingView: View {
 
     private func finish() {
         onboardingComplete = true
+        acceptedTerms = Legal.termsVersion
         locationService.enableMotionDetection()
     }
 
