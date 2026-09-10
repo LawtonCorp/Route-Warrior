@@ -46,6 +46,10 @@ final class RecordingPipeline {
     private let providers: [PlanSnapshot.Provider: any RoutesProviding]
     /// Whose plan the driver sees — the primary snapshot on the trip.
     private let preference: @MainActor () -> MapProvider
+    /// The driver's tier, read at every request (D-050): a purchase
+    /// mid-drive takes effect on the next departure without a restart.
+    private let tier: @MainActor () -> TierPolicy.Tier
+    private let policy: TierPolicy
     private let logStorage: UserDefaults?
     private var pendingSnapshots: [PlanSnapshot] = []
     /// Whether to end a planned drive on arrival (D-038), read per sample
@@ -70,10 +74,14 @@ final class RecordingPipeline {
         providers: [PlanSnapshot.Provider: any RoutesProviding] = [:],
         preference: @escaping @MainActor () -> MapProvider = { MapProvider.default },
         arrivalStop: @escaping @MainActor () -> Bool = { false },
+        tier: @escaping @MainActor () -> TierPolicy.Tier = { .pro },
+        policy: TierPolicy = TierPolicy(),
         logStorage: UserDefaults? = nil
     ) {
         self.context = context
         self.timezoneID = timezoneID
+        self.tier = tier
+        self.policy = policy
         var all = providers
         if let routesProvider {
             // v1 spelling: a single Google provider.
@@ -93,6 +101,12 @@ final class RecordingPipeline {
     /// Providers this build can ask, Apple first (the default map).
     var availableProviders: [PlanSnapshot.Provider] {
         [PlanSnapshot.Provider.appleMaps, .googleRoutes].filter { providers[$0] != nil }
+    }
+
+    /// Providers this driver's tier is asked for a plan (D-050): the free
+    /// tier gets Apple's, Pro gets every one the build can reach.
+    var snapshotProviders: [PlanSnapshot.Provider] {
+        policy.snapshotProviders(for: tier(), available: availableProviders)
     }
     /// The plans held for the current drive (for the drive view).
     var plansForCurrentDrive: [PlanSnapshot] { pendingSnapshots }
@@ -181,7 +195,7 @@ final class RecordingPipeline {
         destinationPlaceID: UUID?
     ) async -> [PlanSnapshot] {
         var plans: [PlanSnapshot] = []
-        for provider in availableProviders {
+        for provider in snapshotProviders {
             guard let client = providers[provider] else { continue }
             do {
                 plans.append(try await client.computeSnapshot(
@@ -316,7 +330,7 @@ final class RecordingPipeline {
     // MARK: Departure snapshots (FR-5/FR-6, "beat both")
 
     private func beginSnapshotFetch(departure: Date) {
-        guard !providers.isEmpty, let originPoint = recorder.liveTrack.first else { return }
+        guard !snapshotProviders.isEmpty, let originPoint = recorder.liveTrack.first else { return }
         snapshotFetch = Task { [weak self] in
             await self?.fetchSnapshots(originPoint: originPoint, departure: departure)
         }
@@ -353,7 +367,7 @@ final class RecordingPipeline {
     }
 
     private func fetchAllPlans(from origin: Coordinate, to place: Place, label: String) async {
-        for provider in availableProviders {
+        for provider in snapshotProviders {
             guard let client = providers[provider] else { continue }
             if let snapshot = try? await client.computeSnapshot(
                 from: origin, to: place.coordinate, destinationPlaceID: place.id
@@ -370,7 +384,7 @@ final class RecordingPipeline {
     /// destination the user named, from wherever the drive currently is.
     /// No-op when idle or with no provider.
     func requestSnapshot(to placeID: UUID) {
-        guard recorderState == .recording, !providers.isEmpty,
+        guard recorderState == .recording, !snapshotProviders.isEmpty,
               let position = recorder.liveTrack.last
         else { return }
         snapshotFetch = Task { [weak self] in

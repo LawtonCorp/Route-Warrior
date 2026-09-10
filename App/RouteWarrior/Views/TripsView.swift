@@ -66,8 +66,22 @@ struct TripsView: View {
             }
             .navigationTitle("Trips")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { sortMenu }
-                ToolbarItem(placement: .topBarTrailing) { filterMenu }
+                if store.policy.tripOrganizerAvailable(for: store.tier) {
+                    ToolbarItem(placement: .topBarTrailing) { sortMenu }
+                    ToolbarItem(placement: .topBarTrailing) { filterMenu }
+                } else {
+                    // The same two buttons, opening the paywall (D-050).
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { showPaywall = true } label: {
+                            Label("Sort", systemImage: "arrow.up.arrow.down")
+                        }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { showPaywall = true } label: {
+                            Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+                        }
+                    }
+                }
             }
         }
     }

@@ -52,16 +52,18 @@ struct RouteWarriorApp: App {
         }
         let mapSettings = MapSettings(googleAvailable: MapSettings.googleAvailable(hasKey: !key.isEmpty))
         _mapSettings = State(initialValue: mapSettings)
+        let store = StoreService()
+        _store = State(initialValue: store)
         let pipeline = RecordingPipeline(
             context: ModelContext(container),
             providers: providers,
             preference: { mapSettings.provider },
             arrivalStop: { mapSettings.stopOnArrival },
+            tier: { store.tier },
+            policy: store.policy,
             logStorage: Self.isTestHost ? nil : UserDefaults.standard
         )
         _pipeline = State(initialValue: pipeline)
-        let store = StoreService()
-        _store = State(initialValue: store)
         let ghostRace = GhostRaceCoordinator(
             context: ModelContext(container),
             presenter: Self.isTestHost ? nil : LiveActivityPresenter(),

@@ -6,7 +6,7 @@ exists, why, and what the previous sessions learned the hard way. Read
 `CLAUDE.md` first; it is binding. Product rationale is in
 `docs/REQUIREMENTS.md`, `docs/SPEC.md`, `docs/SPEC_IN_APP_MAP.md`,
 `docs/BUILD_PLAN.md`, and every behaviour choice is logged in
-`DECISIONS.md` (D-001…D-049; continue from D-050)._
+`DECISIONS.md` (D-001…D-050; continue from D-051)._
 
 ## Where things stand
 
@@ -111,6 +111,13 @@ analysis surfaces only.
   `BlinkingDot`, and the title is inline so Record shares its line.
 - **D-049**: the app icon is Brian's arrow-and-ghost design (6C),
   installed with light/dark/tinted variants; sources in `design/`.
+- **D-050**: the tier line for submission. Free = Apple comparison, 30
+  days, 2 destinations, basic trip detail; Pro = Google on the
+  scoreboard (`TierPolicy.snapshotProviders`, read per request by the
+  pipeline), all history/destinations, heatmap/trend/race, stops and
+  turns, sort/filter, ghost race, drive view, reroute. $3.99 / $24.99,
+  7-day trial on both. `ProLock` blurs locked analytics; the paywall
+  counts locked data (`LockedDataSummary`).
 - Privacy (D-006) still holds: no accounts, no LawtonCorp server; the
   privacy label is "Data Not Collected"; do not add network calls
   casually. Pro gates analysis only (D-008, D-015); D-017 forces Pro on

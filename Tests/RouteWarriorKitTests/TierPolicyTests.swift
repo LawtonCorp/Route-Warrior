@@ -32,4 +32,27 @@ struct TierPolicyTests {
         #expect(!policy.ghostRaceAvailable(for: .free))
         #expect(policy.ghostRaceAvailable(for: .pro))
     }
+
+    // MARK: D-050
+
+    /// The free tier never asks Google: it is the one call that costs.
+    @Test func freeAsksAppleOnlyAndProAsksEveryone() {
+        let both: [PlanSnapshot.Provider] = [.appleMaps, .googleRoutes]
+        #expect(policy.snapshotProviders(for: .free, available: both) == [.appleMaps])
+        #expect(policy.snapshotProviders(for: .pro, available: both) == both)
+        // A keyless build has no Google to withhold.
+        #expect(policy.snapshotProviders(for: .free, available: [.appleMaps]) == [.appleMaps])
+        #expect(policy.snapshotProviders(for: .pro, available: []) == [])
+        #expect(!policy.googleComparisonAvailable(for: .free))
+        #expect(policy.googleComparisonAvailable(for: .pro))
+    }
+
+    @Test func theDeepAnalysisSurfacesArePro() {
+        #expect(!policy.deepAnalyticsAvailable(for: .free))
+        #expect(!policy.fullTripDetailAvailable(for: .free))
+        #expect(!policy.tripOrganizerAvailable(for: .free))
+        #expect(policy.deepAnalyticsAvailable(for: .pro))
+        #expect(policy.fullTripDetailAvailable(for: .pro))
+        #expect(policy.tripOrganizerAvailable(for: .pro))
+    }
 }

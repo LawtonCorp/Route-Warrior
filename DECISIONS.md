@@ -914,3 +914,38 @@ auto-darkened or auto-tinted approximation instead of the designed
 variants, and the designer supplied them); stripping the C2PA
 provenance metadata from the SVGs (it is inert text, and it records
 where the artwork came from).
+
+## D-050 — Free shows this drive against this month; Pro shows every drive from every angle (2026-09-10)
+
+**Chosen**: the tier line for the App Store submission. Free records
+forever, sees the last 30 days and two analyzed destinations, compares
+every drive against Apple's plan, and gets the driven line, the plan
+preview with its turn counts, and "you vs the plan" on each trip. Pro
+adds Google's plan on the scoreboard, all history, every destination,
+the heatmap, the monthly trend and the route race, each trip's stops and
+turns and its way into the destination's analytics, sorting and
+filtering the trip list, and the ghost race, drive view and reroute from
+before. The Google gate is the one with a cost behind it: Apple's
+directions are free to ask for and Google's Routes calls are not, so the
+free tier's marginal cost is now zero and every Pro user is comfortably
+profitable. `TierPolicy.snapshotProviders` decides who is asked at each
+departure and the pipeline reads the tier per request, so a purchase
+takes effect on the next drive without a restart. Locked analytics stay
+on screen, blurred, with one button over them; locked rows show the
+count of what they hold. The paywall counts what is already recorded and
+waiting ("47 drives older than 30 days, 1 more destination to analyze,
+212 stops") from the same policy that does the locking, so it can never
+promise what the gate does not hold. Prices: $3.99 a month, $24.99 a
+year, a 7-day free trial on both, family sharing on. Nothing is ever
+discarded — upgrading opens the past. **Rejected**: capping free
+Google snapshots at a monthly number (more to explain, more to build, and
+a bill that still scales with free users); keeping Google free and
+absorbing the cost (D-008's exposure, real if the app takes off); a
+14-day full-Pro period on install (Brian chose the trial on the
+subscriptions instead — one mechanism, StoreKit's, and no on-device
+clock to reset by reinstalling); gating cross-device sync (two storage
+back ends and a migration at upgrade, for a feature few would notice);
+export as a gate (a new feature, not this release); a tighter free window
+than 30 days or fewer than two destinations (a driver needs a few weeks
+before any of the analytics mean anything, and a gate that closes before
+the value shows is a gate nobody pays to open).

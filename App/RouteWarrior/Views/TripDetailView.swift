@@ -18,6 +18,11 @@ struct TripDetailView: View {
 
     private var trip: Trip? { try? record.trip() }
 
+    /// The map, the times and "you vs the plan" are free; the stops,
+    /// the turns and the way into the destination's analytics are Pro
+    /// (D-050).
+    private var fullDetail: Bool { store.policy.fullTripDetailAvailable(for: store.tier) }
+
     private func snapshot(id: UUID?) -> PlanSnapshot? {
         guard let id else { return nil }
         return allSnapshots.first { $0.id == id }.flatMap { try? $0.snapshot() }
@@ -101,7 +106,7 @@ struct TripDetailView: View {
     private var destinationSection: some View {
         if let place = destinationPlace {
             let rank = DestinationAnalytics.rank(of: place.id, in: places.map(\.id)) ?? 0
-            let allowed = store.policy.canAnalyzeDestination(atRank: rank, tier: store.tier)
+            let allowed = fullDetail && store.policy.canAnalyzeDestination(atRank: rank, tier: store.tier)
             Section {
                 if allowed {
                     NavigationLink {
@@ -120,7 +125,7 @@ struct TripDetailView: View {
             } footer: {
                 Text(allowed
                      ? "Every drive to \(place.name), with each route you have taken and how they compare."
-                     : "Analyzing more destinations is part of Pro.")
+                     : "Comparing every drive to a place is part of Pro.")
             }
         }
     }
@@ -201,7 +206,19 @@ struct TripDetailView: View {
             LabeledContent("Idle", value: Format.duration(record.idleTime))
             if let trip {
                 LabeledContent("Stops", value: "\(trip.stopEvents.count)")
-                LabeledContent("Turns", value: TurnText.summary(TurnCounter.count(for: trip)))
+                if fullDetail {
+                    LabeledContent("Turns", value: TurnText.summary(TurnCounter.count(for: trip)))
+                } else {
+                    Button {
+                        showPaywall = true
+                    } label: {
+                        LabeledContent("Turns") {
+                            Label("Pro", systemImage: "lock.fill")
+                                .foregroundStyle(Theme.pro)
+                        }
+                    }
+                    .tint(.primary)
+                }
             }
             LabeledContent("Recorded", value: record.sourceRaw == "manual" ? "Manually" : "Automatically")
             if plans.isEmpty {
@@ -223,7 +240,16 @@ struct TripDetailView: View {
         }
     }
 
+    @ViewBuilder
     private func stopsSection(_ stops: [StopEvent]) -> some View {
+        if !fullDetail {
+            Section("Stops") {
+                ProLockRow(
+                    title: "\(stops.count) stop\(stops.count == 1 ? "" : "s") on this drive",
+                    detail: "Each one, with its kind and how long, is part of Pro."
+                ) { showPaywall = true }
+            }
+        } else {
         Section("Stops") {
             ForEach(Array(stops.enumerated()), id: \.offset) { _, stop in
                 HStack {
@@ -239,6 +265,7 @@ struct TripDetailView: View {
                         .monospacedDigit()
                 }
             }
+        }
         }
     }
 

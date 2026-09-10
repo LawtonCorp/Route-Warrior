@@ -109,10 +109,14 @@ with enough recorded trips. These come verbatim from the product brief:
 ### Monetization (free + Pro subscription, StoreKit 2)
 
 - **FR-16**: Free: unlimited recording, last-30-days history, analytics on 2
-  saved destinations. Pro (monthly/annual; prices set at M5): unlimited
-  history and destinations, ghost race, full verdict/trend analytics.
-  Recording is never gated — data keeps accruing so upgrading is instantly
-  valuable. Enforced on-device via TierPolicy; no server.
+  saved destinations, the Apple comparison on every drive, the plan
+  preview and "you vs the plan" per trip. Pro ($3.99/month or
+  $24.99/year, 7-day free trial on both): Google's plan on the
+  scoreboard, unlimited history and destinations, heatmap/trend/route
+  race, each trip's stops and turns, trip sorting and filtering, the
+  ghost race, drive view and reroute (D-050). Recording is never gated —
+  data keeps accruing so upgrading is instantly valuable, and the paywall
+  counts what is waiting. Enforced on-device via TierPolicy; no server.
 - **FR-17**: Paywall + restore purchases; family sharing on.
 
 ### Onboarding & trust
