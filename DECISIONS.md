@@ -868,3 +868,29 @@ into the list (a button in a list row is a row, and the point of the
 nav bar was a button that costs no rows); a Live-Activity-style elapsed
 counter beside "Rec" (D-046's reasoning stands: a clock on a list row is
 a redraw a second for a number the drive view already shows).
+
+## D-048 — The icon is a driver with a mane, not a map (2026-09-10)
+
+**Chosen**: the app icon becomes a cartoon portrait: a grinning driver
+in sunglasses at the wheel of a red car, both hands on a complete
+steering wheel, under a huge single-colour orange cloud of curls, on a
+plain blue sky with the door and sill closing the bottom of the frame.
+Brian asked for "a cartoon character with crazy hair driving their car",
+and the D-017 route diagram, honest as it was, was a chart on the home
+screen. The art is vector, drawn as SVG and kept in `design/AppIcon.svg`
+so it can be re-rendered or edited; the 1024×1024 PNG in the asset
+catalog is a headless-Chromium screenshot of it. The crop is tight and
+the palette is six colours (ink, skin, hair, car red, sky, wheel grey)
+because the icon is read at 60 points: the sunglasses, the grin, the
+mane, the wheel and the red door are what survive. The wheel is drawn
+whole, face-on, with three spokes and two hands, because a wheel seen
+edge-on through a side window did not say "driving". **Rejected**: the
+first draft — a whole convertible in side view with a five-colour spiked
+mane, a sun and a dashed road (too busy to read on a phone; at
+home-screen size the character was a dot on a car); the second — a
+side-window view with a spiked magenta mane and a partial wheel behind
+the pillar (the wheel did not read, so neither did the driving); curls
+flying loose off the mane (they read as bubbles); a raster illustration
+from an image model (nothing in this environment generates one, and an
+SVG can be changed by hand); rounded corners baked into the PNG (iOS
+masks the icon itself, and a pre-rounded file shows a dark rim).
