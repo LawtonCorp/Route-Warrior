@@ -1,8 +1,11 @@
 # Design sources
 
-`AppIcon.svg` is the source of the app icon (D-048). To re-render the
-1024×1024 PNG the asset catalog needs, screenshot it with headless
-Chromium at a 1024×1024 window (Playwright's `headless_shell` works;
-`--window-size=1024,1024 --screenshot=AppIcon.png file://…/AppIcon.svg`),
-then replace `App/RouteWarrior/Assets.xcassets/AppIcon.appiconset/AppIcon.png`.
-iOS rounds the corners itself; the source stays square.
+The app icon is Brian's "design 6C": a yellow navigation arrow with a
+violet ghost arrow behind it, on a near-black ground (D-049). The three
+SVGs here are the sources for the light, dark and tinted variants; the
+1024×1024 PNGs in `App/RouteWarrior/Assets.xcassets/AppIcon.appiconset/`
+are their exports, declared with iOS 18 `appearances` in that folder's
+`Contents.json` so Xcode builds every size from them.
+
+Colours: ground #0e0e10, ghost arrow #7674f1, arrow #f1c40f. iOS rounds
+the corners itself; the sources stay square.
