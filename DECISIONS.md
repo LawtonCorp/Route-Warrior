@@ -1117,3 +1117,21 @@ advisory — MapKit and URLSession answer anyway — so the answer still
 had to be checked on arrival); fetching the pick's plan even when the
 guess already covered that place (a plan from a later point is a later
 baseline, and the earlier one is the honest one).
+
+## D-056 — The armed caption says what it means, not how it works (2026-09-10)
+
+**Chosen**: while the recorder is armed — motion says "car", GPS has
+not yet confirmed sustained driving, up to thirty seconds — the Plan
+tab's recorder row reads "Drive detected — recording starts on its
+own". Brian asked what the old line ("confirming you're on the road")
+was for; the answer is that the arming window is the one time the
+screen would otherwise be silent while the Record button is still
+showing, and the row's job is to say the button need not be tapped.
+The old words described the mechanism; the new ones describe the
+driver's part, which is nothing. **Rejected**: removing the row (a
+silent screen with a Record button on it invites the tap the row
+exists to prevent, and D-046's reasoning — thirty seconds of "drive
+detected" is how a driver learns to trust auto-detection — still
+holds); folding the state into the Record button as a pulsing
+"Detecting…" (a button that says it is detecting reads as a button to
+tap, the opposite of the message).

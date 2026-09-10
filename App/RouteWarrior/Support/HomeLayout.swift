@@ -19,4 +19,13 @@ enum HomeLayout {
     static func showsRecorderRow(_ state: TripRecorder.State) -> Bool {
         state != .idle
     }
+
+    /// The words on the recorder row (D-056). Armed says what it means
+    /// for the driver — nothing to do — not how the recorder works.
+    static func recorderCaption(_ state: TripRecorder.State) -> String {
+        switch state {
+        case .recording: "Rec"
+        default: "Drive detected — recording starts on its own"
+        }
+    }
 }

@@ -19,4 +19,13 @@ final class HomeLayoutTests: XCTestCase {
         XCTAssertTrue(HomeLayout.showsRecorderRow(.armed))
         XCTAssertTrue(HomeLayout.showsRecorderRow(.recording))
     }
+
+    func testTheArmedCaptionSaysWhatItMeansForTheDriver() {
+        // D-056: no mechanism talk; the driver has nothing to do.
+        XCTAssertEqual(HomeLayout.recorderCaption(.recording), "Rec")
+        let armed = HomeLayout.recorderCaption(.armed)
+        XCTAssertTrue(armed.hasPrefix("Drive detected"))
+        XCTAssertTrue(armed.contains("on its own"))
+        XCTAssertFalse(armed.lowercased().contains("confirming"))
+    }
 }
