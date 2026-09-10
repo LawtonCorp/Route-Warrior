@@ -69,14 +69,6 @@ final class DrivePlanner {
         was && !now && hasDestination
     }
 
-    /// D-045: one way to start a drive at a time. Record stays on the
-    /// status card while there is no destination (and as Stop while
-    /// recording); once a destination is chosen, Go under the plans is
-    /// the only start button.
-    nonisolated static func showsRecordButton(hasDestination: Bool, recording: Bool) -> Bool {
-        recording || !hasDestination
-    }
-
     /// The plan drawn on the chosen map surface (D-022 §9.2).
     func plan(on surface: PlanSnapshot.Provider) -> PlanSnapshot? {
         plans.first { $0.provider == surface }
