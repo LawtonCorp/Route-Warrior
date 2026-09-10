@@ -79,15 +79,29 @@ struct LegalDocumentView: View {
     }
 }
 
-/// Shown once per new Terms version to an install that accepted an
-/// older one (D-053). Recording is not paused by it: the recorder runs
-/// in the background whatever the root shows.
+/// Shown once to an install that has not accepted the current Terms
+/// (D-053, D-054): an install that accepted an older version is told
+/// they changed; one that never accepted any (it onboarded before the
+/// Terms existed) is simply asked to read them.
 struct TermsUpdateView: View {
     @AppStorage(Legal.acceptedTermsKey) private var acceptedTerms = ""
     @State private var reading = false
 
-    private var effective: String? {
-        Legal.bundled(.terms)?.effectiveDate.map { $0.formatted(date: .long, time: .omitted) }
+    /// The words for this install (D-054).
+    nonisolated static func copy(previouslyAccepted: String?, effective: String?) -> (title: String, body: String) {
+        let changed = !(previouslyAccepted ?? "").isEmpty
+        let title = changed ? "The Terms of Use have changed" : "Before you drive on"
+        let dated = effective.map { ", effective " + $0 } ?? ""
+        var body = changed
+            ? "The new Terms take effect " + (effective ?? "now") + "."
+            : "Route Rebel has a Terms of Use and a Privacy Policy" + dated + "."
+        body += " Please read them; continuing means you agree to both."
+        return (title, body)
+    }
+
+    private var effective: String? { Legal.bundled(.terms)?.effectiveDateText }
+    private var words: (title: String, body: String) {
+        Self.copy(previouslyAccepted: acceptedTerms, effective: effective)
     }
 
     var body: some View {
@@ -98,11 +112,10 @@ struct TermsUpdateView: View {
                 .foregroundStyle(Theme.route)
                 .frame(width: 136, height: 136)
                 .background(Theme.route.opacity(0.12), in: Circle())
-            Text("The Terms of Use have changed")
+            Text(words.title)
                 .font(.title.bold())
                 .multilineTextAlignment(.center)
-            Text(effective.map { "The new Terms take effect \($0). Please read them; continuing means you agree to them and to the Privacy Policy." }
-                ?? "Please read the new Terms; continuing means you agree to them and to the Privacy Policy.")
+            Text(words.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 24)

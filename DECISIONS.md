@@ -1067,3 +1067,27 @@ wall on every launch until accepted (D-015: the screen appears once,
 and continuing is the acceptance); silently re-accepting on behalf of
 existing installs (they agreed to nothing yet — the Terms did not exist
 when they onboarded).
+
+## D-054 — A trip row says where it went, and the Terms screen knows who it is talking to (2026-09-10)
+
+**Chosen**: two fixes from Brian's first look at #52–#54 on the phone.
+The Trips list's first line is the journey — "Home → School", or
+"→ School" when only the destination is a saved place — with the date
+moved to the second line beside the distance and the delta; a trip with
+no saved place on either end keeps the date on the first line, as
+before. A list of dates with durations did not say which drive was
+which. The Terms screen now has two voices: an install that accepted an
+older version reads "The Terms of Use have changed" with the new
+effective date; an install that never accepted any — every install
+that onboarded before D-051, and nobody after launch — reads "Before
+you drive on" and is simply asked to read the documents, because
+nothing changed for them. The effective date is rendered as the
+document writes it ("10 September 2026") from the document's own
+calendar day; formatting a UTC midnight in Denver had shown the day
+before. **Rejected**: the destination alone as the first line (the
+origin is one word and turns "School" into a journey); a "To" prefix
+("To School") instead of the arrow (the arrow is what the Plan tab and
+the trip detail already draw); showing the journey on a variant's
+drives too (every drive on a variant shares one journey, which the
+section header already names); dropping the update screen for
+pre-D-051 installs (they agreed to nothing yet).

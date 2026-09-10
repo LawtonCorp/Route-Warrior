@@ -155,4 +155,11 @@ struct LegalDocument: Equatable {
     var versionKey: String? {
         effectiveDate.map { LegalMarkdown.versionFormatter.string(from: $0) }
     }
+
+    /// The effective date as the document writes it ("10 September
+    /// 2026"), in the document's own calendar day — never shifted by the
+    /// phone's time zone (D-054).
+    var effectiveDateText: String? {
+        effectiveDate.map { LegalMarkdown.dayFormatter.string(from: $0) }
+    }
 }

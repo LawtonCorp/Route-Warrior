@@ -88,6 +88,7 @@ final class LegalTests: XCTestCase {
         let document = LegalDocument(markdown: markdown)
         XCTAssertEqual(document.title, "Title")
         XCTAssertEqual(document.versionKey, "2027-03-03")
+        XCTAssertEqual(document.effectiveDateText, "3 March 2027", "the day the document names, in any time zone")
         XCTAssertEqual(document.blocks, [
             .paragraph("_Effective date: 3 March 2027._"),
             .heading(level: 2, text: "1. First"),
@@ -98,5 +99,18 @@ final class LegalTests: XCTestCase {
         ])
         XCTAssertEqual(LegalMarkdown.stripComments("a <!-- x --> b <!-- unterminated"), "a  b ")
         XCTAssertNil(LegalDocument(markdown: "# T\n\nno date here").effectiveDate)
+    }
+
+    func testTheTermsScreenSpeaksToNewAndUpdatedInstallsDifferently() {
+        // D-054: an install that never accepted any Terms is not told they changed.
+        let fresh = TermsUpdateView.copy(previouslyAccepted: "", effective: "10 September 2026")
+        XCTAssertEqual(fresh.title, "Before you drive on")
+        XCTAssertFalse(fresh.body.contains("changed"))
+        XCTAssertTrue(fresh.body.contains("10 September 2026"))
+        let updated = TermsUpdateView.copy(previouslyAccepted: "2026-01-01", effective: "10 September 2026")
+        XCTAssertEqual(updated.title, "The Terms of Use have changed")
+        XCTAssertTrue(updated.body.contains("take effect 10 September 2026"))
+        let undated = TermsUpdateView.copy(previouslyAccepted: nil, effective: nil)
+        XCTAssertFalse(undated.body.contains("effective"))
     }
 }
