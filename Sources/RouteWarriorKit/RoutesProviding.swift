@@ -24,8 +24,14 @@ public enum GoogleRoutes {
     }
 
     /// Field mask the client requests — parsing expects exactly these.
-    public static let fieldMask =
-        "routes.distanceMeters,routes.duration,routes.staticDuration,routes.polyline.encodedPolyline"
+    public static let fieldMask = [
+        "routes.distanceMeters", "routes.duration", "routes.staticDuration",
+        "routes.polyline.encodedPolyline",
+        // The maneuvers, for in-app guidance (D-052). Step fields do not
+        // change the Compute Routes SKU; TRAFFIC_AWARE already sets it.
+        "routes.legs.steps.distanceMeters", "routes.legs.steps.polyline.encodedPolyline",
+        "routes.legs.steps.navigationInstruction",
+    ].joined(separator: ",")
 
     public static func snapshot(
         fromResponseData data: Data,
@@ -54,7 +60,8 @@ public enum GoogleRoutes {
             alternates.append(.init(
                 polyline: altPolyline,
                 staticDuration: altStatic,
-                trafficDuration: altTraffic
+                trafficDuration: altTraffic,
+                steps: steps(of: route)
             ))
         }
 
@@ -65,8 +72,28 @@ public enum GoogleRoutes {
             distanceM: primary.distanceMeters ?? polyline.lengthMeters,
             staticDuration: stat,
             trafficDuration: traffic,
-            alternates: alternates
+            alternates: alternates,
+            steps: steps(of: primary)
         )
+    }
+
+    /// Every leg's steps in order. A step without a decodable line is
+    /// skipped: guidance can live without one joint, and a plan with no
+    /// usable steps at all simply has no guidance.
+    private static func steps(of route: Route) -> [PlanStep] {
+        (route.legs ?? []).flatMap { leg in
+            (leg.steps ?? []).compactMap { step -> PlanStep? in
+                guard let encoded = step.polyline?.encodedPolyline,
+                      let polyline = Polyline.decode(encoded)
+                else { return nil }
+                return PlanStep(
+                    instruction: step.navigationInstruction?.instructions ?? "",
+                    polyline: polyline,
+                    distanceM: step.distanceMeters ?? polyline.lengthMeters,
+                    maneuver: step.navigationInstruction?.maneuver.map(Maneuver.init(googleName:))
+                )
+            }
+        }
     }
 
     /// Google encodes durations as decimal seconds with an "s" suffix
@@ -87,6 +114,22 @@ public enum GoogleRoutes {
         var duration: String?
         var staticDuration: String?
         var polyline: EncodedPolyline?
+        var legs: [Leg]?
+    }
+
+    private struct Leg: Decodable {
+        var steps: [Step]?
+    }
+
+    private struct Step: Decodable {
+        var distanceMeters: Double?
+        var polyline: EncodedPolyline?
+        var navigationInstruction: NavigationInstruction?
+    }
+
+    private struct NavigationInstruction: Decodable {
+        var maneuver: String?
+        var instructions: String?
     }
 
     private struct EncodedPolyline: Decodable {

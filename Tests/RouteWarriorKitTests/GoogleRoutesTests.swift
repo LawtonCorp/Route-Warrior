@@ -23,7 +23,26 @@ struct GoogleRoutesTests {
               "distanceMeters": 9214,
               "duration": "723s",
               "staticDuration": "674s",
-              "polyline": { "encodedPolyline": "\(docPolyline)" }
+              "polyline": { "encodedPolyline": "\(docPolyline)" },
+              "legs": [
+                {
+                  "steps": [
+                    {
+                      "distanceMeters": 120,
+                      "polyline": { "encodedPolyline": "\(docPolyline)" },
+                      "navigationInstruction": { "maneuver": "DEPART", "instructions": "Head north on Main St" }
+                    },
+                    {
+                      "distanceMeters": 9094,
+                      "polyline": { "encodedPolyline": "\(docPolyline)" },
+                      "navigationInstruction": { "maneuver": "TURN_LEFT", "instructions": "Turn left onto Broadway" }
+                    },
+                    {
+                      "navigationInstruction": { "maneuver": "TURN_RIGHT", "instructions": "no line, dropped" }
+                    }
+                  ]
+                }
+              ]
             },
             {
               "distanceMeters": 9950,
@@ -54,6 +73,22 @@ struct GoogleRoutesTests {
         // No staticDuration on the alternate: falls back to traffic.
         #expect(snapshot.alternates[0].trafficDuration == 800.5)
         #expect(snapshot.alternates[0].staticDuration == 800.5)
+
+        // D-052: the steps, with Google's own maneuver class; a step
+        // without a line is dropped, an alternate without legs has none.
+        #expect(snapshot.steps.count == 2)
+        #expect(snapshot.steps[0].maneuver == .depart)
+        #expect(snapshot.steps[0].distanceM == 120)
+        #expect(snapshot.steps[1].instruction == "Turn left onto Broadway")
+        #expect(snapshot.steps[1].resolvedManeuver == .left)
+        #expect(snapshot.steps[1].polyline.coordinates == docCoordinates)
+        #expect(snapshot.alternates[0].steps.isEmpty)
+    }
+
+    @Test func fieldMaskAsksForTheStepsItParses() {
+        for field in ["routes.legs.steps.navigationInstruction", "routes.legs.steps.polyline.encodedPolyline", "routes.polyline.encodedPolyline"] {
+            #expect(GoogleRoutes.fieldMask.split(separator: ",").map(String.init).contains(field))
+        }
     }
 
     @Test func rejectsResponsesWithoutRoutes() {

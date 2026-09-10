@@ -19,6 +19,10 @@ final class MapSettings {
     /// End a planned drive on arrival (D-038). On by default: a trip
     /// that ends at the kerb is what the comparison wants.
     private(set) var stopOnArrival: Bool
+    /// Turn-by-turn on the drive view (D-052): the maneuver banner, and
+    /// the voice. Both on by default; the voice can be silenced alone.
+    private(set) var guidance: Bool
+    private(set) var guidanceVoice: Bool
     let availableProviders: [MapProvider]
 
     private let defaults: UserDefaults
@@ -26,6 +30,8 @@ final class MapSettings {
     private static let autoRerouteKey = "autoReroute"
     private static let appleMapsNavigationKey = "navigateWithAppleMaps"
     private static let stopOnArrivalKey = "stopOnArrival"
+    private static let guidanceKey = "guidance"
+    private static let guidanceVoiceKey = "guidanceVoice"
 
     init(defaults: UserDefaults = .standard, googleAvailable: Bool) {
         self.defaults = defaults
@@ -38,6 +44,10 @@ final class MapSettings {
         // Unset reads as true — bool(forKey:) alone would read as false.
         stopOnArrival = defaults.object(forKey: MapSettings.stopOnArrivalKey) == nil
             || defaults.bool(forKey: MapSettings.stopOnArrivalKey)
+        guidance = defaults.object(forKey: MapSettings.guidanceKey) == nil
+            || defaults.bool(forKey: MapSettings.guidanceKey)
+        guidanceVoice = defaults.object(forKey: MapSettings.guidanceVoiceKey) == nil
+            || defaults.bool(forKey: MapSettings.guidanceVoiceKey)
     }
 
     func select(_ provider: MapProvider) {
@@ -59,6 +69,16 @@ final class MapSettings {
     func setStopOnArrival(_ on: Bool) {
         stopOnArrival = on
         defaults.set(on, forKey: Self.stopOnArrivalKey)
+    }
+
+    func setGuidance(_ on: Bool) {
+        guidance = on
+        defaults.set(on, forKey: Self.guidanceKey)
+    }
+
+    func setGuidanceVoice(_ on: Bool) {
+        guidanceVoice = on
+        defaults.set(on, forKey: Self.guidanceVoiceKey)
     }
 
     /// Google mode needs both a key and the Google map surface.

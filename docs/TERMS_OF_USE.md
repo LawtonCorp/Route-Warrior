@@ -18,11 +18,16 @@ routes and arrival estimates that mapping providers offered at the time
 you left. It counts things about those drives — stops, signals, turns,
 time — and shows you patterns in your own history.
 
-**The App is not a navigation, safety or driver-assistance product.** It
-does not give driving instructions, does not warn you about hazards, and
-does not know the conditions of the road you are on. When the App hands
-a destination to Apple Maps, the directions you then follow are Apple's,
-under Apple's terms, not ours.
+**The App is not a safety or driver-assistance product.** It does not
+warn you about hazards and does not know the conditions of the road you
+are on. Route Rebel Pro can show and speak turn-by-turn directions on the
+drive view. Those directions are built from route data supplied by Apple
+or Google at the moment you left, or when you asked for a new route;
+they are estimates, they can be wrong, late, out of date or impossible
+to follow safely, and they never override a road sign, a signal, a
+traffic law or your own judgement. You decide every manoeuvre. When the
+App hands a destination to Apple Maps, the directions you then follow
+are Apple's, under Apple's terms, not ours.
 
 The "ghost race", the scoreboard and every "beat the plan" comparison are
 records of how long past drives took. They are not an invitation, a

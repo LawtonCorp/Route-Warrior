@@ -87,6 +87,10 @@ targets:
           so recording is hands-free.
         UIBackgroundModes:
           - location
+          # Spoken turn-by-turn (D-052) must play with the screen locked
+          # or another app in front; activating the audio session in the
+          # background needs this mode.
+          - audio
         # Injected at build time (scripts/device-build.sh); empty in CI, so
         # CI builds run keyless and trips show "no comparison".
         GoogleRoutesAPIKey: $(ROUTEWARRIOR_ROUTES_KEY)

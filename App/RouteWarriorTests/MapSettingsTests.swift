@@ -75,4 +75,18 @@ final class MapSettingsTests: XCTestCase {
         settings.setStopOnArrival(true)
         XCTAssertTrue(MapSettings(defaults: defaults, googleAvailable: true).stopOnArrival)
     }
+
+    func testGuidanceAndItsVoiceAreOnUntilSwitchedOff() throws {
+        // D-052: unset reads as on, like stop-on-arrival.
+        let (defaults, cleanup) = try freshDefaults()
+        defer { cleanup() }
+        let settings = MapSettings(defaults: defaults, googleAvailable: true)
+        XCTAssertTrue(settings.guidance)
+        XCTAssertTrue(settings.guidanceVoice)
+        settings.setGuidanceVoice(false)
+        settings.setGuidance(false)
+        let again = MapSettings(defaults: defaults, googleAvailable: true)
+        XCTAssertFalse(again.guidance)
+        XCTAssertFalse(again.guidanceVoice)
+    }
 }

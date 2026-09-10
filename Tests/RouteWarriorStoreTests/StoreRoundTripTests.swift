@@ -137,6 +137,44 @@ struct StoreRoundTripTests {
         #expect(try SnapshotRecord(snapshot).snapshot() == snapshot)
     }
 
+    @Test func snapshotRecordDropsTheStepsAndKeepsTheRest() throws {
+        // D-052: steps are for the drive, not the record.
+        let step = PlanStep(
+            instruction: "Turn left onto Broadway",
+            polyline: Polyline(coordinates: [
+                Coordinate(latitude: 41.9, longitude: -87.6),
+                Coordinate(latitude: 41.91, longitude: -87.6),
+            ]),
+            distanceM: 1_100
+        )
+        var snapshot = PlanSnapshot(
+            requestedAt: t0,
+            polyline: Polyline(coordinates: [
+                Coordinate(latitude: 41.9, longitude: -87.6),
+                Coordinate(latitude: 41.92, longitude: -87.63),
+            ]),
+            distanceM: 9_100,
+            staticDuration: 840,
+            trafficDuration: 960,
+            alternates: [.init(
+                polyline: Polyline(coordinates: [
+                    Coordinate(latitude: 41.9, longitude: -87.6),
+                    Coordinate(latitude: 41.93, longitude: -87.61),
+                ]),
+                staticDuration: 900,
+                trafficDuration: 990,
+                steps: [step]
+            )],
+            steps: [step, step]
+        )
+        let restored = try SnapshotRecord(snapshot).snapshot()
+        #expect(restored.steps.isEmpty)
+        #expect(restored.alternates[0].steps.isEmpty)
+        snapshot.steps = []
+        snapshot.alternates[0].steps = []
+        #expect(restored == snapshot)
+    }
+
     @Test func corruptTripBlobThrowsInsteadOfCrashing() throws {
         let record = try TripRecord(makeTrip())
         record.pointsBlob = Data("not json".utf8)

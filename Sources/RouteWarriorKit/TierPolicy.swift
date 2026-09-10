@@ -60,6 +60,12 @@ public struct TierPolicy: Sendable {
         tier == .pro
     }
 
+    /// Turn-by-turn on the drive view — the banner and the voice (D-052).
+    /// It lives on the drive view, so it goes where the drive view goes.
+    public func guidanceAvailable(for tier: Tier) -> Bool {
+        driveViewAvailable(for: tier)
+    }
+
     // MARK: D-050 — free shows this drive against this month; Pro shows
     // every drive from every angle. Nothing is ever discarded.
 

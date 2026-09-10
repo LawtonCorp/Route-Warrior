@@ -978,3 +978,56 @@ button is the accepted form of assent for a consumer app); bundling the
 Terms as an in-app screen instead of a link (two copies to keep in step,
 and Apple wants a URL in metadata anyway); an arbitration clause (a
 choice with real trade-offs for the lawyer, not a default to ship).
+
+## D-052 — Turn-by-turn on the phone, from the plan's own steps (2026-09-10)
+
+**Chosen**: Route Rebel guides the drive itself, on the drive view, for
+Pro. The steps come with the plan: Apple's `MKRoute.steps` (words, a
+line and a distance each) and Google's `legs.steps` (the same plus a
+maneuver class) ride on the departure snapshot as `PlanSnapshot.steps`,
+so the guidance follows the exact line the drive is judged against — it
+cannot disagree with the scoreboard because it is the same object, and
+it cannot move the baseline because it never writes to it (D-010). The
+kit's `GuidanceEngine` places the car on the concatenated step lines,
+names the maneuver at the end of the current step with its distance,
+and makes each callout once at one mile, half a mile, a quarter mile,
+500 feet and at the turn (metric equivalents for metric locales), and
+only on a step long enough to hold the callout, so "in half a mile" is
+never said on a step that is 0.4 miles long. A GPS gap plays the nearest
+due callout and spends the ones it skipped. Progress is monotonic along
+the line. Apple gives no maneuver class, so the kit reads the arrow from
+the words after cutting the road name off ("Turn right onto Left Hand
+Canyon Drive" is a right). The voice is the system synthesizer as a
+voice prompt that ducks whatever is playing and releases it when the
+sentence ends; with CarPlay or Bluetooth connected the phone's audio is
+the car's, so the callouts reach the speakers without any entitlement.
+The `audio` background mode is added so the callouts play with the
+screen locked. Leaving the plan hides the maneuver banner (the drive
+view already says "Off the plan — your way"); when a reroute lands the
+guide follows the reroute's steps while the scoreboard and the verdict
+stay on the departure plan (D-022: a reroute is a second line). Two
+settings, both on by default: the banner, and the voice alone. The
+Apple Maps hand-off (D-034) stays as the way to put guidance on the
+CarPlay screen, which nothing here can reach. Steps are never persisted:
+the store strips them, and a snapshot written before this decision
+decodes with none. The Terms of Use §1 now say the App gives directions
+and what they are worth; the lawyer's read (D-051) must cover that
+paragraph. **Rejected**: Google's Navigation SDK (a full guidance UI,
+but a heavy binary, Google's map only while guiding, a terms dialog of
+its own, per-destination billing after the first thousand a month, its
+own claim on the location and audio sessions beside the recorder, and
+it still needs Apple's CarPlay navigation entitlement for the car
+screen — it solves the part that was cheap to build and not the part
+that is Apple's to grant); keeping the hand-off as the only guidance
+(leaving the drive view, and the scoreboard with it, at the moment a
+driver following the plan most wants to see how the plan is doing);
+lane guidance and speed limits (neither provider gives them to a third
+party); a maneuver icon from Apple's words without cutting the road
+name (a street called Left Hand Canyon Drive would read as a left);
+persisting steps on the snapshot record (a CloudKit row does not need
+the words, and their lines would double it); speaking the callouts
+through the ghost-race Live Activity instead (a Live Activity has no
+audio, and the lock screen already shows the ghost race); applying for
+Apple's navigation entitlement now (nothing to apply with until this
+ships; with it shipped, the app is on paper a turn-by-turn app, and the
+application can be made after launch, without holding it).
