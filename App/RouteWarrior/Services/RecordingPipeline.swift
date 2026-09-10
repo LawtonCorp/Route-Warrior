@@ -37,6 +37,11 @@ final class RecordingPipeline {
     /// The in-flight departure snapshot fetch; exposed so tests (and the
     /// UI, if it cares) can await it.
     private(set) var snapshotFetch: Task<Void, Never>?
+    /// Which departure the in-flight fetch belongs to (D-055). A plan
+    /// that lands after the driver named a destination, after the drive
+    /// ended, or after a newer request began is not this drive's and is
+    /// dropped: the map draws one destination, the one the driver chose.
+    private var snapshotGeneration = 0
 
     private var recorder: TripRecorder
     private let context: ModelContext
@@ -159,11 +164,22 @@ final class RecordingPipeline {
             recorderState = recorder.state
             samplesThisSegment = 0
         }
+        // The driver named the destination: any guess still being fetched
+        // for an auto-detected start is superseded (D-055).
+        supersedePendingFetch()
         pendingSnapshots = snapshots
         predictOnFirstSample = false
         arrivalDetector.reset()
         lastOutcome = "Recording (planned)"
         note("Recording started from the plan screen with \(snapshots.count) plan(s)")
+    }
+
+    /// A newer intent replaces whatever fetch was in flight: its answer,
+    /// when it lands, is checked against the generation and dropped.
+    private func supersedePendingFetch() {
+        snapshotGeneration += 1
+        snapshotFetch?.cancel()
+        snapshotFetch = nil
     }
 
     /// D-044: the driver tapped Go while the plans were still loading.
@@ -173,6 +189,7 @@ final class RecordingPipeline {
     /// that already carries plans keeps them (D-010: never replaced).
     func adoptDeparturePlans(_ snapshots: [PlanSnapshot]) {
         guard isRecording, pendingSnapshots.isEmpty, !snapshots.isEmpty else { return }
+        supersedePendingFetch()
         pendingSnapshots = snapshots
         arrivalDetector.reset()
         note("\(snapshots.count) plan(s) arrived after departure and became the baseline")
@@ -331,12 +348,14 @@ final class RecordingPipeline {
 
     private func beginSnapshotFetch(departure: Date) {
         guard !snapshotProviders.isEmpty, let originPoint = recorder.liveTrack.first else { return }
+        snapshotGeneration += 1
+        let generation = snapshotGeneration
         snapshotFetch = Task { [weak self] in
-            await self?.fetchSnapshots(originPoint: originPoint, departure: departure)
+            await self?.fetchSnapshots(originPoint: originPoint, departure: departure, generation: generation)
         }
     }
 
-    private func fetchSnapshots(originPoint: TrackPoint, departure: Date) async {
+    private func fetchSnapshots(originPoint: TrackPoint, departure: Date, generation: Int) async {
         do {
             let places = try context.fetch(FetchDescriptor<PlaceRecord>()).map { $0.place() }
             let origin = RouteMatcher.place(containing: originPoint.coordinate, in: places)
@@ -358,7 +377,7 @@ final class RecordingPipeline {
             }
             for targetID in targets {
                 guard let place = places.first(where: { $0.id == targetID }) else { continue }
-                await fetchAllPlans(from: originPoint.coordinate, to: place, label: place.name)
+                await fetchAllPlans(from: originPoint.coordinate, to: place, label: place.name, generation: generation)
             }
         } catch {
             // No comparison for this trip — recording is never blocked
@@ -366,12 +385,17 @@ final class RecordingPipeline {
         }
     }
 
-    private func fetchAllPlans(from origin: Coordinate, to place: Place, label: String) async {
+    private func fetchAllPlans(from origin: Coordinate, to place: Place, label: String, generation: Int) async {
         for provider in snapshotProviders {
             guard let client = providers[provider] else { continue }
-            if let snapshot = try? await client.computeSnapshot(
+            let snapshot = try? await client.computeSnapshot(
                 from: origin, to: place.coordinate, destinationPlaceID: place.id
-            ) {
+            )
+            guard generation == snapshotGeneration else {
+                note("\(provider.displayName) plan for \(label) arrived after the destination changed — dropped")
+                return
+            }
+            if let snapshot {
                 pendingSnapshots.append(snapshot)
                 note("\(provider.displayName) plan fetched for \(label): ETA \(Format.duration(snapshot.trafficDuration))")
             } else {
@@ -382,23 +406,37 @@ final class RecordingPipeline {
 
     /// The one-tap pick (FR-6): fetch every provider's plan for a
     /// destination the user named, from wherever the drive currently is.
-    /// No-op when idle or with no provider.
+    /// The named destination replaces any guess (D-055): plans for other
+    /// places are dropped, and a plan already held for this place is
+    /// kept rather than fetched again from a later point. No-op when
+    /// idle or with no provider.
     func requestSnapshot(to placeID: UUID) {
         guard recorderState == .recording, !snapshotProviders.isEmpty,
               let position = recorder.liveTrack.last
         else { return }
+        supersedePendingFetch()
+        pendingSnapshots.removeAll { $0.destinationPlaceID != placeID }
+        guard pendingSnapshots.isEmpty else {
+            note("Destination confirmed; keeping the plan already fetched for it")
+            return
+        }
+        let generation = snapshotGeneration
         snapshotFetch = Task { [weak self] in
             guard let self else { return }
             guard let place = try? self.context.fetch(FetchDescriptor<PlaceRecord>())
                 .first(where: { $0.id == placeID })?.place()
             else { return }
-            await self.fetchAllPlans(from: position.coordinate, to: place, label: "\(place.name) (your pick)")
+            await self.fetchAllPlans(
+                from: position.coordinate, to: place, label: "\(place.name) (your pick)", generation: generation
+            )
         }
     }
 
     private func clearPendingSnapshots() {
         pendingSnapshots.removeAll()
-        snapshotFetch = nil
+        // A plan still in flight for a drive that has ended belongs to
+        // no drive (D-055).
+        supersedePendingFetch()
         predictOnFirstSample = false
     }
 
