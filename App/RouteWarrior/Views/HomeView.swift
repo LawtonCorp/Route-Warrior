@@ -320,9 +320,14 @@ struct HomeView: View {
     /// The Go button never waits for the providers (D-044): while they
     /// are still being asked, the footer says the plan will catch up.
     private var goFooter: String {
-        let base = mapSettings.navigateWithAppleMaps
-            ? "Recording starts now, then Apple Maps takes over for turn-by-turn — on CarPlay too. Route Rebel keeps recording in the background, and the plan you left with stays the baseline."
-            : "Recording starts now. Whatever plan you leave with is the baseline the drive is judged against. The live drive view and reroute are part of Pro; the trip records and compares either way."
+        let base = switch mapSettings.navigation {
+        case .appleMaps:
+            "Recording starts now, then Apple Maps takes over for turn-by-turn — on CarPlay too. Route Rebel keeps recording in the background, and the plan you left with stays the baseline."
+        case .googleMaps:
+            "Recording starts now, then Google Maps takes over for turn-by-turn — on CarPlay too. Google Maps chooses its own route; the plan you left with stays the baseline, and Route Rebel keeps recording in the background."
+        case .off:
+            "Recording starts now. Whatever plan you leave with is the baseline the drive is judged against. The live drive view and reroute are part of Pro; the trip records and compares either way."
+        }
         return planner.loading
             ? "Plans are still loading. Go now and they become the baseline when they arrive. " + base
             : base
@@ -508,9 +513,15 @@ struct HomeView: View {
         // sends the driver to another app, and the drive still has to be
         // recorded and compared.
         pipeline.startPlannedDrive(with: planner.plans)
-        if mapSettings.navigateWithAppleMaps, let destination = planner.destination,
-           AppleMapsHandoff.navigate(to: destination.coordinate, named: destination.name) {
-            return
+        if let destination = planner.destination {
+            switch mapSettings.navigation {
+            case .appleMaps:
+                if AppleMapsHandoff.navigate(to: destination.coordinate, named: destination.name) { return }
+            case .googleMaps:
+                if GoogleMapsHandoff.navigate(to: destination.coordinate) { return }
+            case .off:
+                break
+            }
         }
         if store.policy.driveViewAvailable(for: store.tier) {
             showDrive = true

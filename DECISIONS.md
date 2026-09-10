@@ -1135,3 +1135,31 @@ detected" is how a driver learns to trust auto-detection — still
 holds); folding the state into the Record button as a pulsing
 "Detecting…" (a button that says it is detecting reads as a button to
 tap, the opposite of the message).
+
+## D-057 — Go can hand the destination to Google Maps too (2026-09-10)
+
+**Chosen**: the Apple Maps toggle (D-034) becomes a choice — Navigate
+with: Off, Apple Maps, Google Maps. Google Maps is reached through
+Google's published Maps URL (`/maps/dir/?api=1&destination=lat,lng
+&travelmode=driving&dir_action=navigate`), a universal link that opens
+the Google Maps app straight into navigation when it is installed and
+the browser's directions page when it is not, so there is no scheme to
+declare and nothing to detect. Field evidence: Brian runs Google Maps
+on his CarPlay screen, and Route Rebel's Google plan was not the route
+the car showed — because nothing had been handed to Google Maps at all.
+What the hand-off carries is the destination, not the route: Google
+Maps chooses its own, which is usually the route Route Rebel
+snapshotted a moment earlier and is not guaranteed to be; the snapshot
+stays the baseline (D-010), so the verdict is the same whichever route
+the car screen draws. An install that had the old toggle on keeps
+Apple Maps. **Rejected**: steering Google Maps onto the snapshot with a
+via point (Google Maps treats a waypoint as a stop, announces arriving
+there, and the link's waypoints are "may be ignored", so the route
+could still differ and the driver would hear a phantom arrival); the
+`comgooglemaps://` scheme with `canOpenURL` (needs an
+`LSApplicationQueriesSchemes` entry and a fallback of its own, for the
+same result the universal link gives); Google's Navigation SDK (D-052:
+a heavy binary and Google's map only while guiding, and it would still
+not reach the CarPlay screen without Apple's entitlement); handing off
+to whichever navigation app the car is showing (CarPlay does not tell
+an app that, and D-034 rejected guessing).

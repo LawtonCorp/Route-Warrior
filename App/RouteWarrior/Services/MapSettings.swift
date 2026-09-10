@@ -13,9 +13,10 @@ final class MapSettings {
 
     private(set) var provider: MapProvider
     private(set) var autoReroute: Bool
-    /// Hand the destination to Apple Maps at departure (D-034), which is
-    /// what puts turn-by-turn on CarPlay.
-    private(set) var navigateWithAppleMaps: Bool
+    /// Hand the destination to a navigation app at departure (D-034,
+    /// D-057): Apple Maps puts turn-by-turn on CarPlay; Google Maps does
+    /// the same for drivers who run Google Maps on the car screen.
+    private(set) var navigation: NavigationHandoff
     /// End a planned drive on arrival (D-038). On by default: a trip
     /// that ends at the kerb is what the comparison wants.
     private(set) var stopOnArrival: Bool
@@ -28,7 +29,10 @@ final class MapSettings {
     private let defaults: UserDefaults
     private static let providerKey = "mapProvider"
     private static let autoRerouteKey = "autoReroute"
-    private static let appleMapsNavigationKey = "navigateWithAppleMaps"
+    private static let navigationKey = "navigationHandoff"
+    /// The pre-D-057 toggle, read once so an install that chose Apple
+    /// Maps keeps it.
+    private static let legacyAppleMapsKey = "navigateWithAppleMaps"
     private static let stopOnArrivalKey = "stopOnArrival"
     private static let guidanceKey = "guidance"
     private static let guidanceVoiceKey = "guidanceVoice"
@@ -40,7 +44,12 @@ final class MapSettings {
             .flatMap(MapProvider.init(rawValue:)) ?? MapProvider.default
         provider = availableProviders.contains(stored) ? stored : MapProvider.default
         autoReroute = defaults.bool(forKey: MapSettings.autoRerouteKey)
-        navigateWithAppleMaps = defaults.bool(forKey: MapSettings.appleMapsNavigationKey)
+        if let stored = defaults.string(forKey: MapSettings.navigationKey),
+           let handoff = NavigationHandoff(rawValue: stored) {
+            navigation = handoff
+        } else {
+            navigation = defaults.bool(forKey: MapSettings.legacyAppleMapsKey) ? .appleMaps : .off
+        }
         // Unset reads as true — bool(forKey:) alone would read as false.
         stopOnArrival = defaults.object(forKey: MapSettings.stopOnArrivalKey) == nil
             || defaults.bool(forKey: MapSettings.stopOnArrivalKey)
@@ -61,9 +70,9 @@ final class MapSettings {
         defaults.set(on, forKey: Self.autoRerouteKey)
     }
 
-    func setNavigateWithAppleMaps(_ on: Bool) {
-        navigateWithAppleMaps = on
-        defaults.set(on, forKey: Self.appleMapsNavigationKey)
+    func setNavigation(_ handoff: NavigationHandoff) {
+        navigation = handoff
+        defaults.set(handoff.rawValue, forKey: Self.navigationKey)
     }
 
     func setStopOnArrival(_ on: Bool) {

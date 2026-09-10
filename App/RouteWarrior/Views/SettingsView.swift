@@ -60,11 +60,15 @@ struct SettingsView: View {
                         settingsLabel("Spoken directions", symbol: "speaker.wave.2.fill", color: Theme.route)
                     }
                     .disabled(!store.policy.guidanceAvailable(for: store.tier) || !mapSettings.guidance)
-                    Toggle(isOn: Binding(
-                        get: { mapSettings.navigateWithAppleMaps },
-                        set: { mapSettings.setNavigateWithAppleMaps($0) }
+                    Picker(selection: Binding(
+                        get: { mapSettings.navigation },
+                        set: { mapSettings.setNavigation($0) }
                     )) {
-                        settingsLabel("Navigate with Apple Maps", symbol: "arrow.triangle.turn.up.right.circle.fill", color: Theme.win)
+                        ForEach(NavigationHandoff.allCases, id: \.self) { handoff in
+                            Text(handoff.label).tag(handoff)
+                        }
+                    } label: {
+                        settingsLabel("Navigate with", symbol: "arrow.triangle.turn.up.right.circle.fill", color: Theme.win)
                     }
                 } header: {
                     Text("Map")
@@ -171,9 +175,15 @@ struct SettingsView: View {
         lines.append(store.policy.guidanceAvailable(for: store.tier)
             ? "Turn-by-turn shows the next maneuver above the scoreboard and speaks it, through the car's speakers when the phone is connected. It follows the plan you left with, then a reroute if you ask for one; the verdict is always against the plan you left with."
             : "Turn-by-turn on the drive view is part of Pro.")
-        lines.append(mapSettings.navigateWithAppleMaps
-            ? "Go hands the destination to Apple Maps for turn-by-turn, which is what puts guidance on the CarPlay screen. Route Rebel keeps recording in the background."
-            : "Turn on Apple Maps navigation to get guidance on the CarPlay screen at departure; Route Rebel keeps recording either way.")
+        let navigationLine = switch mapSettings.navigation {
+        case .appleMaps:
+            "Go hands the destination to Apple Maps for turn-by-turn, which is what puts guidance on the CarPlay screen. Route Rebel keeps recording in the background."
+        case .googleMaps:
+            "Go hands the destination to Google Maps for turn-by-turn, on the CarPlay screen when Google Maps is your car's navigation app. Google Maps chooses its own route, usually the one Route Rebel shows; the plan you left with stays the baseline, and Route Rebel keeps recording in the background."
+        case .off:
+            "Choose Apple Maps or Google Maps to get guidance on the CarPlay screen at departure; Route Rebel keeps recording either way."
+        }
+        lines.append(navigationLine)
         return lines.joined(separator: " ")
     }
 
