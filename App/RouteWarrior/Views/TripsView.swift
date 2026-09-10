@@ -26,6 +26,11 @@ struct TripsView: View {
 
     private var isFiltered: Bool { destinationFilter != nil || outcome != .any }
 
+    private func placeName(_ id: UUID?) -> String? {
+        guard let id else { return nil }
+        return places.first { $0.id == id }?.name
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -90,7 +95,12 @@ struct TripsView: View {
         NavigationLink {
             TripDetailView(record: record)
         } label: {
-            TripRowView(record: record, deltaSeconds: record.etaDeltaSeconds(in: snapshots))
+            TripRowView(
+                record: record,
+                deltaSeconds: record.etaDeltaSeconds(in: snapshots),
+                originName: placeName(record.originPlaceID),
+                destinationName: placeName(record.destinationPlaceID)
+            )
         }
     }
 
@@ -145,15 +155,40 @@ struct TripsView: View {
     }
 }
 
-/// One trip in a list: how it went against the ETA, at a glance.
+/// One trip in a list: where it went and how it went against the ETA,
+/// at a glance (D-054). The first line is the journey when its places
+/// are known ("Home → School"), otherwise the date; the date then rides
+/// on the second line with the distance and the delta.
 struct TripRowView: View {
     let record: TripRecord
     /// Actual duration minus the provider's ETA (see
     /// `TripRecord.etaDeltaSeconds`); nil when the trip has no comparison.
     var deltaSeconds: Double? = nil
+    /// The saved places' names, when the list knows them. A variant's
+    /// drives all share one journey, so that list passes none.
+    var originName: String? = nil
+    var destinationName: String? = nil
 
     private var tone: TripTone {
         .forTrip(deltaSeconds: deltaSeconds, excluded: record.excludedFromStats)
+    }
+
+    /// "Home → School", "→ School", or nil when neither place is saved.
+    nonisolated static func journey(origin: String?, destination: String?) -> String? {
+        let from = origin?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let to = destination?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        switch (from.isEmpty, to.isEmpty) {
+        case (false, false): return "\(from) → \(to)"
+        case (true, false): return "→ \(to)"
+        case (false, true): return "\(from) → …"
+        case (true, true): return nil
+        }
+    }
+
+    private var journey: String? { Self.journey(origin: originName, destination: destinationName) }
+
+    private var dateText: Text {
+        Text(record.startedAt, format: .dateTime.weekday(.abbreviated).month().day().hour().minute())
     }
 
     var body: some View {
@@ -165,13 +200,22 @@ struct TripRowView: View {
                 .background(tone.color.opacity(0.14), in: Circle())
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    Text(record.startedAt, format: .dateTime.weekday(.abbreviated).month().day().hour().minute())
-                        .font(.subheadline)
+                    if let journey {
+                        Text(journey)
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                    } else {
+                        dateText
+                            .font(.subheadline)
+                    }
                     Spacer()
                     Text(Format.duration(record.endedAt.timeIntervalSince(record.startedAt)))
                         .font(.subheadline.monospacedDigit())
                 }
                 HStack(spacing: 8) {
+                    if journey != nil {
+                        dateText
+                    }
                     Text(Format.distance(record.distanceM))
                     if record.excludedFromStats {
                         Text("excluded")
