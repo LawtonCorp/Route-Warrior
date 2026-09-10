@@ -42,21 +42,32 @@ final class MapSettingsTests: XCTestCase {
         XCTAssertEqual(MapSettings.googleAvailable(hasKey: true), MapSettings.googleSurfaceAvailable)
     }
 
-    /// D-034: off until asked for. Turning it on must survive a relaunch,
-    /// or the driver re-chooses it every trip.
-    func testAppleMapsNavigationIsOffUntilChosenAndThenPersists() throws {
+    /// D-034/D-057: off until asked for. The choice must survive a
+    /// relaunch, or the driver re-chooses it every trip.
+    func testTheNavigationHandoffIsOffUntilChosenAndThenPersists() throws {
         let (defaults, cleanup) = try freshDefaults()
         defer { cleanup() }
 
         let settings = MapSettings(defaults: defaults, googleAvailable: true)
-        XCTAssertFalse(settings.navigateWithAppleMaps)
+        XCTAssertEqual(settings.navigation, .off)
 
-        settings.setNavigateWithAppleMaps(true)
-        XCTAssertTrue(settings.navigateWithAppleMaps)
-        XCTAssertTrue(MapSettings(defaults: defaults, googleAvailable: true).navigateWithAppleMaps)
+        settings.setNavigation(.googleMaps)
+        XCTAssertEqual(settings.navigation, .googleMaps)
+        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .googleMaps)
 
-        settings.setNavigateWithAppleMaps(false)
-        XCTAssertFalse(MapSettings(defaults: defaults, googleAvailable: true).navigateWithAppleMaps)
+        settings.setNavigation(.off)
+        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .off)
+    }
+
+    /// An install that switched on the old Apple Maps toggle keeps Apple
+    /// Maps; one that never did starts off.
+    func testTheOldAppleMapsToggleCarriesOver() throws {
+        let (defaults, cleanup) = try freshDefaults()
+        defer { cleanup() }
+        defaults.set(true, forKey: "navigateWithAppleMaps")
+        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .appleMaps)
+        defaults.set("googleMaps", forKey: "navigationHandoff")
+        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .googleMaps, "the new key wins")
     }
 
     /// D-038: on until switched off — a drive that ends at the kerb is
