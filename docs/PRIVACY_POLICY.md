@@ -1,6 +1,6 @@
 # Route Rebel Privacy Policy
 
-_Draft — host at a public URL before submission and set the effective date._
+_Draft — served at https://routerebel.app/privacy; set the effective date before submission._
 
 Route Rebel is built so that we — LawtonCorp — cannot see your data at
 all. There are no accounts, no analytics SDKs, no advertising identifiers,

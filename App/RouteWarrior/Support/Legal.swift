@@ -9,8 +9,8 @@ enum Legal {
     /// the Terms change and the app asks for acceptance again.
     static let termsVersion = "2026-09-10"
 
-    static let termsURL = URL(string: "https://lawtoncorp.com/route-rebel/terms")!
-    static let privacyURL = URL(string: "https://lawtoncorp.com/route-rebel/privacy")!
+    static let termsURL = URL(string: "https://routerebel.app/terms")!
+    static let privacyURL = URL(string: "https://routerebel.app/privacy")!
 
     /// The AppStorage key holding the accepted Terms version.
     static let acceptedTermsKey = "acceptedTermsVersion"

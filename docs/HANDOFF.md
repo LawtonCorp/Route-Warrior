@@ -86,8 +86,9 @@ Work top to bottom — later items depend on earlier ones.
 1. Host the privacy policy (docs/PRIVACY_POLICY.md) **and the Terms of
    Use (docs/TERMS_OF_USE.md)** at public URLs, and make them match the
    two constants in `App/RouteWarrior/Support/Legal.swift`
-   (`https://lawtoncorp.com/route-rebel/terms` and `/privacy` — change
-   the constants if you host elsewhere). Apple's guideline 3.1.2 requires
+   (`https://routerebel.app/terms` and `https://routerebel.app/privacy`,
+   served by the marketing site — change the constants if you host
+   elsewhere). Apple's guideline 3.1.2 requires
    working links to both inside an app that sells subscriptions; the app
    shows them in Settings → About, on the paywall, and under onboarding's
    first Continue. In App Store Connect set the privacy URL in App
