@@ -121,7 +121,9 @@ analysis surfaces only.
 - **D-051**: Terms of Use (`docs/TERMS_OF_USE.md`, liability-first,
   with Apple's custom-EULA clauses). Links in Settings, the paywall and
   onboarding come from `Legal`; onboarding's Continue records
-  `acceptedTermsVersion`. Both documents must be hosted before
+  `acceptedTermsVersion`. Both documents are served by the marketing
+  site at `routerebel.app/terms` and `/privacy` (Next.js on Vercel,
+  DNS on Cloudflare, separate repo); they must be live before
   submission (HANDOFF §5).
 - Privacy (D-006) still holds: no accounts, no LawtonCorp server; the
   privacy label is "Data Not Collected"; do not add network calls

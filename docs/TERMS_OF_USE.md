@@ -1,7 +1,7 @@
 # Route Rebel Terms of Use
 
-_Effective date: 10 September 2026. Host this at a public URL before
-submission, keep `Legal.termsURL` in the app pointing at it, and have a
+_Effective date: 10 September 2026. Served at https://routerebel.app/terms
+(keep `Legal.termsURL` in the app pointing there), and have a
 lawyer licensed in your state review it before the app goes live. This
 draft was written without legal advice; it is a starting point, not a
 substitute for counsel._
