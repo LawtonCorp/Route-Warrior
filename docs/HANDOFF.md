@@ -63,10 +63,17 @@ Work top to bottom — later items depend on earlier ones.
 1. In App Store Connect create the subscription group "Route Rebel Pro"
    and two auto-renewable products matching
    `App/RouteWarrior/RouteWarrior.storekit` exactly:
-   `com.lawtoncorp.routewarrior.pro.monthly` and
-   `com.lawtoncorp.routewarrior.pro.annual`, with your chosen prices
-   (the .storekit placeholders are $2.99 / $19.99).
-2. Sandbox-test purchase, restore, and cancellation on-device.
+   `com.lawtoncorp.routewarrior.pro.monthly` at **$3.99/month** and
+   `com.lawtoncorp.routewarrior.pro.annual` at **$24.99/year** (D-050).
+   On each product add an **Introductory Offer**: type *Free*, duration
+   *1 week*, all countries, no end date. The paywall reads the offer from
+   StoreKit and writes "7 days free, then $24.99 per year" by itself;
+   nothing in the app hard-codes a price. Turn Family Sharing on for
+   both.
+2. Sandbox-test purchase, restore, and cancellation on-device, and check
+   that the trial appears on the paywall rows (a sandbox account that has
+   already used a trial will not be offered one again — make a fresh
+   sandbox tester if the line is missing).
 3. **Your own Pro unlock (D-017)**: add `ROUTEWARRIOR_FORCE_PRO=1` to
    `scripts/signing.local` and re-run `./scripts/device-build.sh` — your
    builds report Pro without a subscription. Comment it out when you want

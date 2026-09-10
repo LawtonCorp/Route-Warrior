@@ -245,12 +245,20 @@ struct HomeView: View {
             // Plans arrived, but not from the provider whose map is on
             // screen. Say so instead of showing an empty map, and show
             // what did come back.
-            Label(
-                "\(surface.displayName) returned no plan for this trip. Settings → Recorder log says why.",
-                systemImage: "exclamationmark.triangle.fill"
-            )
-            .font(.footnote)
-            .foregroundStyle(Theme.google)
+            if surface == .googleRoutes, !store.policy.googleComparisonAvailable(for: store.tier) {
+                // Not a failure: Google's plan is the Pro comparison (D-050).
+                ProLockRow(
+                    title: "Google's plan is part of Pro",
+                    detail: "Apple's plan is your baseline for now. Pro puts Google on the scoreboard too."
+                ) { showPaywall = true }
+            } else {
+                Label(
+                    "\(surface.displayName) returned no plan for this trip. Settings → Recorder log says why.",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.footnote)
+                .foregroundStyle(Theme.google)
+            }
             planRow(
                 title: "\(other.provider.displayName)'s plan",
                 eta: other.trafficDuration,

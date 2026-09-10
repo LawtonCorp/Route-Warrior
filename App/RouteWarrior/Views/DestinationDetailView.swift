@@ -9,8 +9,14 @@ import SwiftUI
 /// trend — all computed by kit engines over this destination's history.
 struct DestinationDetailView: View {
     @Environment(\.modelContext) private var context
+    @Environment(StoreService.self) private var store
     let place: PlaceRecord
     @State private var overpass = OverpassServiceHolder()
+    @State private var showPaywall = false
+
+    /// The verdict card is free; the heatmap, the trend and the route
+    /// race are Pro (D-050), shown blurred so the shape is visible.
+    private var deepLocked: Bool { !store.policy.deepAnalyticsAvailable(for: store.tier) }
 
     @Query private var allTrips: [TripRecord]
     @Query private var allVariants: [VariantRecord]
@@ -44,6 +50,7 @@ struct DestinationDetailView: View {
             trendSection
         }
         .navigationTitle(place.name)
+        .sheet(isPresented: $showPaywall) { PaywallView() }
         .task {
             for variant in variants {
                 await overpass.service.fetchInventoryIfMissing(for: variant, context: context)
@@ -166,11 +173,18 @@ struct DestinationDetailView: View {
     private var variantsSection: some View {
         let race = self.race
         return Section {
-            if race.routes.count >= 2 {
+            if deepLocked {
+                ProLockRow(
+                    title: race.routes.count >= 2
+                        ? "\(race.routes.count) of your routes, raced"
+                        : "Your routes, raced against each other",
+                    detail: "Which of your own ways here is faster, with the signals, stop signs and turns on each — part of Pro."
+                ) { showPaywall = true }
+            } else if race.routes.count >= 2 {
                 routesMap(race)
             }
-            headToHead(race)
-            ForEach(Array(race.routes.enumerated()), id: \.element.id) { rank, route in
+            if !deepLocked { headToHead(race) }
+            ForEach(Array((deepLocked ? [] : race.routes).enumerated()), id: \.element.id) { rank, route in
                 if let record = recordsByID[route.id] {
                     NavigationLink {
                         VariantDetailView(variant: record)
@@ -179,14 +193,14 @@ struct DestinationDetailView: View {
                     }
                 }
             }
-            if race.routes.isEmpty {
+            if race.routes.isEmpty, !deepLocked {
                 Text("No routes yet. They appear once a drive here is matched to one.")
                     .foregroundStyle(.secondary)
             }
         } header: {
             Text("Your routes")
         } footer: {
-            if race.routes.count >= 2 {
+            if race.routes.count >= 2, !deepLocked {
                 Text("Each route is coloured to match its line on the map. Tap one to name it and see its drives.")
             }
         }
@@ -284,6 +298,18 @@ struct DestinationDetailView: View {
 
     private var heatmapSection: some View {
         Section {
+            ProLock(locked: deepLocked, title: "Your best hours — Pro", onUnlock: { showPaywall = true }) {
+                heatmapBody
+            }
+        } header: {
+            Text("By day and time (median)")
+        } footer: {
+            Text("Minutes. Green is your fastest slot, orange the slowest.")
+        }
+    }
+
+    @ViewBuilder
+    private var heatmapBody: some View {
             let matrix = StatsEngine.weekdayBucketMatrix(for: trips)
             if matrix.isEmpty {
                 Text("Not enough trips yet.").foregroundStyle(.secondary)
@@ -316,11 +342,6 @@ struct DestinationDetailView: View {
                 }
                 .padding(.vertical, 4)
             }
-        } header: {
-            Text("By day and time (median)")
-        } footer: {
-            Text("Minutes. Green is your fastest slot, orange the slowest.")
-        }
     }
 
     private func heatCell(_ stats: StatsEngine.DurationStats?, best: Double, worst: Double) -> some View {
@@ -350,6 +371,14 @@ struct DestinationDetailView: View {
 
     private var trendSection: some View {
         Section("Month over month (median)") {
+            ProLock(locked: deepLocked, title: "Month over month — Pro", onUnlock: { showPaywall = true }) {
+                trendBody
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var trendBody: some View {
             let trend = StatsEngine.monthlyTrend(for: trips)
             if trend.count < 2 {
                 Text("Trends appear after a second month of driving.")
@@ -366,7 +395,6 @@ struct DestinationDetailView: View {
                 .frame(height: 160)
                 .padding(.vertical, 4)
             }
-        }
     }
 }
 

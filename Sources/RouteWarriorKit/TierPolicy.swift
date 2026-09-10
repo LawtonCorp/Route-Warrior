@@ -59,4 +59,41 @@ public struct TierPolicy: Sendable {
     public func rerouteAvailable(for tier: Tier) -> Bool {
         tier == .pro
     }
+
+    // MARK: D-050 — free shows this drive against this month; Pro shows
+    // every drive from every angle. Nothing is ever discarded.
+
+    /// Google's plan on the scoreboard. Apple's directions are free to
+    /// ask for; Google's cost per call, so the free tier compares against
+    /// Apple and Pro puts Google on the board too.
+    public func googleComparisonAvailable(for tier: Tier) -> Bool {
+        tier == .pro
+    }
+
+    /// Which providers to ask at departure, out of those the build can
+    /// reach: everything for Pro, everything but Google for free.
+    public func snapshotProviders(
+        for tier: Tier,
+        available: [PlanSnapshot.Provider]
+    ) -> [PlanSnapshot.Provider] {
+        googleComparisonAvailable(for: tier) ? available : available.filter { $0 != .googleRoutes }
+    }
+
+    /// A destination's day-by-hour heatmap, monthly trend and route race.
+    /// The verdict card stays free.
+    public func deepAnalyticsAvailable(for tier: Tier) -> Bool {
+        tier == .pro
+    }
+
+    /// A trip's stops list, turn counts and the way into its
+    /// destination's analytics. The map, the times and "you vs the plan"
+    /// stay free.
+    public func fullTripDetailAvailable(for tier: Tier) -> Bool {
+        tier == .pro
+    }
+
+    /// Sorting and filtering the trip list.
+    public func tripOrganizerAvailable(for tier: Tier) -> Bool {
+        tier == .pro
+    }
 }
