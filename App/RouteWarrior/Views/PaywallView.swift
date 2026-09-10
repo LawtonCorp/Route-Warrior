@@ -102,6 +102,8 @@ struct PaywallView: View {
                             if store.tier == .pro { dismiss() }
                         }
                     }
+                    Link("Terms of Use", destination: Legal.termsURL)
+                    Link("Privacy Policy", destination: Legal.privacyURL)
                 }
             }
             .navigationTitle("Go Pro")

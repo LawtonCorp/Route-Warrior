@@ -6,7 +6,7 @@ exists, why, and what the previous sessions learned the hard way. Read
 `CLAUDE.md` first; it is binding. Product rationale is in
 `docs/REQUIREMENTS.md`, `docs/SPEC.md`, `docs/SPEC_IN_APP_MAP.md`,
 `docs/BUILD_PLAN.md`, and every behaviour choice is logged in
-`DECISIONS.md` (D-001…D-050; continue from D-051)._
+`DECISIONS.md` (D-001…D-051; continue from D-052)._
 
 ## Where things stand
 
@@ -118,6 +118,11 @@ analysis surfaces only.
   turns, sort/filter, ghost race, drive view, reroute. $3.99 / $24.99,
   7-day trial on both. `ProLock` blurs locked analytics; the paywall
   counts locked data (`LockedDataSummary`).
+- **D-051**: Terms of Use (`docs/TERMS_OF_USE.md`, liability-first,
+  with Apple's custom-EULA clauses). Links in Settings, the paywall and
+  onboarding come from `Legal`; onboarding's Continue records
+  `acceptedTermsVersion`. Both documents must be hosted before
+  submission (HANDOFF §5).
 - Privacy (D-006) still holds: no accounts, no LawtonCorp server; the
   privacy label is "Data Not Collected"; do not add network calls
   casually. Pro gates analysis only (D-008, D-015); D-017 forces Pro on

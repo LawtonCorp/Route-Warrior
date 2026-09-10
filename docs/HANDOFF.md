@@ -83,8 +83,18 @@ Work top to bottom — later items depend on earlier ones.
 
 ## 5. App Store submission (M6)
 
-1. Host the privacy policy (docs/PRIVACY_POLICY.md) at a public URL and set
-   it in App Store Connect.
+1. Host the privacy policy (docs/PRIVACY_POLICY.md) **and the Terms of
+   Use (docs/TERMS_OF_USE.md)** at public URLs, and make them match the
+   two constants in `App/RouteWarrior/Support/Legal.swift`
+   (`https://lawtoncorp.com/route-rebel/terms` and `/privacy` — change
+   the constants if you host elsewhere). Apple's guideline 3.1.2 requires
+   working links to both inside an app that sells subscriptions; the app
+   shows them in Settings → About, on the paywall, and under onboarding's
+   first Continue. In App Store Connect set the privacy URL in App
+   Information, and paste the Terms into **App Information → License
+   Agreement → Custom** (it includes the Apple clauses a custom EULA must
+   carry, §14). Have a lawyer read the Terms first; the draft says so at
+   the top.
 2. App Privacy questionnaire: since the Google map (M8) the app links
    the Google Maps SDK, which declares its own collection, so "Data Not
    Collected" no longer applies. Do this once from the archive: Xcode →

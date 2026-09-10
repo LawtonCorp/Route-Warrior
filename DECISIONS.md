@@ -949,3 +949,32 @@ export as a gate (a new feature, not this release); a tighter free window
 than 30 days or fewer than two destinations (a driver needs a few weeks
 before any of the analytics mean anything, and a gate that closes before
 the value shows is a gate nobody pays to open).
+
+## D-051 — Terms of Use: the driver drives, the App records (2026-09-10)
+
+**Chosen**: a Terms of Use (`docs/TERMS_OF_USE.md`) written to put every
+consequence of driving where it belongs — on the driver. It says in plain
+words that the App is not a navigation, safety or driver-assistance
+product, that the ghost race and every "beat the plan" comparison are
+records of past drives and not an invitation to make up time, that the
+driver agrees to obey the law and never touch the phone while moving,
+and that every number the App shows is an estimate from consumer GPS and
+third-party data. Then the standard machinery: no warranty, a liability
+cap at the greater of twelve months' payments and ten dollars, an
+indemnity for the driver's own conduct, Colorado law and Denver venue
+(flagged for the lawyer to confirm), and the clauses Apple requires in a
+custom EULA so the same text can be pasted into App Store Connect. In the
+app, `Legal` holds the two URLs and the Terms version; Settings → About,
+the paywall and onboarding all link both documents, because Apple's
+guideline 3.1.2 demands working links wherever a subscription is sold;
+onboarding's first Continue carries "By continuing you agree…" and
+records the accepted version, so a future change to the Terms can ask
+again. The draft says at the top that it was written without legal
+advice and must be reviewed by a lawyer before launch. **Rejected**:
+relying on Apple's standard EULA alone (it protects Apple and licenses
+the software; it says nothing about driving); a modal "I agree" wall on
+first launch (D-015 rejected hard walls, and continuing past a labelled
+button is the accepted form of assent for a consumer app); bundling the
+Terms as an in-app screen instead of a link (two copies to keep in step,
+and Apple wants a URL in metadata anyway); an arbitration clause (a
+choice with real trade-offs for the lawyer, not a default to ship).
