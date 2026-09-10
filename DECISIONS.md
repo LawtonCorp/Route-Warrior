@@ -852,6 +852,23 @@ keeping it); an elapsed-time counter on the recorder row (the drive view
 has one, and a ticking clock on a list row is a redraw a second for a
 number nobody is watching from the Plan tab).
 
+## D-047 — The recorder row is its own card, blinks, and Record sits on the title line (2026-09-10)
+
+**Chosen**: three fixes from the first look at D-046 on a phone. The
+recorder row moves out of the map's section into its own, so it is a
+card with a gap above it rather than a strip glued to the map's bottom
+edge. "Recording" becomes "Rec" beside a tally light — a dot that
+switches between full and near-off every half second while recording,
+in place of the symbol pulse, which on a filled glyph was too subtle to
+read as a state. The title goes inline, so the nav-bar Record button
+sits on the same line as "Route Rebel" instead of floating above a
+large title; that also returns the large title's height to the field
+and the map. **Rejected**: keeping the large title and moving Record
+into the list (a button in a list row is a row, and the point of the
+nav bar was a button that costs no rows); a Live-Activity-style elapsed
+counter beside "Rec" (D-046's reasoning stands: a clock on a list row is
+a redraw a second for a number the drive view already shows).
+
 ## D-048 — The icon is a driver with a mane, not a map (2026-09-10)
 
 **Chosen**: the app icon becomes a cartoon: a grinning driver in

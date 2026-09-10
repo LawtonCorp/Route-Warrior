@@ -156,3 +156,23 @@ extension View {
         )
     }
 }
+
+/// A tally light: a dot that blinks while a drive is being recorded, the
+/// way a camera's does. Blinking, not pulsing — a glyph fading in place
+/// reads as a rendering hiccup, a dot switching on and off reads as
+/// "recording" from across the car.
+struct BlinkingDot: View {
+    let color: Color
+    var size: CGFloat = 12
+    @State private var lit = true
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: size, height: size)
+            .opacity(lit ? 1 : 0.15)
+            .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: lit)
+            .onAppear { lit = false }
+            .accessibilityLabel("Recording")
+    }
+}
