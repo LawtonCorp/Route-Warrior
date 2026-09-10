@@ -1091,3 +1091,29 @@ the trip detail already draw); showing the journey on a variant's
 drives too (every drive on a variant shares one journey, which the
 section header already names); dropping the update screen for
 pre-D-051 installs (they agreed to nothing yet).
+
+## D-055 — One destination per drive: a named destination supersedes the guess (2026-09-10)
+
+**Chosen**: the pipeline stamps every plan fetch with a generation, and
+a plan that lands after the generation moved on is dropped with a line
+in the recorder log. The generation moves on when the driver names the
+destination (Go on the Plan tab during an auto-detected drive, or the
+"Where are you headed?" pick), when a late departure plan is adopted
+(D-044), and when the drive ends. The pick also replaces: plans for
+other places are removed, and a plan already held for the picked place
+is kept rather than fetched again from a later point. Field evidence:
+the drive started itself, the predictor guessed a destination and asked
+both providers; Brian typed the real destination and tapped Go, which
+replaced the guess — and then the guess's slower answer (Google's, with
+a ten-second timeout) landed and joined the list, so the drive view
+drew two destinations. Guesses are what the app does when it has not
+been told; once it has been told, a guess is wrong by definition, and
+D-010's rule that the plan you left with is the baseline applies to the
+plan for the destination you are actually going to. **Rejected**:
+drawing only the first plan's destination on the drive view (hides the
+duplicate instead of removing it, and the verdict at arrival could still
+pick the guess); cancelling the fetch task alone (cancellation is
+advisory — MapKit and URLSession answer anyway — so the answer still
+had to be checked on arrival); fetching the pick's plan even when the
+guess already covered that place (a plan from a later point is a later
+baseline, and the earlier one is the honest one).
