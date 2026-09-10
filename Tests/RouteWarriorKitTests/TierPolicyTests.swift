@@ -55,4 +55,11 @@ struct TierPolicyTests {
         #expect(policy.fullTripDetailAvailable(for: .pro))
         #expect(policy.tripOrganizerAvailable(for: .pro))
     }
+
+    @Test func guidanceGoesWhereTheDriveViewGoes() {
+        // D-052: turn-by-turn lives on the drive view, so it is Pro.
+        #expect(!policy.guidanceAvailable(for: .free))
+        #expect(policy.guidanceAvailable(for: .pro))
+        #expect(policy.guidanceAvailable(for: .free) == policy.driveViewAvailable(for: .free))
+    }
 }

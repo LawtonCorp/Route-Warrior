@@ -5,7 +5,9 @@ import UIKit
 /// FR-21/FR-22: the map that follows the car, on the surface the user
 /// chose. That provider's plan is the dashed line; your trail is blue and
 /// turns green the moment you leave the plan; a reroute, if asked for, is
-/// a second line. Nothing here changes the departure snapshot. Pro.
+/// a second line. Turn-by-turn (D-052) sits above the scoreboard and
+/// follows the plan, then the reroute. Nothing here changes the departure
+/// snapshot. Pro.
 struct DriveView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(RecordingPipeline.self) private var pipeline
@@ -14,6 +16,8 @@ struct DriveView: View {
     @Environment(StoreService.self) private var store
 
     @State private var monitor: DriveMonitor?
+    @State private var guide: DriveGuide?
+    @State private var voice: GuidanceVoice?
 
     private var surfaceProvider: PlanSnapshot.Provider { mapSettings.provider.snapshotProvider }
 
@@ -28,6 +32,22 @@ struct DriveView: View {
     }
 
     private var rerouteAllowed: Bool { store.policy.rerouteAvailable(for: store.tier) }
+    private var guidanceOn: Bool { mapSettings.guidance && store.policy.guidanceAvailable(for: store.tier) }
+
+    /// Following a reroute rather than the departure plan.
+    private var guideOnReroute: Bool {
+        guard let guide, let plan else { return false }
+        return guide.following.id != plan.id
+    }
+
+    /// The maneuver to show: while on the plan, or while following a
+    /// reroute; not while off the plan with nothing new to follow.
+    private var shownGuidance: GuidanceEngine.Guidance? {
+        guard guidanceOn, let guide, guide.hasSteps, let guidance = guide.guidance,
+              !isOffPlan || guideOnReroute
+        else { return nil }
+        return guidance
+    }
 
     /// Where the drive stands against the plan, right now (D-035).
     private var board: DriveScoreboard {
@@ -56,7 +76,16 @@ struct DriveView: View {
         ZStack(alignment: .top) {
             MapSurfaceView(scene: scene)
                 .ignoresSafeArea()
-            banner
+            VStack(spacing: 8) {
+                if let shownGuidance {
+                    GuidanceBanner(
+                        guidance: shownGuidance,
+                        distance: guide?.distanceText ?? "",
+                        onReroute: guideOnReroute
+                    )
+                }
+                banner
+            }
         }
         .overlay(alignment: .bottom) { controls }
         .onAppear {
@@ -69,6 +98,19 @@ struct DriveView: View {
         .onChange(of: plan?.id) { syncMonitor() }
         .onChange(of: pipeline.liveTrack.count) {
             monitor?.ingest(track: pipeline.liveTrack, autoReroute: mapSettings.autoReroute && rerouteAllowed)
+            if let last = pipeline.liveTrack.last {
+                guide?.ingest(position: last.coordinate)
+            }
+        }
+        .onChange(of: monitor?.reroute?.id) {
+            // A reroute is a second line (D-022): guidance follows it,
+            // the scoreboard and the verdict keep the departure plan.
+            if let reroute = monitor?.reroute {
+                guide?.follow(reroute)
+            }
+        }
+        .onChange(of: mapSettings.guidanceVoice) {
+            guide?.voiceEnabled = mapSettings.guidanceVoice
         }
         .onChange(of: pipeline.isRecording) {
             if !pipeline.isRecording { dismiss() }
@@ -109,7 +151,7 @@ struct DriveView: View {
         .padding(12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .padding(.horizontal, 12)
-        .padding(.top, 8)
+        .padding(.top, shownGuidance == nil ? 8 : 0)
     }
 
     private var headline: String {
@@ -191,6 +233,7 @@ struct DriveView: View {
     private func syncMonitor() {
         guard let plan else {
             monitor = nil
+            guide = nil
             return
         }
         guard monitor?.plan.id != plan.id else { return }
@@ -198,6 +241,7 @@ struct DriveView: View {
         let provider = plan.provider
         guard let destination = plan.destination else {
             monitor = nil
+            guide = nil
             return
         }
         monitor = DriveMonitor(plan: plan) { position in
@@ -206,5 +250,61 @@ struct DriveView: View {
             )
         }
         monitor?.ingest(track: pipeline.liveTrack, autoReroute: false)
+        let voice = self.voice ?? GuidanceVoice()
+        self.voice = voice
+        let guide = DriveGuide(plan: plan, units: DriveGuide.localUnits(), voice: voice)
+        guide.voiceEnabled = mapSettings.guidanceVoice
+        self.guide = guide
+        if guidanceOn, guide.hasSteps {
+            pipeline.note("Guidance follows \(plan.provider.displayName)'s plan: \(plan.steps.count) steps")
+        }
+        if let last = pipeline.liveTrack.last {
+            guide.ingest(position: last.coordinate)
+        }
+    }
+}
+
+/// The maneuver ahead: arrow, distance, words, and the one after (D-052).
+struct GuidanceBanner: View {
+    let guidance: GuidanceEngine.Guidance
+    let distance: String
+    /// Following a reroute rather than the departure plan.
+    var onReroute = false
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 14) {
+            Image(systemName: ManeuverSymbol.name(for: guidance.maneuver))
+                .font(.system(size: 34, weight: .bold))
+                .frame(width: 44)
+                .foregroundStyle(guidance.arrived ? Theme.win : Theme.route)
+            VStack(alignment: .leading, spacing: 2) {
+                if guidance.arrived {
+                    Text("You have arrived")
+                        .font(.title2.bold())
+                } else {
+                    Text(distance)
+                        .font(.title2.monospacedDigit().bold())
+                    Text(guidance.instruction)
+                        .font(.headline)
+                        .lineLimit(2)
+                }
+                if !guidance.arrived, let then = guidance.then {
+                    Text("Then \(then.instruction)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else if onReroute {
+                    Text("Following the new plan")
+                        .font(.caption)
+                        .foregroundStyle(Theme.pro)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .accessibilityElement(children: .combine)
     }
 }

@@ -35,7 +35,7 @@ struct PaywallView: View {
                         featureRow("mappin.and.ellipse", Theme.win, "Analytics on every destination")
                         featureRow("chart.bar.xaxis", Theme.google, "Heatmaps, trends, and your routes raced")
                         featureRow("octagon.fill", Theme.recording, "Every stop and turn on every drive")
-                        featureRow("flag.checkered", Theme.pro, "The ghost race, live drive view, reroute")
+                        featureRow("flag.checkered", Theme.pro, "The ghost race, live drive view with turn-by-turn, reroute")
                         Text("Recording is always free — your history keeps building either way.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)

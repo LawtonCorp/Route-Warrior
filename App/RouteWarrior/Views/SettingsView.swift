@@ -47,6 +47,20 @@ struct SettingsView: View {
                     }
                     .disabled(!store.policy.rerouteAvailable(for: store.tier))
                     Toggle(isOn: Binding(
+                        get: { mapSettings.guidance },
+                        set: { mapSettings.setGuidance($0) }
+                    )) {
+                        settingsLabel("Turn-by-turn on the drive view", symbol: "arrow.turn.up.right", color: Theme.route)
+                    }
+                    .disabled(!store.policy.guidanceAvailable(for: store.tier))
+                    Toggle(isOn: Binding(
+                        get: { mapSettings.guidanceVoice },
+                        set: { mapSettings.setGuidanceVoice($0) }
+                    )) {
+                        settingsLabel("Spoken directions", symbol: "speaker.wave.2.fill", color: Theme.route)
+                    }
+                    .disabled(!store.policy.guidanceAvailable(for: store.tier) || !mapSettings.guidance)
+                    Toggle(isOn: Binding(
                         get: { mapSettings.navigateWithAppleMaps },
                         set: { mapSettings.setNavigateWithAppleMaps($0) }
                     )) {
@@ -153,9 +167,12 @@ struct SettingsView: View {
         lines.append(store.policy.rerouteAvailable(for: store.tier)
             ? "Automatic reroute asks for a fresh plan when you leave the one you started with. The original plan stays the baseline for the verdict."
             : "Automatic reroute is part of Pro.")
+        lines.append(store.policy.guidanceAvailable(for: store.tier)
+            ? "Turn-by-turn shows the next maneuver above the scoreboard and speaks it, through the car's speakers when the phone is connected. It follows the plan you left with, then a reroute if you ask for one; the verdict is always against the plan you left with."
+            : "Turn-by-turn on the drive view is part of Pro.")
         lines.append(mapSettings.navigateWithAppleMaps
-            ? "Go hands the destination to Apple Maps for turn-by-turn, which is what puts guidance on CarPlay. Route Rebel keeps recording in the background."
-            : "Turn on Apple Maps navigation to get turn-by-turn and CarPlay guidance at departure; Route Rebel keeps recording either way.")
+            ? "Go hands the destination to Apple Maps for turn-by-turn, which is what puts guidance on the CarPlay screen. Route Rebel keeps recording in the background."
+            : "Turn on Apple Maps navigation to get guidance on the CarPlay screen at departure; Route Rebel keeps recording either way.")
         return lines.joined(separator: " ")
     }
 

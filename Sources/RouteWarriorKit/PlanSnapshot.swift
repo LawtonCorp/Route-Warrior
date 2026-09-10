@@ -14,11 +14,33 @@ public struct PlanSnapshot: Sendable, Equatable, Codable, Identifiable {
         public var polyline: Polyline
         public var staticDuration: TimeInterval
         public var trafficDuration: TimeInterval
+        /// The alternate's own maneuvers (D-052), so promoting it keeps
+        /// guidance. In memory only: the store drops them.
+        public var steps: [PlanStep]
 
-        public init(polyline: Polyline, staticDuration: TimeInterval, trafficDuration: TimeInterval) {
+        public init(
+            polyline: Polyline,
+            staticDuration: TimeInterval,
+            trafficDuration: TimeInterval,
+            steps: [PlanStep] = []
+        ) {
             self.polyline = polyline
             self.staticDuration = staticDuration
             self.trafficDuration = trafficDuration
+            self.steps = steps
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case polyline, staticDuration, trafficDuration, steps
+        }
+
+        /// Alternates persisted before D-052 carry no steps.
+        public init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            polyline = try container.decode(Polyline.self, forKey: .polyline)
+            staticDuration = try container.decode(TimeInterval.self, forKey: .staticDuration)
+            trafficDuration = try container.decode(TimeInterval.self, forKey: .trafficDuration)
+            steps = try container.decodeIfPresent([PlanStep].self, forKey: .steps) ?? []
         }
     }
 
@@ -34,6 +56,10 @@ public struct PlanSnapshot: Sendable, Equatable, Codable, Identifiable {
     /// Traffic-aware ETA at the moment of the request.
     public var trafficDuration: TimeInterval
     public var alternates: [AltRoute]
+    /// The maneuvers along the recommended route, for in-app guidance
+    /// (D-052). Held for the drive and never persisted: the verdict needs
+    /// the line and the times, not the words.
+    public var steps: [PlanStep]
 
     /// The provider's traffic assumption: traffic-aware over free-flow time.
     /// 1.0 means "no traffic expected"; compare with a trip's actual
@@ -54,7 +80,8 @@ public struct PlanSnapshot: Sendable, Equatable, Codable, Identifiable {
         distanceM: Double,
         staticDuration: TimeInterval,
         trafficDuration: TimeInterval,
-        alternates: [AltRoute] = []
+        alternates: [AltRoute] = [],
+        steps: [PlanStep] = []
     ) {
         self.id = id
         self.provider = provider
@@ -65,6 +92,27 @@ public struct PlanSnapshot: Sendable, Equatable, Codable, Identifiable {
         self.staticDuration = staticDuration
         self.trafficDuration = trafficDuration
         self.alternates = alternates
+        self.steps = steps
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, provider, requestedAt, destinationPlaceID, polyline, distanceM
+        case staticDuration, trafficDuration, alternates, steps
+    }
+
+    /// Snapshots encoded before D-052 carry no steps.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        provider = try container.decode(Provider.self, forKey: .provider)
+        requestedAt = try container.decode(Date.self, forKey: .requestedAt)
+        destinationPlaceID = try container.decodeIfPresent(UUID.self, forKey: .destinationPlaceID)
+        polyline = try container.decode(Polyline.self, forKey: .polyline)
+        distanceM = try container.decode(Double.self, forKey: .distanceM)
+        staticDuration = try container.decode(TimeInterval.self, forKey: .staticDuration)
+        trafficDuration = try container.decode(TimeInterval.self, forKey: .trafficDuration)
+        alternates = try container.decodeIfPresent([AltRoute].self, forKey: .alternates) ?? []
+        steps = try container.decodeIfPresent([PlanStep].self, forKey: .steps) ?? []
     }
 }
 
@@ -80,7 +128,10 @@ public extension PlanSnapshot {
         var rest = alternates
         rest.remove(at: index)
         rest.insert(
-            AltRoute(polyline: polyline, staticDuration: staticDuration, trafficDuration: trafficDuration),
+            AltRoute(
+                polyline: polyline, staticDuration: staticDuration, trafficDuration: trafficDuration,
+                steps: steps
+            ),
             at: 0
         )
         promoted.polyline = chosen.polyline
@@ -88,6 +139,7 @@ public extension PlanSnapshot {
         promoted.trafficDuration = chosen.trafficDuration
         promoted.distanceM = chosen.polyline.lengthMeters
         promoted.alternates = rest
+        promoted.steps = chosen.steps
         return promoted
     }
 }

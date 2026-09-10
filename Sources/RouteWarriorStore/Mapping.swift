@@ -161,7 +161,13 @@ public extension SnapshotRecord {
         distanceM = snapshot.distanceM
         staticDuration = snapshot.staticDuration
         trafficDuration = snapshot.trafficDuration
-        alternatesBlob = try JSONEncoder().encode(snapshot.alternates)
+        // Steps are for the drive, not the record (D-052): a CloudKit row
+        // does not need the words, and their lines would double it.
+        alternatesBlob = try JSONEncoder().encode(snapshot.alternates.map { alternate in
+            var stripped = alternate
+            stripped.steps = []
+            return stripped
+        })
     }
 
     func snapshot() throws -> PlanSnapshot {
