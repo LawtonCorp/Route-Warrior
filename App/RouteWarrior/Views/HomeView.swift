@@ -374,7 +374,7 @@ struct HomeView: View {
             } else {
                 IconTile(symbol: Theme.statusSymbol(for: pipeline.recorderState), color: tint, size: 24)
             }
-            Text(pipeline.isRecording ? "Rec" : "Drive detected — confirming you're on the road")
+            Text(HomeLayout.recorderCaption(pipeline.recorderState))
                 .font(pipeline.isRecording ? .subheadline.weight(.semibold) : .footnote)
                 .foregroundStyle(pipeline.isRecording ? .primary : .secondary)
                 .lineLimit(2)
