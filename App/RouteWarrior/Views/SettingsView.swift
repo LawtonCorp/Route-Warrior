@@ -127,11 +127,12 @@ struct SettingsView: View {
                     } label: {
                         settingsLabel("Version", symbol: "info.circle.fill", color: .gray)
                     }
-                    Link(destination: Legal.termsURL) {
-                        settingsLabel("Terms of Use", symbol: "doc.text.fill", color: .gray)
-                    }
-                    Link(destination: Legal.privacyURL) {
-                        settingsLabel("Privacy Policy", symbol: "hand.raised.fill", color: .gray)
+                    ForEach(Legal.Document.allCases, id: \.title) { document in
+                        NavigationLink {
+                            LegalDocumentView(document: document)
+                        } label: {
+                            settingsLabel(document.title, symbol: document.symbol, color: .gray)
+                        }
                     }
                     Text("Trip data never leaves your devices except the route requests sent to the mapping providers at departure.")
                         .font(.footnote)

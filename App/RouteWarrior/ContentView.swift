@@ -1,10 +1,18 @@
 import SwiftUI
 
+/// The root (D-053): onboarding, then the Terms-changed screen once per
+/// new Terms version, then the app.
 struct ContentView: View {
     @AppStorage("onboardingComplete") private var onboardingComplete = false
+    @AppStorage(Legal.acceptedTermsKey) private var acceptedTerms = ""
 
     var body: some View {
-        if onboardingComplete {
+        switch RootRoute.route(onboardingComplete: onboardingComplete, acceptedTerms: acceptedTerms) {
+        case .onboarding:
+            OnboardingView()
+        case .termsUpdate:
+            TermsUpdateView()
+        case .app:
             TabView {
                 HomeView()
                     .tabItem { Label("Plan", systemImage: "car.fill") }
@@ -15,8 +23,6 @@ struct ContentView: View {
                 SettingsView()
                     .tabItem { Label("Settings", systemImage: "gearshape") }
             }
-        } else {
-            OnboardingView()
         }
     }
 }

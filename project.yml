@@ -48,6 +48,12 @@ targets:
       # Shared with the widget target: the Live Activity contract must
       # compile into both sides (see App/Shared/GhostRaceAttributes.swift).
       - path: App/Shared
+      # The legal documents, bundled as they are (D-053): the same files
+      # the website serves, so there is one text to keep right.
+      - path: docs/TERMS_OF_USE.md
+        buildPhase: resources
+      - path: docs/PRIVACY_POLICY.md
+        buildPhase: resources
     dependencies:
       - package: RouteWarriorKit
         product: RouteWarriorKit

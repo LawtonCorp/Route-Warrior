@@ -1031,3 +1031,39 @@ audio, and the lock screen already shows the ghost race); applying for
 Apple's navigation entitlement now (nothing to apply with until this
 ships; with it shipped, the app is on paper a turn-by-turn app, and the
 application can be made after launch, without holding it).
+
+## D-053 — The legal documents ride in the app, and a new version asks once (2026-09-10)
+
+**Chosen**: `docs/TERMS_OF_USE.md` and `docs/PRIVACY_POLICY.md` are
+bundled into the app as they are, and the same two files are what the
+website serves at routerebel.app/terms and /privacy — one text, in one
+place, shown in two. Settings → About opens each document in the app
+(`LegalDocumentView`, a small reader for the Markdown subset the
+documents use: headings, paragraphs, bullet and numbered lists, inline
+emphasis and links) with "Open on the web" in its toolbar; the paywall
+and onboarding keep their web links, because Apple's guideline 3.1.2
+asks for links and reviewers look for them. Maintainer notes in the
+files ("have a lawyer read this", "confirm the venue") are HTML
+comments now, which Markdown renderers hide and the reader drops, so
+nothing meant for the maintainer reaches a driver or a website visitor.
+The Terms version is the effective date at the top of the file:
+`LegalTests` holds `Legal.termsVersion` equal to it, so the two cannot
+drift, and changing the date is the whole act of publishing a new
+version. The root shows `TermsUpdateView` once to any install whose
+accepted version differs — including installs from before D-051, whose
+accepted version is empty — with the new effective date, a "Read the
+Terms" sheet, and Continue as the acceptance, the same form onboarding
+uses. The recorder is not paused by that screen: it runs in the
+background whatever the root shows, so an updated Terms can never cost
+a drive (FR-3). The Privacy Policy gains an effective date line of its
+own (set to the Terms' date; Brian sets the real one before
+submission). **Rejected**: a WebView on the hosted pages (offline
+drivers, a network call the privacy policy would have to disclose, and
+a page that can change without the app's version changing); a second
+copy of the text as Swift strings (two copies to keep in step — the
+reason D-051 chose links only); a full Markdown library (hundreds of
+kilobytes for two documents that use six constructs); a modal "I agree"
+wall on every launch until accepted (D-015: the screen appears once,
+and continuing is the acceptance); silently re-accepting on behalf of
+existing installs (they agreed to nothing yet — the Terms did not exist
+when they onboarded).

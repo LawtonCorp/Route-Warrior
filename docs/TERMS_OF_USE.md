@@ -1,10 +1,13 @@
 # Route Rebel Terms of Use
 
-_Effective date: 10 September 2026. Served at https://routerebel.app/terms
-(keep `Legal.termsURL` in the app pointing there), and have a
-lawyer licensed in your state review it before the app goes live. This
-draft was written without legal advice; it is a starting point, not a
-substitute for counsel._
+<!-- Maintainers: this file is bundled into the app as it is and served
+at https://routerebel.app/terms (keep `Legal.termsURL` pointing there).
+The effective date below is the Terms version: `Legal.termsVersion` must
+equal it as yyyy-MM-dd (LegalTests checks), and changing it asks every
+install to accept again. Have a lawyer licensed in your state review
+this before the app goes live; it was written without legal advice. -->
+
+_Effective date: 10 September 2026._
 
 These Terms of Use ("Terms") are an agreement between you and LawtonCorp
 ("LawtonCorp", "we", "us") about the Route Rebel iPhone app (the "App").
@@ -160,9 +163,9 @@ you agree to contact us at the address below and try to resolve it
 informally for 30 days. Any claim that cannot be resolved that way will
 be brought in the state or federal courts located in Denver, Colorado,
 and you consent to their jurisdiction, except that either party may
-bring a qualifying claim in small-claims court. _(Confirm the state and
-venue with your lawyer; change both if LawtonCorp is organised
-elsewhere.)_
+bring a qualifying claim in small-claims court.
+<!-- Confirm the state and venue with your lawyer; change both if
+LawtonCorp is organised elsewhere. -->
 
 ## 14. Apple
 
