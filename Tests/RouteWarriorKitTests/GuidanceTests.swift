@@ -84,10 +84,31 @@ struct GuidanceTests {
         for y in stride(from: 20.0, through: 900, by: 20) {
             if let a = engine.ingest(position: at(east: 1_200, north: y)) { spoken.append(a) }
         }
-        // B St is 900 m: "in half a mile" needs 926, so it is skipped.
+        // B St is 900 m: "in half a mile" needs 926, so it is skipped;
+        // and reaching the zero-length arrival step says nothing more.
         #expect(spoken.map(\.tier) == [.quarter, .near, .now])
         #expect(spoken.first?.text == "In a quarter mile, arrive at your destination.")
         #expect(spoken.last?.text == "Arrive at your destination.")
+        #expect(engine.guidance?.arrived == true)
+    }
+
+    @Test func aLastStepWithItsOwnLineAnnouncesTheArrivalItself() {
+        // Google's plans end on a road leg, with no separate arrival step.
+        var engine = GuidanceEngine(steps: Array(steps.prefix(2)))
+        var spoken: [String] = []
+        for x in stride(from: 0.0, through: 1_200, by: 20) {
+            _ = engine.ingest(position: at(east: x))
+        }
+        for y in stride(from: 20.0, through: 900, by: 20) {
+            if let a = engine.ingest(position: at(east: 1_200, north: y)) { spoken.append(a.text) }
+        }
+        #expect(spoken == [
+            "In a quarter mile, arrive at your destination.",
+            "In 500 feet, arrive at your destination.",
+            "Arrive at your destination.",
+        ])
+        #expect(engine.guidance?.arrived == true)
+        #expect(engine.guidance?.next == nil)
     }
 
     @Test func aGapPlaysOnlyTheNearestDueCallout() {

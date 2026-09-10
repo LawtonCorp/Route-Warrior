@@ -255,6 +255,10 @@ public struct GuidanceEngine: Sendable {
 
     private mutating func announcement(for index: Int, toManeuver: Double, next: PlanStep?) -> Announcement? {
         let stepLength = stepEnds[index] - (index > 0 ? stepEnds[index - 1] : 0)
+        // A trailing arrival step with no line of its own (Apple's last
+        // step) was announced as the maneuver at the end of the step
+        // before it; reaching it is arrival, not a second callout.
+        if index == steps.count - 1, stepLength <= config.arrivalRadiusM { return nil }
         var done = announced[index] ?? []
         var chosen: (Announcement.Tier, String)?
         for (tier, meters, phrase) in tiers where toManeuver <= meters && !done.contains(tier) {
