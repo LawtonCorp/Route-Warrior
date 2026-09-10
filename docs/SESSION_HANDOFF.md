@@ -6,7 +6,7 @@ exists, why, and what the previous sessions learned the hard way. Read
 `CLAUDE.md` first; it is binding. Product rationale is in
 `docs/REQUIREMENTS.md`, `docs/SPEC.md`, `docs/SPEC_IN_APP_MAP.md`,
 `docs/BUILD_PLAN.md`, and every behaviour choice is logged in
-`DECISIONS.md` (D-001…D-045; continue from D-046)._
+`DECISIONS.md` (D-001…D-046; continue from D-047)._
 
 ## Where things stand
 
@@ -104,6 +104,9 @@ analysis surfaces only.
 - **D-045**: Record hides once a destination is chosen (Go is the one
   start button); a manual Record predicts its destination on its first
   GPS point, like an auto-detected drive.
+- **D-046**: no status card on the Plan tab. "Where to?" is first;
+  Record is a nav-bar button (`HomeLayout.showsRecordButton`); the
+  recorder is one row beneath the routes only while armed/recording.
 - Privacy (D-006) still holds: no accounts, no LawtonCorp server; the
   privacy label is "Data Not Collected"; do not add network calls
   casually. Pro gates analysis only (D-008, D-015); D-017 forces Pro on

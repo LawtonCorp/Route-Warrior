@@ -828,3 +828,26 @@ the Trips tab (the missed-detection fallback belongs beside the recorder
 status it is a fallback for); predicting at the tap instead of the first
 point (there is nothing to predict from yet, and the first sample lands
 within a second).
+
+## D-046 — "Where to?" comes first, and the recorder speaks only when it has something to say (2026-09-10)
+
+**Chosen**: the Plan tab opens with the "Where to?" field; the status
+card above it is gone. "Ready — waiting for the next drive" occupied the
+top of the screen to say what an empty field already said. What the card
+carried moves to where it is needed: Record becomes a navigation-bar
+button, shown only while nothing else would start a drive (no
+destination, not recording); the recorder itself is a single row beneath
+the routes, present only while armed (a caption: "Drive detected") or
+recording ("Recording", a Drive view button and Stop, small controls on
+one line); the location-permission warning sits under the field while it
+applies, because it is the one recorder message that must not hide. The
+"Trip saved" line leaves the Plan tab: the Trips tab shows the trip and
+the recorder log keeps the words. **Rejected**: keeping a slimmer status
+card (any card at the top is a card above the field, and idle is the
+state the screen is in almost all the time); a floating Stop button over
+the map (it covers the plan line at exactly the moment it matters);
+dropping the armed caption too (auto-detection is the app's promise, and
+thirty seconds of "drive detected" is how the driver learns it is
+keeping it); an elapsed-time counter on the recorder row (the drive view
+has one, and a ticking clock on a list row is a redraw a second for a
+number nobody is watching from the Plan tab).

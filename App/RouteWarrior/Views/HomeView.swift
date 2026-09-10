@@ -54,10 +54,16 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section { statusCard }
+                // "Where to?" is the first thing on the screen (D-046);
+                // the recorder speaks only when it has something to say.
                 Section {
                     searchField
                     if showsSuggestions { suggestionRows }
+                    if let warning = LocationPrimer.warning(for: locationService.authorizationStatus) {
+                        locationWarning(warning)
+                    }
+                }
+                Section {
                     MapSurfaceView(scene: scene)
                         .frame(height: 320)
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -68,6 +74,7 @@ struct HomeView: View {
                         // would only frame it in white.
                         .listRowBackground(Color.clear)
                     if planner.hasDestination { planRows }
+                    if HomeLayout.showsRecorderRow(pipeline.recorderState) { recorderRow }
                 } header: {
                     if let destination = planner.destination {
                         Text("To \(destination.name)")
@@ -77,6 +84,18 @@ struct HomeView: View {
                 savedPlacesSection
             }
             .navigationTitle("Route Rebel")
+            .toolbar {
+                if HomeLayout.showsRecordButton(
+                    hasDestination: planner.hasDestination, state: pipeline.recorderState
+                ) {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Record", systemImage: "record.circle") {
+                            pipeline.startManualRecording()
+                        }
+                        .tint(Theme.recording)
+                    }
+                }
+            }
             .listSectionSpacing(.compact)
             .fullScreenCover(isPresented: $showDrive) { DriveView() }
             .sheet(isPresented: $showPaywall) { PaywallView() }
@@ -327,32 +346,26 @@ struct HomeView: View {
         }
     }
 
-    // MARK: Status
+    // MARK: The recorder, beneath the routes
 
-    private var statusCard: some View {
+    /// One line, only while the recorder is doing something (D-046):
+    /// armed reads as a caption, recording carries Stop and the drive
+    /// view. An idle recorder shows nothing — "Ready" said nothing the
+    /// empty field did not.
+    private var recorderRow: some View {
         let tint = Theme.statusTint(for: pipeline.recorderState)
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 12) {
-                IconTile(
-                    symbol: Theme.statusSymbol(for: pipeline.recorderState),
-                    color: tint,
-                    size: 40,
-                    pulsing: pipeline.isRecording
-                )
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(statusText)
-                        .font(.headline)
-                    Text(statusDetail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if DrivePlanner.showsRecordButton(
-                    hasDestination: planner.hasDestination, recording: pipeline.isRecording
-                ) {
-                    recordButton
-                }
-            }
+        return HStack(spacing: 10) {
+            IconTile(
+                symbol: Theme.statusSymbol(for: pipeline.recorderState),
+                color: tint,
+                size: 24,
+                pulsing: pipeline.isRecording
+            )
+            Text(pipeline.isRecording ? "Recording" : "Drive detected — confirming you're on the road")
+                .font(pipeline.isRecording ? .subheadline.weight(.semibold) : .footnote)
+                .foregroundStyle(pipeline.isRecording ? .primary : .secondary)
+                .lineLimit(2)
+            Spacer(minLength: 8)
             if pipeline.isRecording {
                 Button {
                     if store.policy.driveViewAvailable(for: store.tier) {
@@ -361,57 +374,33 @@ struct HomeView: View {
                         showPaywall = true
                     }
                 } label: {
-                    Label("Open the drive view", systemImage: "map.fill")
+                    Label("Drive view", systemImage: "map.fill")
                 }
                 .buttonStyle(.bordered)
                 .tint(tint)
-                .font(.footnote)
-            }
-            if let outcome = pipeline.lastOutcome {
-                Text(outcome)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            if let warning = LocationPrimer.warning(for: locationService.authorizationStatus) {
-                Label(warning, systemImage: "exclamationmark.triangle.fill")
-                    .font(.footnote)
-                    .foregroundStyle(Theme.google)
-                LocationFixButton(style: .bordered)
-                    .font(.footnote)
+                Button("Stop") {
+                    pipeline.stopManualRecording()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.recording)
             }
         }
-        .padding(.vertical, 6)
+        .controlSize(.small)
+        .padding(.vertical, 2)
         .tintedRow(tint)
     }
 
-    private var statusText: String {
-        switch pipeline.recorderState {
-        case .idle: "Ready"
-        case .armed: "Drive detected…"
-        case .recording: "Recording"
+    /// The permission warning is the one recorder message that must stay
+    /// on screen while it applies; it sits under the field, not in a card.
+    private func locationWarning(_ warning: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(warning, systemImage: "exclamationmark.triangle.fill")
+                .font(.footnote)
+                .foregroundStyle(Theme.google)
+            LocationFixButton(style: .bordered)
+                .font(.footnote)
         }
-    }
-
-    private var statusDetail: String {
-        switch pipeline.recorderState {
-        case .idle: "Waiting for the next drive"
-        case .armed: "Confirming you're on the road"
-        case .recording: "Tracking this drive"
-        }
-    }
-
-    private var recordButton: some View {
-        Button {
-            if pipeline.isRecording {
-                pipeline.stopManualRecording()
-            } else {
-                pipeline.startManualRecording()
-            }
-        } label: {
-            Text(pipeline.isRecording ? "Stop" : "Record")
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(pipeline.isRecording ? Theme.recording : Theme.route)
+        .padding(.vertical, 2)
     }
 
     // MARK: Actions
