@@ -6,7 +6,7 @@ exists, why, and what the previous sessions learned the hard way. Read
 `CLAUDE.md` first; it is binding. Product rationale is in
 `docs/REQUIREMENTS.md`, `docs/SPEC.md`, `docs/SPEC_IN_APP_MAP.md`,
 `docs/BUILD_PLAN.md`, and every behaviour choice is logged in
-`DECISIONS.md` (D-001…D-048; continue from D-049)._
+`DECISIONS.md` (D-001…D-049; continue from D-050)._
 
 ## Where things stand
 
@@ -109,8 +109,8 @@ analysis surfaces only.
   recorder is one row beneath the routes only while armed/recording.
   **D-047**: that row is its own section, says "Rec" beside a
   `BlinkingDot`, and the title is inline so Record shares its line.
-- **D-048**: the app icon is a cartoon driver with a spiked mane;
-  source in `design/AppIcon.svg`, re-render per `design/README.md`.
+- **D-049**: the app icon is Brian's arrow-and-ghost design (6C),
+  installed with light/dark/tinted variants; sources in `design/`.
 - Privacy (D-006) still holds: no accounts, no LawtonCorp server; the
   privacy label is "Data Not Collected"; do not add network calls
   casually. Pro gates analysis only (D-008, D-015); D-017 forces Pro on

@@ -894,3 +894,23 @@ flying loose off the mane (they read as bubbles); a raster illustration
 from an image model (nothing in this environment generates one, and an
 SVG can be changed by hand); rounded corners baked into the PNG (iOS
 masks the icon itself, and a pre-rounded file shows a dark rim).
+
+## D-049 — The icon is Brian's arrow and its ghost (2026-09-10)
+
+**Chosen**: the app icon is the design Brian supplied ("6C"): a yellow
+navigation arrow with a violet ghost arrow behind it on a near-black
+ground — the ghost race (FR-15) drawn as a mark, and the one thing in
+the app no other navigation icon has. The package is installed as
+delivered: the 1024×1024 light, dark and tinted PNGs with their
+`Contents.json`, which declares the iOS 18 `appearances` so the home
+screen gets the pure-black dark variant and the white-on-black tinted
+one without any extra work here; the three SVG sources live in
+`design/` beside a README naming the colours. This replaces the D-048
+cartoon after one day. **Rejected**: keeping the cartoon driver
+alongside as an alternate icon (the app has one identity, and an
+alternate-icon picker is a feature nobody asked for); flattening the
+package to a single light PNG as before (iOS 18 users would get an
+auto-darkened or auto-tinted approximation instead of the designed
+variants, and the designer supplied them); stripping the C2PA
+provenance metadata from the SVGs (it is inert text, and it records
+where the artwork came from).
