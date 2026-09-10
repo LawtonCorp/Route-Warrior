@@ -851,3 +851,25 @@ thirty seconds of "drive detected" is how the driver learns it is
 keeping it); an elapsed-time counter on the recorder row (the drive view
 has one, and a ticking clock on a list row is a redraw a second for a
 number nobody is watching from the Plan tab).
+
+## D-048 — The icon is a driver with a mane, not a map (2026-09-10)
+
+**Chosen**: the app icon becomes a cartoon: a grinning driver in
+sunglasses at the wheel of a red convertible, hair streaming back in a
+fan of magenta, violet, orange, teal and gold spikes, on a sunset with a
+low sun and a dashed road. Brian asked for "a cartoon character with
+crazy hair driving their car", and the D-017 route diagram, honest as it
+was, was a chart on the home screen. The art is vector, drawn as SVG and
+kept in `design/AppIcon.svg` so it can be re-rendered or edited; the
+1024×1024 PNG in the asset catalog is a headless-Chromium screenshot of
+it. The head is oversized on purpose — at the 60-point home-screen size
+the sunglasses, the grin and the mane are what survive, and a smaller
+head reads as a ball on a seat. The mane fans over the top and back of
+the head only and is clipped above the car's roofline, so nothing spills
+onto the road. **Rejected**: a raster illustration from an image model
+(nothing in this environment generates one, and an SVG can be changed
+by hand); a front three-quarter view of the car (more car, less hair,
+and the hair is the ask); keeping the route line somewhere in the
+composition (a chart under a cartoon is two icons fighting); rounded
+corners baked into the PNG (iOS masks the icon itself, and a pre-rounded
+file shows a dark rim).
