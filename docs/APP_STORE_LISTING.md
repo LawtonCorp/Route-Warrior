@@ -37,9 +37,11 @@ driving history lives on your iPhone and in your private iCloud — nowhere
 else. The only thing that ever leaves your phone is the route request that
 makes the comparison possible.
 
-**Route Rebel Pro** unlocks unlimited history, unlimited destinations,
-full analytics, and the ghost race. Recording is always free — your data
-keeps building from day one.
+**Route Rebel Pro** puts Google's plan on the scoreboard next to Apple's,
+opens every drive you have ever recorded and every destination, adds the
+heatmaps, trends and route races, the live drive view with turn-by-turn
+directions and reroute, and the ghost race. Recording is always free —
+your data keeps building from day one.
 
 Your commute has a leaderboard now.
 
@@ -49,11 +51,18 @@ commute,drive,route,tracker,traffic,eta,navigation,stopwatch,driving,log,stop si
 
 ## Screenshots (shot list)
 
-1. Home — recording hands-free (status card live).
-2. Trip detail — your route (solid) vs. Google's (dashed), ETA delta.
-3. Destination analytics — day × time heatmap, verdict card.
-4. Ghost race — lock-screen Live Activity, ahead by 0:42.
-5. Privacy — "Your data never leaves your control."
+1. Plan tab — "Where to?" filled, both plans drawn, ETA / distance /
+   turn counts under the map, Go under the plans.
+2. Drive view — maneuver banner above the scoreboard ("+0:42 vs Apple").
+3. Trip detail — your route (solid) vs. the plan (dashed), ETA delta,
+   stops and turns.
+4. Destination analytics — day × time heatmap, verdict card.
+5. Ghost race — lock-screen Live Activity, ahead by 0:42.
+6. Privacy — the onboarding page: "Your drives are yours."
+
+Sizes: 6.9" slot (1320×2868 or 1290×2796 — an iPhone 16 Pro Max or
+15 Pro Max shot works as is); the other iPhone slots are optional and
+scale from it. No iPad slot: the app is iPhone-only.
 
 ## Category
 
