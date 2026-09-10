@@ -74,16 +74,22 @@ struct HomeView: View {
                         // would only frame it in white.
                         .listRowBackground(Color.clear)
                     if planner.hasDestination { planRows }
-                    if HomeLayout.showsRecorderRow(pipeline.recorderState) { recorderRow }
                 } header: {
                     if let destination = planner.destination {
                         Text("To \(destination.name)")
                     }
                 }
+                // Its own card, so it never reads as the map's footer (D-047).
+                if HomeLayout.showsRecorderRow(pipeline.recorderState) {
+                    Section { recorderRow }
+                }
                 if planner.hasDestination, !pipeline.isRecording { goSection }
                 savedPlacesSection
             }
             .navigationTitle("Route Rebel")
+            // Inline, so Record sits on the title's line rather than
+            // floating above a large title (D-047).
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if HomeLayout.showsRecordButton(
                     hasDestination: planner.hasDestination, state: pipeline.recorderState
@@ -355,13 +361,12 @@ struct HomeView: View {
     private var recorderRow: some View {
         let tint = Theme.statusTint(for: pipeline.recorderState)
         return HStack(spacing: 10) {
-            IconTile(
-                symbol: Theme.statusSymbol(for: pipeline.recorderState),
-                color: tint,
-                size: 24,
-                pulsing: pipeline.isRecording
-            )
-            Text(pipeline.isRecording ? "Recording" : "Drive detected — confirming you're on the road")
+            if pipeline.isRecording {
+                BlinkingDot(color: tint)
+            } else {
+                IconTile(symbol: Theme.statusSymbol(for: pipeline.recorderState), color: tint, size: 24)
+            }
+            Text(pipeline.isRecording ? "Rec" : "Drive detected — confirming you're on the road")
                 .font(pipeline.isRecording ? .subheadline.weight(.semibold) : .footnote)
                 .foregroundStyle(pipeline.isRecording ? .primary : .secondary)
                 .lineLimit(2)
