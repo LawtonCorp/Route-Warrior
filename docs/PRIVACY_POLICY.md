@@ -1,6 +1,10 @@
 # Route Rebel Privacy Policy
 
-_Draft — served at https://routerebel.app/privacy; set the effective date before submission._
+<!-- Maintainers: this file is bundled into the app as it is and served
+at https://routerebel.app/privacy (keep `Legal.privacyURL` pointing
+there). Set the effective date before submission. -->
+
+_Effective date: 10 September 2026._
 
 Route Rebel is built so that we — LawtonCorp — cannot see your data at
 all. There are no accounts, no analytics SDKs, no advertising identifiers,
