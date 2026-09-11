@@ -1194,11 +1194,18 @@ screen" is a delete).
 **Chosen**: on the drive view, a pan, a pinch or a rotate suspends the
 following camera, and a Recenter button in the control bar resumes it.
 Field evidence: Brian could not move or zoom the drive map at all —
-every gesture snapped back within a second. Both surfaces caused it and
-neither knew: the Apple surface reassigned `.userLocation(followsHeading:)`
-on every new fix, and the Google surface animated back to the car on
-every `updateUIView`, which is once per GPS sample. The camera was
-right and the driver was overruled. The gesture is told from the app's
+every gesture snapped back within a second. **The confirmed defect was
+Google's**: that surface animated back to the car on every
+`updateUIView`, which is once per GPS sample. Brian reported afterwards
+that the Apple surface panned and zoomed fine, so the Apple half of
+this entry is parity, not a bug fix — its `frame()` does reassign
+`.userLocation(followsHeading:)` on every fix and looks like the same
+defect on the page, but on a phone MapKit evidently kept the driver's
+camera anyway. Both are suspended the same way regardless, because two
+maps that answer a pan differently is a worse thing to explain than one
+extra tap, and a reader of this code should not have to know which
+surface forgives the reassignment. The camera was right and the driver
+was overruled. The gesture is told from the app's
 own camera work by asking the SDK: MapKit's `positionedByUser` is true
 only for a camera the finger set, and Google's delegate reports
 `willMove(gesture:)`. One `MapFollowState`, shared by the screen and
@@ -1216,4 +1223,10 @@ Google's sits under the maneuver banner); a "map is yours" banner
 (a button that does the thing beats a label that describes it);
 suspending on any camera change rather than a gesture (every follow
 tick is a camera change, so the chase would stop itself on the first
-fix).
+fix); leaving the Apple surface as it was once it turned out not to be
+broken (Brian chose parity — see above — and the alternative is a
+Recenter button that appears on one map and not the other). **Watch on
+the next Apple drive**: if MapKit ever reports `positionedByUser` for
+its own follow animation, that surface will stop chasing on the first
+fix and sit there with a Recenter button, which is worse than what it
+did before. Nothing in CI can catch that; it needs a phone.
