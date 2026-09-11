@@ -10,15 +10,30 @@ import UIKit
 /// surface, drawing only Google's plans (D-022 §9.2).
 struct GoogleMapSurface: UIViewRepresentable {
     var scene: MapScene
+    var follow: MapFollowState? = nil
 
     private static let provider = PlanSnapshot.Provider.googleRoutes
 
-    final class Coordinator {
+    /// The SDK reports every camera move and says whether a gesture
+    /// caused it, which is what lets the chase stand down (D-059).
+    /// Main-actor (so its state is Sendable and the delegate callback can
+    /// step onto the actor) with the delegate method itself `nonisolated`,
+    /// because the SDK's protocol requirement is.
+    @MainActor
+    final class Coordinator: NSObject, GMSMapViewDelegate {
         var framedForCamera: MapScene.Camera?
         var framedPlanIDs: [UUID] = []
         /// The zoom this surface last set. If the map sits at a different
         /// one, the driver changed it and it is theirs to keep.
         var appliedZoom: Float?
+        var follow: MapFollowState?
+
+        /// The SDK calls this on the main thread, before every camera
+        /// move; `gesture` is true only when a finger caused it.
+        nonisolated func mapView(_ mapView: GMSMapView, willMove gesture: Bool) {
+            guard gesture else { return }
+            MainActor.assumeIsolated { self.follow?.userMovedMap() }
+        }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -39,10 +54,12 @@ struct GoogleMapSurface: UIViewRepresentable {
         view.isMyLocationEnabled = true
         view.settings.myLocationButton = true
         view.settings.compassButton = true
+        view.delegate = context.coordinator
         return view
     }
 
     func updateUIView(_ view: GMSMapView, context: Context) {
+        context.coordinator.follow = follow
         view.isTrafficEnabled = scene.showsTraffic
         view.clear()
 
@@ -116,6 +133,9 @@ struct GoogleMapSurface: UIViewRepresentable {
     private func frame(_ view: GMSMapView, coordinator: Coordinator) {
         switch scene.camera {
         case .followUser:
+            // Paused by a gesture until Recenter (D-059): the driver is
+            // looking somewhere, and a chase a second later takes it away.
+            guard follow?.drivesCamera(for: scene.camera) ?? true else { return }
             // The SDK's own fix usually lands before the app's, and a nil
             // one used to leave the camera parked on the country view.
             guard let target = view.myLocation?.coordinate ?? scene.userLocation.map({
