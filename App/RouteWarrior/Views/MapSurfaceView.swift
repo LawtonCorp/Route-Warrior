@@ -9,13 +9,16 @@ import SwiftUI
 struct MapSurfaceView: View {
     @Environment(MapSettings.self) private var mapSettings
     var scene: MapScene
+    /// Shared with the screen, for a following camera the driver can
+    /// take over and hand back (D-059). Nil for maps that never follow.
+    var follow: MapFollowState? = nil
 
     var body: some View {
         switch mapSettings.provider {
         case .apple:
-            AppleMapSurface(scene: scene)
+            AppleMapSurface(scene: scene, follow: follow)
         case .google:
-            GoogleMapSurface(scene: scene)
+            GoogleMapSurface(scene: scene, follow: follow)
         }
     }
 }
@@ -23,6 +26,7 @@ struct MapSurfaceView: View {
 /// Apple's map: the v1 look, driven by the shared scene.
 struct AppleMapSurface: View {
     var scene: MapScene
+    var follow: MapFollowState? = nil
     @State private var camera: MapCameraPosition = .automatic
     @State private var framed = false
 
@@ -74,6 +78,12 @@ struct AppleMapSurface: View {
             MapCompass()
             MapScaleView()
         }
+        // A pan or a pinch sets `positionedByUser`; a camera this view
+        // assigned does not. That is what tells a gesture from our own
+        // chase, so the chase can stand down (D-059).
+        .onMapCameraChange(frequency: .onEnd) {
+            if camera.positionedByUser { follow?.userMovedMap() }
+        }
         .onAppear { frame() }
         .onChange(of: scene.camera) { framed = false; frame() }
         .onChange(of: scene.drawablePlans(for: provider).map(\.id)) { framed = false; frame() }
@@ -81,12 +91,15 @@ struct AppleMapSurface: View {
         // The first fix after an empty start is what moves the camera off
         // the default; once framed, `frame()` ignores these.
         .onChange(of: scene.userLocation) { frame() }
+        // Recenter: start chasing the car again.
+        .onChange(of: follow?.isFollowing ?? true) { frame() }
     }
 
     @MainActor
     private func frame() {
         switch scene.camera {
         case .followUser:
+            guard follow?.drivesCamera(for: scene.camera) ?? true else { return }
             camera = .userLocation(followsHeading: true, fallback: .automatic)
         case .fitContent:
             guard !framed else { return }

@@ -1188,3 +1188,32 @@ each, sync to every device, and nothing else would ever collect them);
 exclude-from-stats as the swipe instead (it is the right answer for a
 passenger's ride and stays in the detail, but "remove it from the trip
 screen" is a delete).
+
+## D-059 — The drive map stops chasing the car the moment the driver moves it (2026-09-11)
+
+**Chosen**: on the drive view, a pan, a pinch or a rotate suspends the
+following camera, and a Recenter button in the control bar resumes it.
+Field evidence: Brian could not move or zoom the drive map at all —
+every gesture snapped back within a second. Both surfaces caused it and
+neither knew: the Apple surface reassigned `.userLocation(followsHeading:)`
+on every new fix, and the Google surface animated back to the car on
+every `updateUIView`, which is once per GPS sample. The camera was
+right and the driver was overruled. The gesture is told from the app's
+own camera work by asking the SDK: MapKit's `positionedByUser` is true
+only for a camera the finger set, and Google's delegate reports
+`willMove(gesture:)`. One `MapFollowState`, shared by the screen and
+whichever surface is drawing, so the button and the camera can never
+disagree — the button appears only on a following camera that has been
+moved, so a fit-to-content map (the Plan tab, a trip detail, which
+frame once and already leave the driver alone) never shows it and is
+never suspended. Recentring is the driver's to ask for and is not
+timed: an automatic snap-back after a few seconds is the same
+overruling with a delay, and a driver who panned ahead to see the next
+junction is not finished in five seconds. **Rejected**: a timed
+auto-recenter (as above); leaning on each SDK's own my-location button
+(it centres once and does not resume the chase, and on the drive view
+Google's sits under the maneuver banner); a "map is yours" banner
+(a button that does the thing beats a label that describes it);
+suspending on any camera change rather than a gesture (every follow
+tick is a camera change, so the chase would stop itself on the first
+fix).

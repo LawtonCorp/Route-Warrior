@@ -18,6 +18,8 @@ struct DriveView: View {
     @State private var monitor: DriveMonitor?
     @State private var guide: DriveGuide?
     @State private var voice: GuidanceVoice?
+    /// The camera chases the car until the driver moves it (D-059).
+    @State private var follow = MapFollowState()
 
     private var surfaceProvider: PlanSnapshot.Provider { mapSettings.provider.snapshotProvider }
 
@@ -74,7 +76,7 @@ struct DriveView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            MapSurfaceView(scene: scene)
+            MapSurfaceView(scene: scene, follow: follow)
                 .ignoresSafeArea()
             VStack(spacing: 8) {
                 if let shownGuidance {
@@ -190,6 +192,20 @@ struct DriveView: View {
             }
             .buttonStyle(.bordered)
             .accessibilityLabel("Hide the drive view")
+            // Only while the map is the driver's (D-059): following, it
+            // is already centred and the button would do nothing.
+            if follow.showsRecenter(for: scene.camera) {
+                Button {
+                    follow.recenter()
+                } label: {
+                    Image(systemName: "location.fill")
+                        .font(.body.weight(.semibold))
+                        .frame(width: 22, height: 22)
+                }
+                .buttonStyle(.bordered)
+                .tint(Theme.route)
+                .accessibilityLabel("Recenter the map on the car")
+            }
             if rerouteAllowed, plan != nil {
                 Button {
                     guard let last = pipeline.liveTrack.last else { return }
