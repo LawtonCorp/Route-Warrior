@@ -7,6 +7,7 @@ import SwiftUI
 /// code rather than by the view.
 struct TripsView: View {
     @Environment(StoreService.self) private var store
+    @Environment(\.modelContext) private var context
     @Query(sort: \TripRecord.startedAt, order: .reverse) private var trips: [TripRecord]
     @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
     @Query private var snapshots: [SnapshotRecord]
@@ -101,6 +102,16 @@ struct TripsView: View {
                 originName: placeName(record.originPlaceID),
                 destinationName: placeName(record.destinationPlaceID)
             )
+        }
+        // Swipe to delete (D-058), the same delete the trip's own screen
+        // offers. A full swipe deletes; a passenger's ride is better
+        // excluded than deleted, so that stays a toggle in the detail.
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) {
+                TripDeletion.delete(record, in: context)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
 

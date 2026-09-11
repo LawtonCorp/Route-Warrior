@@ -273,8 +273,10 @@ struct TripDetailView: View {
         Section {
             Toggle("Exclude from stats", isOn: excludedBinding)
             Button("Delete trip", role: .destructive) {
-                context.delete(record)
-                try? context.save()
+                // The same deletion the Trips list's swipe performs
+                // (D-058): the trip, its departure snapshots, and its
+                // route's drive count.
+                TripDeletion.delete(record, in: context)
                 dismiss()
             }
         } footer: {

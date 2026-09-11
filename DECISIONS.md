@@ -1163,3 +1163,28 @@ a heavy binary and Google's map only while guiding, and it would still
 not reach the CarPlay screen without Apple's entitlement); handing off
 to whichever navigation app the car is showing (CarPlay does not tell
 an app that, and D-034 rejected guessing).
+
+## D-058 — A trip can be swiped away, and takes its own rows with it (2026-09-11)
+
+**Chosen**: a left swipe on any row of the Trips list deletes that
+trip, the gesture iOS has trained every driver to expect and the same
+delete the trip's own screen already offered as a button. Both now go
+through `TripDeletion`, which deletes more than the trip: the departure
+snapshots taken for it, unless a surviving trip still refers to them,
+and one tick of its route's drive count — and the route itself when
+that was its last drive. The old button deleted the `TripRecord` alone,
+which left orphaned snapshot rows in the store and in CloudKit and a
+route claiming drives it no longer had; a button nobody pressed twice
+hid that, and a swipe would not have. The rule is a pure function over
+ids, tested on its own, with a store round-trip proving the wiring.
+Deletion stays immediate, with no confirmation dialog: it matches the
+existing button, iOS's own full-swipe, and the Places list (D-012).
+**Rejected**: a confirmation alert on every swipe (a modal on a gesture
+whose whole value is speed, for a row the driver chose to swipe);
+`.onDelete` on the ForEach (it hands back offsets into the arranged
+list, which is sorted and filtered, so the offset is not the trip);
+deleting the trip row alone and leaving the snapshots (they are 1-2 KB
+each, sync to every device, and nothing else would ever collect them);
+exclude-from-stats as the swipe instead (it is the right answer for a
+passenger's ride and stays in the detail, but "remove it from the trip
+screen" is a delete).
