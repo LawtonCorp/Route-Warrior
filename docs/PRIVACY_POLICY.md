@@ -4,11 +4,11 @@
 at https://routerebel.app/privacy (keep `Legal.privacyURL` pointing
 there). Set the effective date before submission. -->
 
-_Effective date: 10 September 2026._
+_Effective date: 15 September 2026._
 
-Route Rebel is built so that we — LawtonCorp — cannot see your data at
+Route Rebel is built so that we — Lawton, LLC — cannot see your data at
 all. There are no accounts, no analytics SDKs, no advertising identifiers,
-and no LawtonCorp servers.
+and no servers of ours.
 
 ## What the app records
 
@@ -49,7 +49,7 @@ policy will change and the app will say so.
 
 ## What we collect
 
-Nothing. LawtonCorp receives no telemetry, no crash reports beyond what
+Nothing. Lawton, LLC receives no telemetry, no crash reports beyond what
 you opt to share with Apple, and no usage data. The App Store's privacy
 label reflects the Google Maps SDK's own disclosures when Google is your
 chosen map; it is not data we ever see.

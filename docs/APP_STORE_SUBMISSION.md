@@ -11,11 +11,12 @@ steps depend on earlier ones. Every command runs from
 
 | # | Done when | Where |
 |---|---|---|
-| 0.1 | **Done (2026-09-15).** A lawyer reviewed `docs/TERMS_OF_USE.md`, including the limitation of liability in §9, and approved it as written. | Approved as written, so the effective date stands at 10 September 2026 and `Legal.termsVersion` is unchanged — no install is asked to accept again. A change to the text after launch means a fresh review, a new date in both places, and every install asked once. |
-| 0.2 | `docs/PRIVACY_POLICY.md` has its real effective date. | Top of the file. |
-| 0.3 | The website serves both files at https://routerebel.app/terms and https://routerebel.app/privacy, and a support page at https://routerebel.app/support (an email address and a sentence is enough). | Website sessions. The app bundles the same two files; the URLs are what Apple checks. |
+| 0.1 | **Done (2026-09-15)**, with one thing to confirm. A lawyer reviewed `docs/TERMS_OF_USE.md`, including the limitation of liability in §9, and approved it as written. After that approval the contracting party was corrected from "LawtonCorp" to the registered entity, **Lawton, LLC**; nothing else changed. Worth one line back from the lawyer confirming the renamed party reads right. | Both documents are now effective 15 September 2026 and `Legal.termsVersion` is `2026-09-15`. Bumping it asks every install to accept once — free before launch, expensive after. A later edit means a fresh review and a new date in both places. |
+| 0.2 | **Done.** `docs/PRIVACY_POLICY.md` carries its effective date, 15 September 2026 — moved with the entity correction above. | Top of the file. The Privacy Policy is not version-gated, so its date changing prompts nobody. |
+| 0.3 | **Done.** The website serves both files at https://routerebel.app/terms and https://routerebel.app/privacy, and a support page at https://routerebel.app/support. | Confirm all three are still live before pressing Release (step 11). |
 | 0.4 | Google Cloud key: **iOS apps** restriction with both bundle ids, API restriction to Routes API + Maps SDK for iOS, a daily quota, a billing alert. | `docs/HANDOFF.md` §2. |
-| 0.5 | Apple Developer Program active; **Paid Apps Agreement** accepted with banking and tax forms complete. Subscriptions cannot be created for review without it. | App Store Connect → Business (or Agreements, Tax, and Banking). |
+| 0.5 | Apple Developer Program active; **Paid Apps Agreement** accepted, then tax forms, then banking — in that order, each unlocks the next. Subscriptions cannot be created for review without it. | App Store Connect → **Business** → **Agreements** tab, signed in as the **Account Holder**; no other role is offered the options. Paid Apps row → *View and Agree to Terms*; then Tax Forms → *Add Tax Info* (every developer files the US form, W-9 for a US entity); then Bank Accounts → *Add Bank Account*. Done when the Paid Apps row reads **Active**. The legal entity name — **Lawton, LLC** — must match character for character across the tax form, the bank account holder, and IRS records; a mismatch is the usual rejection. |
+| 0.5a | **App Store Small Business Program**: 15% commission instead of 30%, under $1M proceeds a year. Needs the Paid Apps agreement signed first (0.5). | developer.apple.com/app-store/small-business-program/enroll/ as Account Holder. Have the Team ID (developer.apple.com → Account → Membership details) and the legal name. List every **Associated Developer Account** — any account you control more than 50% of, or that controls yours — with its name, Team ID, Account Holder email and the relationship; omitting one is what gets an enrolment rejected. The rate starts 15 days after the end of the fiscal month approval lands, and is not retroactive, so enrol before there are subscribers. |
 | 0.6 | `project.yml` has the version you mean to ship: `MARKETING_VERSION: "1.0"`, `CURRENT_PROJECT_VERSION: "1"`. Every upload needs a build number higher than the last upload of that version. | `project.yml` (both targets — keep the widget in step). |
 
 ## 1. Create the app record
@@ -108,7 +109,7 @@ smaller iPhone slots scale from it. No iPad slot: the app is iPhone-only.
 | Support URL | `https://routerebel.app/support` |
 | Marketing URL | `https://routerebel.app` |
 | Version | 1.0 |
-| Copyright | 2026 LawtonCorp |
+| Copyright | 2026 Lawton, LLC |
 
 ### Build
 

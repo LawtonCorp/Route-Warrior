@@ -140,7 +140,7 @@ the blurred Pro sections, the paywall counts, or the trial line.
   `acceptedTermsVersion` (bump `Legal.termsVersion` to ask again).
   Reviewed by a lawyer and approved as written (2026-09-15); a later
   edit needs a fresh review and a new effective date.
-- Privacy (D-006) still holds: no accounts, no LawtonCorp server; do
+- Privacy (D-006) still holds: no accounts, no server of ours; do
   not add network calls casually. D-017 forces Pro on Brian's personal
   build via `ROUTEWARRIOR_FORCE_PRO=1` in `scripts/signing.local`; he
   comments it out to see the free tier.

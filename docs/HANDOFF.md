@@ -7,7 +7,7 @@ Work top to bottom — later items depend on earlier ones.
 
 ## 1. Apple Developer / App Store Connect (needed before any device work)
 
-1. Ensure the LawtonCorp Apple Developer Program membership is active.
+1. Ensure the Lawton, LLC Apple Developer Program membership is active.
 2. In Xcode → Settings → Accounts, sign in; note the Team ID.
 3. `echo 'ROUTEWARRIOR_TEAM=YOURTEAMID' > scripts/signing.local` (gitignored).
 4. First device build: `./scripts/device-build.sh` — `-allowProvisioningUpdates`
@@ -104,7 +104,7 @@ Work top to bottom — later items depend on earlier ones.
    the bundled SDKs declare. Answer the App Store Connect questionnaire
    from that PDF, mark each Google type as "not linked to the user" and
    "not used for tracking" unless the report says otherwise, and attach
-   nothing for LawtonCorp itself — we still collect nothing.
+   nothing for Lawton, LLC itself — we still collect nothing.
 3. Record the App Review demo video (see docs/APP_REVIEW_NOTES.md) showing
    the always-location education flow and the recording feature.
 4. Screenshots (6.7" and 6.1"): Home recording state, Trip detail with

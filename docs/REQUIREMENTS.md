@@ -128,7 +128,7 @@ with enough recorded trips. These come verbatim from the product brief:
 ## 5. Non-functional requirements
 
 - **NFR-1 Privacy**: trip data exists only on-device and in the user's
-  private CloudKit database. No accounts, no LawtonCorp server, no
+  private CloudKit database. No accounts, no server of ours, no
   third-party analytics/ads SDKs. Only external calls: Google Routes
   (origin/destination coordinates + departure time) and Overpass (padded
   bounding boxes). Both disclosed in the privacy policy; App Privacy label
