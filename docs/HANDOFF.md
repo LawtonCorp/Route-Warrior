@@ -94,8 +94,8 @@ Work top to bottom — later items depend on earlier ones.
    first Continue. In App Store Connect set the privacy URL in App
    Information, and paste the Terms into **App Information → License
    Agreement → Custom** (it includes the Apple clauses a custom EULA must
-   carry, §14). Have a lawyer read the Terms first; the draft says so at
-   the top.
+   carry, §14). The lawyer's read is done: approved as written on
+   2026-09-15, so the text goes across unchanged.
 2. App Privacy questionnaire: since the Google map (M8) the app links
    the Google Maps SDK, which declares its own collection, so "Data Not
    Collected" no longer applies. Do this once from the archive: Xcode →

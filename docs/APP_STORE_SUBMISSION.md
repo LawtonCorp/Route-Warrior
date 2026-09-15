@@ -11,7 +11,7 @@ steps depend on earlier ones. Every command runs from
 
 | # | Done when | Where |
 |---|---|---|
-| 0.1 | A lawyer has read `docs/TERMS_OF_USE.md` — §1 (the App gives directions, and what they are worth), §13 (Colorado / Denver) and the liability cap in §9 in particular. | Outside the repo. The effective date at the top of the file is the Terms version the app ships (`LegalTests` holds `Legal.termsVersion` equal to it); a change to the text after launch means a new date, and every install is asked to accept once. |
+| 0.1 | **Done (2026-09-15).** A lawyer reviewed `docs/TERMS_OF_USE.md`, including the limitation of liability in §9, and approved it as written. | Approved as written, so the effective date stands at 10 September 2026 and `Legal.termsVersion` is unchanged — no install is asked to accept again. A change to the text after launch means a fresh review, a new date in both places, and every install asked once. |
 | 0.2 | `docs/PRIVACY_POLICY.md` has its real effective date. | Top of the file. |
 | 0.3 | The website serves both files at https://routerebel.app/terms and https://routerebel.app/privacy, and a support page at https://routerebel.app/support (an email address and a sentence is enough). | Website sessions. The app bundles the same two files; the URLs are what Apple checks. |
 | 0.4 | Google Cloud key: **iOS apps** restriction with both bundle ids, API restriction to Routes API + Maps SDK for iOS, a daily quota, a billing alert. | `docs/HANDOFF.md` §2. |
