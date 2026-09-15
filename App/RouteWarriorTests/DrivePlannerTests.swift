@@ -11,6 +11,16 @@ import XCTest
 final class DrivePlannerTests: XCTestCase {
     private let t0 = Date(timeIntervalSince1970: 1_700_000_000)
 
+    /// The plan drawn on a surface, unwrapped without `try` so the
+    /// assertions below read as one line each.
+    private func shown(_ snapshot: PlanSnapshot?) -> PlanSnapshot {
+        guard let snapshot else {
+            XCTFail("no plan for that surface")
+            return plan(.appleMaps)
+        }
+        return snapshot
+    }
+
     private func plan(_ provider: PlanSnapshot.Provider, seconds: TimeInterval = 600) -> PlanSnapshot {
         PlanSnapshot(
             provider: provider,
@@ -96,22 +106,81 @@ final class DrivePlannerTests: XCTestCase {
         XCTAssertEqual(planner.plan(on: .googleRoutes)?.provider, .googleRoutes)
     }
 
-    func testPromotingAnAlternateReplacesOnlyThatProvidersPlan() {
+    // MARK: Picking a route without moving the list (D-063)
+
+    /// Apple with two alternates, plus a Google plan to prove the pick
+    /// touches only the surface it was made on.
+    private func plannerWithAlternates() -> DrivePlanner {
         let planner = DrivePlanner()
         let work = destination("Work")
         var apple = plan(.appleMaps, seconds: 600)
-        apple.alternates = [PlanSnapshot.AltRoute(
-            polyline: apple.polyline, staticDuration: 400, trafficDuration: 400
-        )]
-        let google = plan(.googleRoutes, seconds: 900)
+        apple.alternates = [
+            PlanSnapshot.AltRoute(polyline: apple.polyline, staticDuration: 400, trafficDuration: 400),
+            PlanSnapshot.AltRoute(polyline: apple.polyline, staticDuration: 800, trafficDuration: 800),
+        ]
         planner.start(work)
         planner.beginFetch()
-        planner.finish(with: [apple, google], for: work)
+        planner.finish(with: [apple, plan(.googleRoutes, seconds: 900)], for: work)
+        return planner
+    }
 
-        planner.promote(alternate: 0, on: .appleMaps)
+    func testPickingAnAlternateDepartsWithItAndTouchesNoOtherProvider() {
+        let planner = plannerWithAlternates()
+        planner.select(route: 1, on: .appleMaps)
 
-        XCTAssertEqual(planner.plan(on: .appleMaps)?.trafficDuration, 400)
-        XCTAssertEqual(planner.plan(on: .googleRoutes)?.trafficDuration, 900)
+        let departure = planner.departurePlans(on: .appleMaps)
+        XCTAssertEqual(departure.first { $0.provider == .appleMaps }?.trafficDuration, 400)
+        XCTAssertEqual(departure.first { $0.provider == .googleRoutes }?.trafficDuration, 900)
+    }
+
+    /// The defect this replaced: every tap rewrote the stored plans, so
+    /// the rows renumbered under the finger and a second tap promoted a
+    /// promotion. The list must read the same before and after.
+    func testTheListOnScreenNeverMovesWhenAPickIsMade() {
+        let planner = plannerWithAlternates()
+        let before = PlanList.rows(shown(planner.plan(on: .appleMaps)))
+
+        planner.select(route: 2, on: .appleMaps)
+        XCTAssertEqual(PlanList.rows(shown(planner.plan(on: .appleMaps))), before)
+
+        planner.select(route: 1, on: .appleMaps)
+        XCTAssertEqual(PlanList.rows(shown(planner.plan(on: .appleMaps))), before)
+        // And the pick still means what it says after changing your mind.
+        XCTAssertEqual(
+            planner.departurePlans(on: .appleMaps).first { $0.provider == .appleMaps }?.trafficDuration, 400
+        )
+    }
+
+    /// Picking the same row twice lands where picking it once did.
+    func testPickingTheSameRowTwiceIsNotAPromotionOfAPromotion() {
+        let planner = plannerWithAlternates()
+        planner.select(route: 2, on: .appleMaps)
+        let once = planner.departurePlans(on: .appleMaps)
+        planner.select(route: 2, on: .appleMaps)
+        XCTAssertEqual(planner.departurePlans(on: .appleMaps), once)
+        XCTAssertEqual(once.first { $0.provider == .appleMaps }?.trafficDuration, 800)
+    }
+
+    func testANewAnswerClearsAPickMadeAgainstTheOldList() {
+        let planner = plannerWithAlternates()
+        planner.select(route: 2, on: .appleMaps)
+        XCTAssertEqual(planner.selectedRoute, 2)
+
+        let work = destination("Work")
+        planner.beginFetch()
+        planner.finish(with: [plan(.appleMaps, seconds: 700)], for: work)
+        XCTAssertEqual(planner.selectedRoute, PlanList.recommendedRow, "a row number means nothing here")
+
+        planner.select(route: 4, on: .appleMaps)
+        XCTAssertEqual(planner.selectedRoute, PlanList.recommendedRow, "and a row that does not exist is refused")
+    }
+
+    /// A new destination cannot inherit the last one's pick.
+    func testANewDestinationClearsThePick() {
+        let planner = plannerWithAlternates()
+        planner.select(route: 1, on: .appleMaps)
+        planner.start(destination("School"))
+        XCTAssertEqual(planner.selectedRoute, PlanList.recommendedRow)
     }
 
     func testOnlyTheEndOfARecordingTakesThePlanOffTheScreen() {

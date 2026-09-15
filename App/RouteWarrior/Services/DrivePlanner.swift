@@ -18,6 +18,12 @@ final class DrivePlanner {
     private(set) var plans: [PlanSnapshot] = []
     private(set) var loading = false
     private(set) var failed = false
+    /// Which row of the shown plan's route list the driver picked
+    /// (D-063). Row 0 is the provider's recommendation. Held here
+    /// rather than folded into `plans`, so the list on screen keeps its
+    /// order and its numbers while the drive still departs with the
+    /// route that was picked.
+    private(set) var selectedRoute = PlanList.recommendedRow
 
     var hasDestination: Bool { destination != nil }
 
@@ -38,6 +44,7 @@ final class DrivePlanner {
         plans = []
         failed = false
         loading = false
+        selectedRoute = PlanList.recommendedRow
     }
 
     func beginFetch() {
@@ -52,11 +59,15 @@ final class DrivePlanner {
         self.plans = plans
         loading = false
         failed = plans.isEmpty
+        // A new set of routes is a new list; the old row number would
+        // point at something else.
+        selectedRoute = PlanList.recommendedRow
     }
 
     func clear() {
         destination = nil
         plans = []
+        selectedRoute = PlanList.recommendedRow
         loading = false
         failed = false
     }
@@ -74,9 +85,19 @@ final class DrivePlanner {
         plans.first { $0.provider == surface }
     }
 
-    /// Promote one of the drawn plan's alternates to be the plan.
-    func promote(alternate index: Int, on surface: PlanSnapshot.Provider) {
-        guard let shown = plan(on: surface) else { return }
-        plans = plans.map { $0.id == shown.id ? $0.promotingAlternate(at: index) : $0 }
+    /// Pick a route off the list. Out-of-range picks fall back to the
+    /// provider's recommendation rather than being stored and acted on.
+    func select(route row: Int, on surface: PlanSnapshot.Provider) {
+        selectedRoute = PlanList.clamped(row, to: plan(on: surface))
+    }
+
+    /// The plans as the drive would depart with them (D-063): the shown
+    /// surface's snapshot with the driver's pick promoted, every other
+    /// provider's untouched. The stored plans are never rewritten, so
+    /// nothing on screen moves when the pick changes.
+    func departurePlans(on surface: PlanSnapshot.Provider) -> [PlanSnapshot] {
+        guard let shown = plan(on: surface) else { return plans }
+        let departure = PlanList.departure(shown, selecting: selectedRoute)
+        return plans.map { $0.id == shown.id ? departure : $0 }
     }
 }
