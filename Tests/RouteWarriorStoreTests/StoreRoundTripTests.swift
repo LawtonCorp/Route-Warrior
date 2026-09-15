@@ -175,6 +175,17 @@ struct StoreRoundTripTests {
         #expect(restored == snapshot)
     }
 
+    /// D-060: the label is the driver's, not the drive's. Rewriting a
+    /// record from a recomputed `Trip` must never take it away.
+    @Test func theDriversLabelSurvivesAKitTripBeingWrittenOverIt() throws {
+        let trip = makeTrip()
+        let record = try TripRecord(trip)
+        record.label = "School run"
+        try record.update(from: trip)
+        #expect(record.label == "School run")
+        #expect(try record.trip() == trip, "and the drive itself is unchanged by having a name")
+    }
+
     @Test func corruptTripBlobThrowsInsteadOfCrashing() throws {
         let record = try TripRecord(makeTrip())
         record.pointsBlob = Data("not json".utf8)

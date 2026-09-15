@@ -322,10 +322,10 @@ struct HomeView: View {
     private var goFooter: String {
         let base = switch mapSettings.navigation {
         case .appleMaps:
-            "Recording starts now, then Apple Maps takes over for turn-by-turn — on CarPlay too. Route Rebel keeps recording in the background, and the plan you left with stays the baseline."
+            "Recording starts now, then Apple Maps takes over for turn-by-turn — on CarPlay too. Apple Maps will ask you to confirm a route on its own screen. Route Rebel keeps recording in the background, and the plan you left with stays the baseline."
         case .googleMaps:
             "Recording starts now, then Google Maps takes over for turn-by-turn — on CarPlay too. Google Maps chooses its own route; the plan you left with stays the baseline, and Route Rebel keeps recording in the background."
-        case .off:
+        case .routeRebel:
             "Recording starts now. Whatever plan you leave with is the baseline the drive is judged against. The live drive view and reroute are part of Pro; the trip records and compares either way."
         }
         return planner.loading
@@ -519,7 +519,7 @@ struct HomeView: View {
                 if AppleMapsHandoff.navigate(to: destination.coordinate, named: destination.name) { return }
             case .googleMaps:
                 if GoogleMapsHandoff.navigate(to: destination.coordinate) { return }
-            case .off:
+            case .routeRebel:
                 break
             }
         }

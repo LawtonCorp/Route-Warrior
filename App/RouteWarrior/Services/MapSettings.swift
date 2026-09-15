@@ -30,9 +30,6 @@ final class MapSettings {
     private static let providerKey = "mapProvider"
     private static let autoRerouteKey = "autoReroute"
     private static let navigationKey = "navigationHandoff"
-    /// The pre-D-057 toggle, read once so an install that chose Apple
-    /// Maps keeps it.
-    private static let legacyAppleMapsKey = "navigateWithAppleMaps"
     private static let stopOnArrivalKey = "stopOnArrival"
     private static let guidanceKey = "guidance"
     private static let guidanceVoiceKey = "guidanceVoice"
@@ -44,12 +41,11 @@ final class MapSettings {
             .flatMap(MapProvider.init(rawValue:)) ?? MapProvider.default
         provider = availableProviders.contains(stored) ? stored : MapProvider.default
         autoReroute = defaults.bool(forKey: MapSettings.autoRerouteKey)
-        if let stored = defaults.string(forKey: MapSettings.navigationKey),
-           let handoff = NavigationHandoff(rawValue: stored) {
-            navigation = handoff
-        } else {
-            navigation = defaults.bool(forKey: MapSettings.legacyAppleMapsKey) ? .appleMaps : .off
-        }
+        // The pre-D-057 Apple Maps toggle is no longer read (D-060): it
+        // was set when the app had no guidance of its own, so it says
+        // nothing about whether the driver wants to leave the app now.
+        navigation = defaults.string(forKey: MapSettings.navigationKey)
+            .flatMap(NavigationHandoff.init(rawValue:)) ?? .routeRebel
         // Unset reads as true — bool(forKey:) alone would read as false.
         stopOnArrival = defaults.object(forKey: MapSettings.stopOnArrivalKey) == nil
             || defaults.bool(forKey: MapSettings.stopOnArrivalKey)

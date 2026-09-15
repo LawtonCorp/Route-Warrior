@@ -49,25 +49,42 @@ final class MapSettingsTests: XCTestCase {
         defer { cleanup() }
 
         let settings = MapSettings(defaults: defaults, googleAvailable: true)
-        XCTAssertEqual(settings.navigation, .off)
+        XCTAssertEqual(settings.navigation, .routeRebel, "Go stays in the app until told otherwise")
 
         settings.setNavigation(.googleMaps)
         XCTAssertEqual(settings.navigation, .googleMaps)
         XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .googleMaps)
 
-        settings.setNavigation(.off)
-        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .off)
+        settings.setNavigation(.routeRebel)
+        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .routeRebel)
     }
 
-    /// An install that switched on the old Apple Maps toggle keeps Apple
-    /// Maps; one that never did starts off.
-    func testTheOldAppleMapsToggleCarriesOver() throws {
+    /// D-060: the pre-D-057 toggle is no longer read. It was set when the
+    /// app had no turn-by-turn of its own, so it cannot mean the driver
+    /// wants to leave the app now.
+    func testTheOldAppleMapsToggleNoLongerDecides() throws {
         let (defaults, cleanup) = try freshDefaults()
         defer { cleanup() }
         defaults.set(true, forKey: "navigateWithAppleMaps")
-        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .appleMaps)
-        defaults.set("googleMaps", forKey: "navigationHandoff")
-        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .googleMaps, "the new key wins")
+        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .routeRebel)
+        defaults.set("appleMaps", forKey: "navigationHandoff")
+        XCTAssertEqual(
+            MapSettings(defaults: defaults, googleAvailable: true).navigation, .appleMaps,
+            "a choice made in the picker is still honoured"
+        )
+    }
+
+    /// The stored value did not change with the name, so an install that
+    /// already chose in the picker is not reset by this rename.
+    func testTheRouteRebelChoiceStillReadsItsStoredValue() throws {
+        let (defaults, cleanup) = try freshDefaults()
+        defer { cleanup() }
+        defaults.set("off", forKey: "navigationHandoff")
+        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .routeRebel)
+        XCTAssertEqual(NavigationHandoff.allCases.map(\.label), ["Route Rebel", "Apple Maps", "Google Maps"])
+        XCTAssertFalse(NavigationHandoff.routeRebel.leavesTheApp)
+        XCTAssertTrue(NavigationHandoff.appleMaps.leavesTheApp)
+        XCTAssertTrue(NavigationHandoff.googleMaps.leavesTheApp)
     }
 
     /// D-038: on until switched off — a drive that ends at the kerb is

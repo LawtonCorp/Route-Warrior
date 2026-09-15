@@ -1230,3 +1230,46 @@ the next Apple drive**: if MapKit ever reports `positionedByUser` for
 its own follow animation, that surface will stop chasing on the first
 fix and sit there with a Recenter button, which is worse than what it
 did before. Nothing in CI can catch that; it needs a phone.
+
+## D-060 — A drive can be named, and Go stays in the app by default (2026-09-15)
+
+**Chosen**: two field-test fixes.
+
+A trip carries a `label` the driver types on its own screen, and the
+Trips row leads with it: the driver's name first, then the journey
+(D-054), then the date. A drive with no saved place at either end was a
+date in a list of dates, and Brian wanted to tell one from another. The
+label is a free-text annotation and nothing else — it lives on
+`TripRecord`, never on the kit's `Trip`, so no verdict, statistic or
+prediction can depend on what a drive was called, and rewriting a
+record from a recomputed drive cannot wipe it (tested). The placeholder
+is whatever the row would otherwise show, so clearing the field
+restores it. **Rejected** for this: naming the trip by setting its
+destination to a saved place (Brian chose the label — it is the
+cheaper half, and assigning a place after the fact also needs the
+route matcher re-run or the trip joins a destination's analytics
+without joining any of its routes); a name on the kit's `Trip` (an
+annotation is not part of the drive, and anything computed from a drive
+must not vary with its name).
+
+Go's "Navigate with" choice renames **Off** to **Route Rebel**, which
+is what it always did and no longer describes an absence: since D-052
+the drive view has turn-by-turn of its own. Route Rebel is the default,
+and the pre-D-057 Apple Maps toggle is no longer carried over — it was
+set when the app had no guidance, so it cannot mean the driver wants to
+leave the app now. Field evidence: Brian picked a route in Route Rebel,
+tapped Go, and Apple Maps opened on its own route picker asking again.
+That second pick cannot be removed: `openInMaps` with driving
+directions always lands on Apple's preview, and Apple publishes no
+launch option to start guidance directly (Google's link does, which is
+why Google Maps drives away immediately). So the honest fix is to stop
+sending the driver there by default and to say plainly, in both
+footers, that Apple Maps will ask again. The stored value stays "off",
+so an install that chose in the picker is not reset by the rename.
+**Rejected**: skipping Route Rebel's own plan list when handing off
+(it is where an alternate is promoted to the baseline, which is the
+comparison the app exists for); leaving it and only explaining it
+(Brian asked for a fix, and the explanation is now a footnote to a
+default that no longer bites); dropping the Apple hand-off altogether
+(it is the only way to put guidance on the CarPlay screen, which
+Route Rebel cannot reach without Apple's navigation entitlement).
