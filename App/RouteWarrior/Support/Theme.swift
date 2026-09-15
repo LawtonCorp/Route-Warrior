@@ -138,22 +138,32 @@ struct IconTile: View {
     }
 }
 
+/// The wash behind a tinted row, as a view of its own so a row that
+/// carries it in only some states can ask for it conditionally.
+struct RowTint: View {
+    let color: Color
+
+    var body: some View {
+        ZStack {
+            Color(uiColor: .secondarySystemGroupedBackground)
+            LinearGradient(
+                colors: [color.opacity(0.22), color.opacity(0.06)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+}
+
 extension View {
     /// A soft wash of `color` behind a list row — for the one card per
     /// screen that carries state (recording status, a verdict). Layered
     /// over the grouped cell background so the wash reads as a tint, not
-    /// as a hole in the list, in light and dark mode alike.
-    func tintedRow(_ color: Color) -> some View {
-        listRowBackground(
-            ZStack {
-                Color(uiColor: .secondarySystemGroupedBackground)
-                LinearGradient(
-                    colors: [color.opacity(0.22), color.opacity(0.06)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-        )
+    /// as a hole in the list, in light and dark mode alike. `nil` is the
+    /// plain cell: `listRowBackground` takes an optional, so a row can
+    /// drop the wash without a second code path.
+    func tintedRow(_ color: Color?) -> some View {
+        listRowBackground(color.map { RowTint(color: $0) })
     }
 }
 
