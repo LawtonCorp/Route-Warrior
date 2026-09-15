@@ -1273,3 +1273,45 @@ comparison the app exists for); leaving it and only explaining it
 default that no longer bites); dropping the Apple hand-off altogether
 (it is the only way to put guidance on the CarPlay screen, which
 Route Rebel cannot reach without Apple's navigation entitlement).
+
+## D-061 — What Go does is disclosed, not shouted (2026-09-15)
+
+The Plan tab said too much at once. Above the Go button sat a tinted
+"Drive detected — recording starts on its own" card; below it, four
+lines of standing paragraph explaining what tapping Go would do. Brian
+asked for the detected-drive line to move beneath Go and to become the
+control that reveals the paragraph.
+
+Both now share one line under the button. Armed, it is the recorder's
+own words with the wash it had before; with nothing detected, it reads
+"What happens when you tap Go" behind an info glyph. Either way a tap
+discloses the paragraph as the section's footer, and a second tap hides
+it again. The disclosure is per visit to the screen, not remembered:
+the paragraph is short and the driver who wants it twice can have it.
+
+Two things stayed out of the disclosure. The recording line keeps its
+own card beneath the map, because it carries Stop and the drive view
+and Go is never on screen beside it. And the loading sentence — "Plans
+are still loading. Go now and they become the baseline when they
+arrive" (D-044) — stays visible under Go, because it describes this
+moment rather than how the app works, and a driver deciding whether to
+wait cannot be asked to tap for it first.
+
+`HomeLayout.showsGoButton` now states the condition the Go section
+already used inline, and `recorderSlot` reads the same predicate, so
+the line can never claim a place under a button that is not there — a
+test walks all six state/destination combinations and asserts exactly
+that. `Theme.tintedRow` takes an optional colour so one row can carry
+the wash in one state and not in another without a second code path.
+
+**Rejected**: hanging the disclosure only on the detected-drive line
+(it appears only when motion has already said "automotive", so on a
+screen where the driver is planning from a parked car the explanation —
+including the warning that Apple Maps will ask for a route again —
+would have been unreachable); hiding the loading sentence with the rest
+(it is the answer to "why are there no routes yet", and burying it
+would undo D-044); remembering the disclosed state across launches
+(a preference to maintain, and a screen that silently differs between
+two phones, for four lines of text); leaving the paragraph in place and
+only moving the card (Brian asked for both, and the paragraph was the
+larger half of the clutter).

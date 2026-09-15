@@ -20,9 +20,16 @@ struct HomeView: View {
     @State private var resolving = false
     @State private var showDrive = false
     @State private var showPaywall = false
+    /// What Go does is a tap away, not four lines of standing text
+    /// (D-061). Per visit to the screen, not remembered.
+    @State private var showsGoNote = false
     @FocusState private var searchFocused: Bool
 
     private var surface: PlanSnapshot.Provider { mapSettings.provider.snapshotProvider }
+
+    private var showsGo: Bool {
+        HomeLayout.showsGoButton(hasDestination: planner.hasDestination, state: pipeline.recorderState)
+    }
 
     /// Suggestions belong to an active search, not to a destination the
     /// driver has already picked.
@@ -80,10 +87,13 @@ struct HomeView: View {
                     }
                 }
                 // Its own card, so it never reads as the map's footer (D-047).
-                if HomeLayout.showsRecorderRow(pipeline.recorderState) {
+                if HomeLayout.recorderSlot(state: pipeline.recorderState, showsGo: showsGo) == .ownCard {
                     Section { recorderRow }
                 }
-                if planner.hasDestination, !pipeline.isRecording { goSection }
+                if showsGo {
+                    goSection
+                    goNoteSection
+                }
                 savedPlacesSection
             }
             .navigationTitle("Route Rebel")
@@ -313,14 +323,62 @@ struct HomeView: View {
             .tint(Theme.route)
             .listRowBackground(Color.clear)
         } footer: {
-            Text(goFooter)
+            // The Go button never waits for the providers (D-044), and
+            // this is the one line that cannot hide behind a tap: it is
+            // about right now, not about how the app works.
+            if planner.loading {
+                Text("Plans are still loading. Go now and they become the baseline when they arrive.")
+            }
         }
     }
 
-    /// The Go button never waits for the providers (D-044): while they
-    /// are still being asked, the footer says the plan will catch up.
-    private var goFooter: String {
-        let base = switch mapSettings.navigation {
+    /// The line beneath Go, and the paragraph it discloses (D-061). A
+    /// detected drive says so here — it is the recorder's own words,
+    /// moved down from above the button — and on a screen where nothing
+    /// has been detected the same line offers the explanation anyway.
+    private var goNoteSection: some View {
+        let armed = pipeline.recorderState == .armed
+        let tint = Theme.statusTint(for: pipeline.recorderState)
+        // The detected-drive line keeps the wash it had above the button;
+        // the plain offer of an explanation does not earn one.
+        let wash: Color? = armed ? tint : nil
+        return Section {
+            Button {
+                withAnimation(.snappy) { showsGoNote.toggle() }
+            } label: {
+                HStack(spacing: 10) {
+                    if armed {
+                        IconTile(symbol: Theme.statusSymbol(for: .armed), color: tint, size: 24)
+                    } else {
+                        Image(systemName: "info.circle")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(HomeLayout.goNoteTitle(pipeline.recorderState))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.down")
+                        .font(.footnote)
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(showsGoNote ? 180 : 0))
+                }
+                // The whole line is the target, not just the words.
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.vertical, 2)
+            .accessibilityHint(showsGoNote ? "Hides what happens when you tap Go" : "Shows what happens when you tap Go")
+            .tintedRow(wash)
+        } footer: {
+            if showsGoNote { Text(goExplanation) }
+        }
+    }
+
+    /// What Go does, in the words of whichever app will be guiding.
+    private var goExplanation: String {
+        switch mapSettings.navigation {
         case .appleMaps:
             "Recording starts now, then Apple Maps takes over for turn-by-turn — on CarPlay too. Apple Maps will ask you to confirm a route on its own screen. Route Rebel keeps recording in the background, and the plan you left with stays the baseline."
         case .googleMaps:
@@ -328,9 +386,6 @@ struct HomeView: View {
         case .routeRebel:
             "Recording starts now. Whatever plan you leave with is the baseline the drive is judged against. The live drive view and reroute are part of Pro; the trip records and compares either way."
         }
-        return planner.loading
-            ? "Plans are still loading. Go now and they become the baseline when they arrive. " + base
-            : base
     }
 
     // MARK: Saved places, under the map

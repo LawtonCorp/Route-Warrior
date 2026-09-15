@@ -13,11 +13,37 @@ enum HomeLayout {
         state != .recording && !hasDestination
     }
 
-    /// The one-line recorder row beneath the routes: shown while armed
-    /// (a caption) or recording (Stop and the drive view). An idle
-    /// recorder takes no space at all.
-    static func showsRecorderRow(_ state: TripRecorder.State) -> Bool {
-        state != .idle
+    /// Go is on the screen once there is somewhere to go and the drive
+    /// has not already started — Stop belongs to a drive in progress,
+    /// and two ways to start one is the mistake D-045 fixed.
+    static func showsGoButton(hasDestination: Bool, state: TripRecorder.State) -> Bool {
+        hasDestination && state != .recording
+    }
+
+    /// Where the recorder's one line sits (D-061).
+    enum RecorderSlot: Equatable {
+        /// Its own card beneath the map, as since D-047: a drive in
+        /// progress (the line carries Stop and the drive view), or a
+        /// detected drive on a screen with no Go to sit under.
+        case ownCard
+        /// Beneath the Go button, where the line doubles as the control
+        /// that discloses what Go does.
+        case underGo
+        /// An idle recorder with nothing to explain takes no space.
+        /// Named `hidden` rather than `none`, which every call site would
+        /// have to disambiguate from `Optional.none`.
+        case hidden
+    }
+
+    /// `showsGo` is `showsGoButton` for the same state — the two rules
+    /// read the same predicate so the line can never claim a place
+    /// under a button that is not there.
+    static func recorderSlot(state: TripRecorder.State, showsGo: Bool) -> RecorderSlot {
+        // Recording keeps its own card: the line carries buttons of its
+        // own, and Go is never beside it to be explained.
+        if state == .recording { return .ownCard }
+        if showsGo { return .underGo }
+        return state == .armed ? .ownCard : .hidden
     }
 
     /// The words on the recorder row (D-056). Armed says what it means
@@ -27,5 +53,13 @@ enum HomeLayout {
         case .recording: "Rec"
         default: "Drive detected — recording starts on its own"
         }
+    }
+
+    /// The tappable line under Go (D-061). A detected drive says so in
+    /// its own words; otherwise the line names what it will reveal, so
+    /// the explanation is still reachable on a screen where the
+    /// recorder has detected nothing.
+    static func goNoteTitle(_ state: TripRecorder.State) -> String {
+        state == .armed ? recorderCaption(.armed) : "What happens when you tap Go"
     }
 }
