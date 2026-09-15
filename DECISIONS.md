@@ -1400,3 +1400,43 @@ about the route rather than about the choice); leaving the check off
 rows that are only being reported, such as the other provider's plan
 when this surface returned nothing — done, since an untickable circle
 invites a tap that does nothing.
+
+## D-064 — The contracting party is Lawton, LLC (2026-09-15)
+
+The documents named "LawtonCorp" as the party you contract with. The
+registered entity is **Lawton, LLC**. A legal document naming an entity
+that does not exist is not a cosmetic defect, so both the Terms of Use
+and the Privacy Policy now name the real one.
+
+The text changed, so the dates moved: both documents are effective
+15 September 2026 and `Legal.termsVersion` follows as `2026-09-15`
+(LegalTests holds the two equal). Bumping it asks every install to
+accept the Terms once. That is the whole reason to do this now — before
+launch the only install is the developer's own phone, so the prompt
+costs one tap. The same correction after launch would interrupt every
+driver.
+
+What was deliberately left alone: `com.lawtoncorp.routewarrior` and the
+App Group and iCloud containers built on it, which are identifiers
+rather than names and cannot change without a new app record;
+`brian@lawtoncorp.com`, which is a real address; the `LawtonCorp` GitHub
+organisation; and D-001's entry in this file, which is a log of what was
+decided in June, not a description of today.
+
+The lawyer's approval (recorded earlier the same day) was given for text
+naming LawtonCorp. A party's identity is material even when nothing else
+moves, so the submission checklist now asks for one line back from them
+confirming the renamed party rather than claiming the approval covers
+it.
+
+**Rejected**: leaving the legal documents and correcting only the
+copyright line and the checklists (the binding document is the one place
+the name has force — fixing everything except it would be exactly
+backwards); keeping the 10 September dates because Brian had just
+confirmed them (he confirmed the date of a text that no longer exists;
+a document whose words changed carries the date it changed); renaming
+the bundle id to match (D-005's identifiers are load-bearing, the store
+record is keyed to them, and Brian's standing instruction is to leave
+them as they are); rewriting "LawtonCorp" out of past DECISIONS entries
+(a decision log that is edited to match the present stops being
+evidence).

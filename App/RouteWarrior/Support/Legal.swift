@@ -10,7 +10,7 @@ enum Legal {
     /// yyyy-MM-dd. `LegalTests` holds it equal to the bundled file's
     /// date; when the Terms change, the date in the file changes and
     /// this must follow, and every install is asked again once (D-053).
-    static let termsVersion = "2026-09-10"
+    static let termsVersion = "2026-09-15"
 
     static let termsURL = URL(string: "https://routerebel.app/terms")!
     static let privacyURL = URL(string: "https://routerebel.app/privacy")!

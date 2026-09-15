@@ -6,17 +6,21 @@ The effective date below is the Terms version: `Legal.termsVersion` must
 equal it as yyyy-MM-dd (LegalTests checks), and changing it asks every
 install to accept again.
 
-A lawyer reviewed this text, including the limitation of liability in
-§9, and approved it as written (recorded 2026-09-15). The effective date
-is therefore unchanged and no install is asked to accept again. Any
-later edit to the wording needs a fresh review, a new effective date
-here, and the same date in `Legal.termsVersion` — which does ask every
-install to accept once. -->
+A lawyer reviewed this text and approved it as written, the limitation
+of liability in §9 included (recorded 2026-09-15). One thing changed
+after that approval, the same day: the contracting party was corrected
+from "LawtonCorp" to the registered entity, Lawton, LLC. Nothing else
+moved. The effective date and `Legal.termsVersion` were bumped to match,
+which asks every install to accept once — done before launch, so it
+costs one prompt on the developer's own phone.
 
-_Effective date: 10 September 2026._
+Any later edit needs a fresh review, a new effective date here, and the
+same date in `Legal.termsVersion`, in yyyy-MM-dd (LegalTests checks). -->
 
-These Terms of Use ("Terms") are an agreement between you and LawtonCorp
-("LawtonCorp", "we", "us") about the Route Rebel iPhone app (the "App").
+_Effective date: 15 September 2026._
+
+These Terms of Use ("Terms") are an agreement between you and Lawton,
+LLC ("Lawton", "we", "us") about the Route Rebel iPhone app (the "App").
 By installing, opening or using the App you agree to these Terms and to
 the Route Rebel Privacy Policy. If you do not agree, do not use the App.
 
@@ -142,7 +146,7 @@ those places, they apply only to the extent the law permits.
 
 ## 10. Indemnity
 
-You agree to defend, indemnify and hold harmless LawtonCorp and its
+You agree to defend, indemnify and hold harmless Lawton, LLC and its
 owners, officers, employees and contractors from any claim, demand,
 loss, liability, damage, fine or expense (including reasonable legal
 fees) arising out of or related to your driving, your violation of any
@@ -171,12 +175,12 @@ be brought in the state or federal courts located in Denver, Colorado,
 and you consent to their jurisdiction, except that either party may
 bring a qualifying claim in small-claims court.
 <!-- Colorado and Denver were approved with the rest of the Terms
-(2026-09-15). Change both, with a fresh review, if LawtonCorp is ever
+(2026-09-15). Change both, with a fresh review, if Lawton, LLC is ever
 organised elsewhere. -->
 
 ## 14. Apple
 
-These Terms are between you and LawtonCorp only, not Apple. Apple is not
+These Terms are between you and Lawton, LLC only, not Apple. Apple is not
 responsible for the App or its content. Apple has no obligation to
 provide maintenance or support for the App. If the App fails to conform
 to any applicable warranty, you may notify Apple and Apple will refund
@@ -186,7 +190,7 @@ responsible for addressing any claim by you or any third party relating
 to the App, including product-liability claims, claims that the App
 fails to conform to a legal or regulatory requirement, or claims under
 consumer-protection or similar law. If a third party claims the App
-infringes its intellectual-property rights, LawtonCorp, not Apple, is
+infringes its intellectual-property rights, Lawton, LLC, not Apple, is
 responsible for the investigation, defence, settlement and discharge of
 that claim. You represent that you are not located in a country subject
 to a US Government embargo or designated as a "terrorist supporting"
@@ -203,4 +207,4 @@ Privacy Policy are the entire agreement between you and us about the App.
 
 ## Contact
 
-LawtonCorp — brian@lawtoncorp.com
+Lawton, LLC — brian@lawtoncorp.com
