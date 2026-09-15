@@ -50,7 +50,10 @@ struct RouteWarriorApp: App {
         if !key.isEmpty, !Self.isTestHost {
             GMSServices.provideAPIKey(key)
         }
-        let mapSettings = MapSettings(googleAvailable: MapSettings.googleAvailable(hasKey: !key.isEmpty))
+        let mapSettings = MapSettings(
+            googleAvailable: MapSettings.googleAvailable(hasKey: !key.isEmpty),
+            googleMapsInstalled: GoogleMapsHandoff.isAppInstalled
+        )
         _mapSettings = State(initialValue: mapSettings)
         let store = StoreService()
         _store = State(initialValue: store)

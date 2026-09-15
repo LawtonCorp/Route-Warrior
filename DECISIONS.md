@@ -1315,3 +1315,45 @@ would undo D-044); remembering the disclosed state across launches
 two phones, for four lines of text); leaving the paragraph in place and
 only moving the card (Brian asked for both, and the paragraph was the
 larger half of the clutter).
+
+## D-062 — Go defaults to Google Maps where Google Maps exists (2026-09-15)
+
+Brian asked for Google Maps to be the default hand-off. It is, on any
+phone that has the Google Maps app — and only there.
+
+Google's link is the reason. `dir_action=navigate` starts guidance the
+moment Go is tapped, and Google Maps reaches the CarPlay screen, so it
+is the one choice that gives the driver the car screen without a second
+route to pick. But the same universal link opens Google's directions
+page **in the browser** when the app is absent, which is useless at the
+wheel. Most iPhones do not have Google Maps. A default that lands a new
+driver — or an App Review reviewer — in Safari is not a default.
+
+So the phone decides. `NavigationHandoff.available(googleMapsInstalled:)`
+drops Google Maps from the picker when its app is missing, and
+`preferred(googleMapsInstalled:)` is Google Maps when it is there and
+Route Rebel when it is not. Apple Maps is never a default: since D-060
+we know it always stops to ask for a route again. This is the same shape
+`availableProviders` has used since D-024 — a stored choice the phone
+can no longer honour falls back rather than being acted on — so deleting
+Google Maps cannot leave Go opening a web page, and reinstalling it
+brings the choice back, because the stored value is left alone.
+
+Detection is `canOpenURL("comgooglemaps://")`, which needs
+`comgooglemaps` in `LSApplicationQueriesSchemes` — added to the app
+target in `project.yml`, since iOS answers false for any scheme not
+declared there. D-057 deliberately avoided declaring it; that was right
+when the link was only ever opened on request, and wrong once the answer
+decides a default. It is read once at launch, so installing Google Maps
+takes effect on the next start. The Settings footer says why the choice
+is missing, or its absence reads as a bug.
+
+**Rejected**: defaulting to Google Maps unconditionally (what was asked,
+but it ships the Safari landing to every new install and to the
+reviewer); keeping Google Maps in the picker and silently guiding in
+Route Rebel when it is chosen but absent (a picker that does not mean
+what it says); falling back to Apple Maps instead of Route Rebel (it
+asks for a route again, which is the defect this whole line of work
+started from); re-checking on every foreground (the answer changes only
+when the driver installs or deletes an app, and a setting that shifts
+under them mid-session is worse than one that settles at launch).

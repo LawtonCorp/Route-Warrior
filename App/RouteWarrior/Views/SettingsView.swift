@@ -64,7 +64,7 @@ struct SettingsView: View {
                         get: { mapSettings.navigation },
                         set: { mapSettings.setNavigation($0) }
                     )) {
-                        ForEach(NavigationHandoff.allCases, id: \.self) { handoff in
+                        ForEach(mapSettings.availableHandoffs, id: \.self) { handoff in
                             Text(handoff.label).tag(handoff)
                         }
                     } label: {
@@ -184,6 +184,10 @@ struct SettingsView: View {
             "Go stays here: the drive view guides you, speaks the turns and keeps the scoreboard on screen, with no second route to pick. Choose a maps app instead to get guidance on the CarPlay screen, which Route Rebel cannot reach."
         }
         lines.append(navigationLine)
+        if !mapSettings.availableHandoffs.contains(.googleMaps) {
+            // Otherwise its absence from the picker reads as a bug.
+            lines.append("Google Maps is not on this phone, so it is not offered; install it and Route Rebel will hand off to it.")
+        }
         return lines.joined(separator: " ")
     }
 

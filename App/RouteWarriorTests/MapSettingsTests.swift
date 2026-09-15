@@ -42,21 +42,94 @@ final class MapSettingsTests: XCTestCase {
         XCTAssertEqual(MapSettings.googleAvailable(hasKey: true), MapSettings.googleSurfaceAvailable)
     }
 
-    /// D-034/D-057: off until asked for. The choice must survive a
-    /// relaunch, or the driver re-chooses it every trip.
-    func testTheNavigationHandoffIsOffUntilChosenAndThenPersists() throws {
+    /// D-034/D-057: the choice must survive a relaunch, or the driver
+    /// re-chooses it every trip.
+    func testTheNavigationHandoffPersistsOnceChosen() throws {
         let (defaults, cleanup) = try freshDefaults()
         defer { cleanup() }
 
-        let settings = MapSettings(defaults: defaults, googleAvailable: true)
-        XCTAssertEqual(settings.navigation, .routeRebel, "Go stays in the app until told otherwise")
-
+        let settings = MapSettings(defaults: defaults, googleAvailable: true, googleMapsInstalled: true)
         settings.setNavigation(.googleMaps)
         XCTAssertEqual(settings.navigation, .googleMaps)
-        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .googleMaps)
+        XCTAssertEqual(
+            MapSettings(defaults: defaults, googleAvailable: true, googleMapsInstalled: true).navigation,
+            .googleMaps
+        )
 
         settings.setNavigation(.routeRebel)
-        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .routeRebel)
+        XCTAssertEqual(
+            MapSettings(defaults: defaults, googleAvailable: true, googleMapsInstalled: true).navigation,
+            .routeRebel
+        )
+    }
+
+    // MARK: The default follows what the phone can do (D-062)
+
+    /// Google Maps starts guiding on the tap and reaches the CarPlay
+    /// screen, so it leads when it is there. Without it the link would
+    /// open a web page mid-drive, so Go stays in the app instead.
+    func testTheDefaultIsGoogleMapsOnlyWhenItsAppIsInstalled() throws {
+        let (defaults, cleanup) = try freshDefaults()
+        defer { cleanup() }
+
+        XCTAssertEqual(
+            MapSettings(defaults: defaults, googleAvailable: true, googleMapsInstalled: true).navigation,
+            .googleMaps
+        )
+        XCTAssertEqual(
+            MapSettings(defaults: defaults, googleAvailable: true, googleMapsInstalled: false).navigation,
+            .routeRebel
+        )
+    }
+
+    /// Apple Maps always stops to ask for a route again (D-060), so it
+    /// is never what an install starts with.
+    func testAppleMapsIsNeverADefault() {
+        for installed in [true, false] {
+            XCTAssertNotEqual(NavigationHandoff.preferred(googleMapsInstalled: installed), .appleMaps)
+        }
+    }
+
+    func testGoogleMapsIsOfferedOnlyWhenItCanBeHonoured() {
+        XCTAssertEqual(
+            NavigationHandoff.available(googleMapsInstalled: true), [.routeRebel, .appleMaps, .googleMaps]
+        )
+        XCTAssertEqual(NavigationHandoff.available(googleMapsInstalled: false), [.routeRebel, .appleMaps])
+        // Whatever the phone can do, staying in the app is always one of them.
+        for installed in [true, false] {
+            let available = NavigationHandoff.available(googleMapsInstalled: installed)
+            XCTAssertTrue(available.contains(.routeRebel))
+            XCTAssertTrue(available.contains(NavigationHandoff.preferred(googleMapsInstalled: installed)))
+        }
+    }
+
+    /// Deleting Google Maps must not leave Go opening a web page: the
+    /// stored choice falls back the way an unavailable map provider does.
+    func testAStoredGoogleChoiceFallsBackWhenTheAppIsGone() throws {
+        let (defaults, cleanup) = try freshDefaults()
+        defer { cleanup() }
+        defaults.set("googleMaps", forKey: "navigationHandoff")
+
+        XCTAssertEqual(
+            MapSettings(defaults: defaults, googleAvailable: true, googleMapsInstalled: true).navigation,
+            .googleMaps
+        )
+        XCTAssertEqual(
+            MapSettings(defaults: defaults, googleAvailable: true, googleMapsInstalled: false).navigation,
+            .routeRebel,
+            "the choice is kept in defaults, but it is not acted on while it cannot work"
+        )
+    }
+
+    func testChoosingAHandoffThePhoneCannotMakeIsRefused() throws {
+        let (defaults, cleanup) = try freshDefaults()
+        defer { cleanup() }
+
+        let settings = MapSettings(defaults: defaults, googleAvailable: true, googleMapsInstalled: false)
+        settings.setNavigation(.googleMaps)
+        XCTAssertEqual(settings.navigation, .routeRebel, "unchanged")
+        settings.setNavigation(.appleMaps)
+        XCTAssertEqual(settings.navigation, .appleMaps, "an available one still takes")
     }
 
     /// D-060: the pre-D-057 toggle is no longer read. It was set when the
@@ -66,7 +139,10 @@ final class MapSettingsTests: XCTestCase {
         let (defaults, cleanup) = try freshDefaults()
         defer { cleanup() }
         defaults.set(true, forKey: "navigateWithAppleMaps")
-        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .routeRebel)
+        XCTAssertEqual(
+            MapSettings(defaults: defaults, googleAvailable: true, googleMapsInstalled: false).navigation,
+            .routeRebel
+        )
         defaults.set("appleMaps", forKey: "navigationHandoff")
         XCTAssertEqual(
             MapSettings(defaults: defaults, googleAvailable: true).navigation, .appleMaps,
@@ -80,7 +156,12 @@ final class MapSettingsTests: XCTestCase {
         let (defaults, cleanup) = try freshDefaults()
         defer { cleanup() }
         defaults.set("off", forKey: "navigationHandoff")
-        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).navigation, .routeRebel)
+        // With Google Maps installed the default would be Google Maps,
+        // so this also proves the stored choice beats the default.
+        XCTAssertEqual(
+            MapSettings(defaults: defaults, googleAvailable: true, googleMapsInstalled: true).navigation,
+            .routeRebel
+        )
         XCTAssertEqual(NavigationHandoff.allCases.map(\.label), ["Route Rebel", "Apple Maps", "Google Maps"])
         XCTAssertFalse(NavigationHandoff.routeRebel.leavesTheApp)
         XCTAssertTrue(NavigationHandoff.appleMaps.leavesTheApp)
