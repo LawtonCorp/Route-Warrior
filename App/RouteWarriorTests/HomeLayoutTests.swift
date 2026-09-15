@@ -87,3 +87,67 @@ final class HomeLayoutTests: XCTestCase {
         XCTAssertFalse(idle.contains("Drive detected"), "nothing has been detected")
     }
 }
+
+/// D-063: the route list is a list of choices, not a leaderboard that
+/// re-sorts itself. Row 0 is the provider's recommendation; the rest
+/// keep the numbers the provider gave them, whatever is picked.
+final class PlanListTests: XCTestCase {
+    private func snapshot(alternates: [TimeInterval]) -> PlanSnapshot {
+        let line = Polyline(coordinates: [
+            Coordinate(latitude: 0, longitude: 0), Coordinate(latitude: 0, longitude: 0.02),
+        ])
+        var plan = PlanSnapshot(
+            provider: .googleRoutes, requestedAt: Date(timeIntervalSince1970: 1_700_000_000),
+            polyline: line, distanceM: 2_224, staticDuration: 600, trafficDuration: 600
+        )
+        plan.alternates = alternates.map {
+            PlanSnapshot.AltRoute(polyline: line, staticDuration: $0, trafficDuration: $0)
+        }
+        return plan
+    }
+
+    func testTheRowsAreTheProvidersOrderWithItsOwnNumbers() {
+        let rows = PlanList.rows(snapshot(alternates: [400, 800]))
+        XCTAssertEqual(rows.map(\.id), [0, 1, 2])
+        XCTAssertEqual(rows.map(\.title), ["Google's plan", "Alternate 1", "Alternate 2"])
+        XCTAssertEqual(rows.map(\.eta), [600, 400, 800])
+    }
+
+    func testAPlanWithNoAlternatesIsStillOneRow() {
+        XCTAssertEqual(PlanList.rows(snapshot(alternates: [])).map(\.title), ["Google's plan"])
+    }
+
+    /// The pick decides what the drive departs with (D-010, FR-20) —
+    /// it just does not decide what the list looks like.
+    func testTheDepartureSnapshotCarriesThePickedRoute() {
+        let plan = snapshot(alternates: [400, 800])
+        XCTAssertEqual(PlanList.departure(plan, selecting: 0), plan, "the recommendation is the snapshot itself")
+        XCTAssertEqual(PlanList.departure(plan, selecting: 1).trafficDuration, 400)
+        XCTAssertEqual(PlanList.departure(plan, selecting: 2).trafficDuration, 800)
+        // Still this departure's snapshot from this provider.
+        XCTAssertEqual(PlanList.departure(plan, selecting: 2).id, plan.id)
+        XCTAssertEqual(PlanList.departure(plan, selecting: 2).provider, plan.provider)
+    }
+
+    /// Applied to the snapshot as it came back, every time — so the same
+    /// pick always means the same route, however often it is made.
+    func testThePickIsAlwaysReadAgainstTheOriginalList() {
+        let plan = snapshot(alternates: [400, 800])
+        for row in [1, 2, 1, 2, 2] {
+            XCTAssertEqual(
+                PlanList.departure(plan, selecting: row).trafficDuration,
+                row == 1 ? 400 : 800,
+                "row \(row)"
+            )
+        }
+    }
+
+    func testARowThatIsNotThereFallsBackToTheRecommendation() {
+        let plan = snapshot(alternates: [400])
+        XCTAssertEqual(PlanList.departure(plan, selecting: 9), plan)
+        XCTAssertEqual(PlanList.departure(plan, selecting: -1), plan)
+        XCTAssertEqual(PlanList.clamped(9, to: plan), PlanList.recommendedRow)
+        XCTAssertEqual(PlanList.clamped(1, to: plan), 1)
+        XCTAssertEqual(PlanList.clamped(1, to: nil), PlanList.recommendedRow)
+    }
+}

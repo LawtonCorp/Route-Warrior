@@ -1357,3 +1357,46 @@ asks for a route again, which is the defect this whole line of work
 started from); re-checking on every foreground (the answer changes only
 when the driver installs or deletes an app, and a setting that shifts
 under them mid-session is worse than one that settles at launch).
+
+## D-063 — The route list is a set of choices, not a leaderboard (2026-09-15)
+
+Tapping an alternate used to rewrite the plans: the chosen route became
+the snapshot's recommendation, the old recommendation was demoted to
+`alternates[0]`, and the whole list re-sorted and re-labelled under the
+finger. Brian reported it plainly — the ETA he was reading moved, and
+the route he picked was now called "Google's plan".
+
+Two defects, not one. The obvious one is that a list which rearranges
+itself is unreadable: the numbers you were comparing are somewhere else
+by the time you look back. The quieter one is that promotion was applied
+to the already-promoted snapshot, so a second tap promoted a promotion —
+tapping "Alternate 1" twice did not return you where you started, and
+there was no way back to the provider's own recommendation at all.
+
+The pick is now a row number held on `DrivePlanner`, not a rewrite of
+the plans. `PlanList.rows` renders the snapshot as it came back — the
+recommendation first, then alternates under the numbers the provider
+gave them — and the pick shows as a filled check on its row, the way a
+chosen saved place already does. Row 0 is tappable too, so the
+recommendation can be taken back.
+
+`PlanList.departure(_:selecting:)` applies the pick once, to the
+untouched snapshot, and only where it matters: the line the map draws,
+and the snapshot the drive departs with (D-010, FR-20). Tapping still
+decides what the verdict is measured against; it just no longer decides
+what the screen looks like. A pick is cleared whenever the routes change
+under it — a new destination, a new answer — because a row number means
+nothing against a different list, and a row that does not exist falls
+back to the recommendation rather than being stored.
+
+**Rejected**: keeping the promotion and re-sorting the rows back into a
+stable order for display (the snapshot no longer knows what the original
+order was, so it would have to be remembered anyway — and then the
+rewrite buys nothing); numbering rows by rank instead of by the
+provider's order (the same moving target, one step removed); marking the
+pick with the existing bold-and-tint alone (it already meant "the
+provider's recommendation", so on an alternate it would read as a claim
+about the route rather than about the choice); leaving the check off
+rows that are only being reported, such as the other provider's plan
+when this surface returned nothing — done, since an untickable circle
+invites a tap that does nothing.

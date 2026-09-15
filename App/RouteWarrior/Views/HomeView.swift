@@ -50,7 +50,7 @@ struct HomeView: View {
 
     private var scene: MapScene {
         MapScene(
-            plans: planner.plans,
+            plans: planner.departurePlans(on: surface),
             trail: pipeline.isRecording ? pipeline.liveTrack.map(\.coordinate) : [],
             destinationName: planner.destination?.name,
             camera: .fitContent,
@@ -221,23 +221,18 @@ struct HomeView: View {
     @ViewBuilder
     private var planRows: some View {
         if let shown = planner.plan(on: surface) {
-            planRow(
-                title: "\(shown.provider.displayName)'s plan",
-                eta: shown.trafficDuration,
-                distance: shown.distanceM,
-                turns: TurnCounter.count(along: shown.polyline),
-                highlighted: true
-            )
-            ForEach(Array(shown.alternates.enumerated()), id: \.offset) { index, alternate in
+            // Fixed order, fixed numbers: a tap marks a row, it never
+            // moves one (D-063).
+            ForEach(PlanList.rows(shown)) { row in
                 Button {
-                    planner.promote(alternate: index, on: surface)
+                    planner.select(route: row.id, on: surface)
                 } label: {
                     planRow(
-                        title: "Alternate \(index + 1)",
-                        eta: alternate.trafficDuration,
-                        distance: alternate.polyline.lengthMeters,
-                        turns: TurnCounter.count(along: alternate.polyline),
-                        highlighted: false
+                        title: row.title,
+                        eta: row.eta,
+                        distance: row.distanceM,
+                        turns: TurnCounter.count(along: row.polyline),
+                        highlighted: row.id == planner.selectedRoute
                     )
                 }
                 .tint(.primary)
@@ -274,7 +269,8 @@ struct HomeView: View {
                 eta: other.trafficDuration,
                 distance: other.distanceM,
                 turns: TurnCounter.count(along: other.polyline),
-                highlighted: false
+                highlighted: false,
+                pickable: false
             )
         }
     }
@@ -287,9 +283,20 @@ struct HomeView: View {
         eta: TimeInterval,
         distance: Double,
         turns: TurnCount,
-        highlighted: Bool
+        highlighted: Bool,
+        pickable: Bool = true
     ) -> some View {
-        HStack {
+        HStack(spacing: 10) {
+            // The pick is marked the way a chosen saved place is. A plan
+            // that is only being reported — the other provider's, when
+            // this surface returned nothing — offers no mark to tap.
+            if pickable {
+                Image(systemName: highlighted ? "checkmark.circle.fill" : "circle")
+                    .font(.body)
+                    // Both sides must be a Color for the ternary to
+                    // type-check: Color has no `.tertiary`.
+                    .foregroundStyle(highlighted ? Theme.win : Color.secondary)
+            }
             Text(title)
                 .font(highlighted ? .headline : .body)
             Spacer()
@@ -567,7 +574,7 @@ struct HomeView: View {
         // Recording starts first, whatever happens next: the hand-off
         // sends the driver to another app, and the drive still has to be
         // recorded and compared.
-        pipeline.startPlannedDrive(with: planner.plans)
+        pipeline.startPlannedDrive(with: planner.departurePlans(on: surface))
         if let destination = planner.destination {
             switch mapSettings.navigation {
             case .appleMaps:
