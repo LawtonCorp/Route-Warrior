@@ -2,20 +2,28 @@ import Foundation
 import RouteWarriorKit
 import UIKit
 
-/// Which navigation app, if any, Go hands the destination to (D-034,
-/// D-057). Off keeps the driver on Route Rebel's own drive view.
+/// Which app guides the drive after Go (D-034, D-057, D-060). Route
+/// Rebel's own drive view is the default and is named as the choice it
+/// is: since D-052 it has turn-by-turn of its own, so "Off" described
+/// an app that no longer exists.
 enum NavigationHandoff: String, CaseIterable, Sendable {
-    case off
+    /// Stored as "off" since D-057; the name changed, not the value.
+    case routeRebel = "off"
     case appleMaps
     case googleMaps
 
     var label: String {
         switch self {
-        case .off: "Off"
+        case .routeRebel: "Route Rebel"
         case .appleMaps: "Apple Maps"
         case .googleMaps: "Google Maps"
         }
     }
+
+    /// True when Go leaves the app. Apple Maps always shows its own
+    /// route preview first — it has no launch option to start guidance
+    /// directly — so choosing it means picking a route twice.
+    var leavesTheApp: Bool { self != .routeRebel }
 }
 
 /// Hands the destination to the Google Maps app (D-057), the way

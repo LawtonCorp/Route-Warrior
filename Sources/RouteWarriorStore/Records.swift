@@ -27,6 +27,11 @@ public final class TripRecord {
     public var followedAltPlan: Bool?
     public var sourceRaw: String = Trip.Source.auto.rawValue
     public var excludedFromStats: Bool = false
+    /// What the driver calls this drive (D-060). Empty until they name
+    /// it. The driver's annotation, not the drive's — the kit's `Trip`
+    /// never carries it, so nothing computed from a drive can depend on
+    /// what it was called.
+    public var label: String = ""
     @Attribute(.externalStorage) public var pointsBlob: Data = Data()
     public var stopEventsBlob: Data = Data()
 

@@ -167,7 +167,8 @@ struct TripsView: View {
 }
 
 /// One trip in a list: where it went and how it went against the ETA,
-/// at a glance (D-054). The first line is the journey when its places
+/// at a glance (D-054, D-060). The first line is the driver's own name
+/// for the drive when they gave it one, else the journey when its places
 /// are known ("Home → School"), otherwise the date; the date then rides
 /// on the second line with the distance and the delta.
 struct TripRowView: View {
@@ -184,6 +185,15 @@ struct TripRowView: View {
         .forTrip(deltaSeconds: deltaSeconds, excluded: record.excludedFromStats)
     }
 
+    /// The row's first line: what the driver called this drive, else the
+    /// journey, else nil — and then the date takes the line (D-054,
+    /// D-060). A name the driver typed outranks one the app worked out.
+    nonisolated static func headline(label: String?, origin: String?, destination: String?) -> String? {
+        let named = label?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !named.isEmpty { return named }
+        return journey(origin: origin, destination: destination)
+    }
+
     /// "Home → School", "→ School", or nil when neither place is saved.
     nonisolated static func journey(origin: String?, destination: String?) -> String? {
         let from = origin?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -196,7 +206,9 @@ struct TripRowView: View {
         }
     }
 
-    private var journey: String? { Self.journey(origin: originName, destination: destinationName) }
+    private var headline: String? {
+        Self.headline(label: record.label, origin: originName, destination: destinationName)
+    }
 
     private var dateText: Text {
         Text(record.startedAt, format: .dateTime.weekday(.abbreviated).month().day().hour().minute())
@@ -211,8 +223,8 @@ struct TripRowView: View {
                 .background(tone.color.opacity(0.14), in: Circle())
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    if let journey {
-                        Text(journey)
+                    if let headline {
+                        Text(headline)
                             .font(.subheadline.weight(.semibold))
                             .lineLimit(1)
                     } else {
@@ -224,7 +236,7 @@ struct TripRowView: View {
                         .font(.subheadline.monospacedDigit())
                 }
                 HStack(spacing: 8) {
-                    if journey != nil {
+                    if headline != nil {
                         dateText
                     }
                     Text(Format.distance(record.distanceM))

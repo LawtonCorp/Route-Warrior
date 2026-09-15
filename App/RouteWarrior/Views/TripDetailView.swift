@@ -15,6 +15,7 @@ struct TripDetailView: View {
     @Query private var allTrips: [TripRecord]
     @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
     @State private var showPaywall = false
+    @State private var draftLabel = ""
 
     private var trip: Trip? { try? record.trip() }
 
@@ -78,6 +79,7 @@ struct TripDetailView: View {
                     comparisonCard(snapshot: snapshot)
                 }
             }
+            nameSection
             destinationSection
             statsSection
             if let trip, !trip.stopEvents.isEmpty {
@@ -85,11 +87,49 @@ struct TripDetailView: View {
             }
             controlsSection
         }
-        .navigationTitle(record.startedAt.formatted(date: .abbreviated, time: .shortened))
+        .navigationTitle(record.label.isEmpty
+                         ? record.startedAt.formatted(date: .abbreviated, time: .shortened)
+                         : record.label)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showPaywall) {
             PaywallView()
         }
+        .onAppear { draftLabel = record.label }
+        // Leaving the screen is as much a commit as tapping Done.
+        .onDisappear { commitLabel() }
+    }
+
+    // MARK: What the driver calls this drive
+
+    /// D-060: a drive the app could not identify — no saved place at
+    /// either end — is a date in a list of dates. Naming it is how the
+    /// driver tells one from another. The placeholder is whatever the
+    /// row would have said, so an empty field is never a mystery, and
+    /// clearing the name restores it.
+    private var nameSection: some View {
+        Section {
+            TextField(namePlaceholder, text: $draftLabel)
+                .submitLabel(.done)
+                .onSubmit { commitLabel() }
+        } header: {
+            Text("Name")
+        } footer: {
+            Text("Call this drive what you call it — \"school run\" beats a date when you are looking for it later.")
+        }
+    }
+
+    private var namePlaceholder: String {
+        TripRowView.journey(
+            origin: places.first { $0.id == record.originPlaceID }?.name,
+            destination: destinationPlace?.name
+        ) ?? record.startedAt.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private func commitLabel() {
+        let trimmed = draftLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed != record.label else { return }
+        record.label = trimmed
+        try? context.save()
     }
 
     // MARK: All drives to the same place

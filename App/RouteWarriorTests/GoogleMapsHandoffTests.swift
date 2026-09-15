@@ -23,7 +23,7 @@ final class GoogleMapsHandoffTests: XCTestCase {
     }
 
     func testTheChoicesReadAsAppNames() {
-        XCTAssertEqual(NavigationHandoff.allCases.map(\.label), ["Off", "Apple Maps", "Google Maps"])
+        XCTAssertEqual(NavigationHandoff.allCases.map(\.label), ["Route Rebel", "Apple Maps", "Google Maps"])
         XCTAssertEqual(NavigationHandoff(rawValue: "appleMaps"), .appleMaps)
     }
 }

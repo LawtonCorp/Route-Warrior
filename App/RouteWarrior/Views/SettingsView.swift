@@ -177,11 +177,11 @@ struct SettingsView: View {
             : "Turn-by-turn on the drive view is part of Pro.")
         let navigationLine = switch mapSettings.navigation {
         case .appleMaps:
-            "Go hands the destination to Apple Maps for turn-by-turn, which is what puts guidance on the CarPlay screen. Route Rebel keeps recording in the background."
+            "Go hands the destination to Apple Maps for turn-by-turn, which is what puts guidance on the CarPlay screen. Apple Maps always opens on its own route preview, so you choose a route there as well as here; Route Rebel keeps recording in the background either way."
         case .googleMaps:
-            "Go hands the destination to Google Maps for turn-by-turn, on the CarPlay screen when Google Maps is your car's navigation app. Google Maps chooses its own route, usually the one Route Rebel shows; the plan you left with stays the baseline, and Route Rebel keeps recording in the background."
-        case .off:
-            "Choose Apple Maps or Google Maps to get guidance on the CarPlay screen at departure; Route Rebel keeps recording either way."
+            "Go hands the destination to Google Maps for turn-by-turn, on the CarPlay screen when Google Maps is your car's navigation app. Google Maps starts driving straight away and chooses its own route, usually the one Route Rebel shows; the plan you left with stays the baseline, and Route Rebel keeps recording in the background."
+        case .routeRebel:
+            "Go stays here: the drive view guides you, speaks the turns and keeps the scoreboard on screen, with no second route to pick. Choose a maps app instead to get guidance on the CarPlay screen, which Route Rebel cannot reach."
         }
         lines.append(navigationLine)
         return lines.joined(separator: " ")
