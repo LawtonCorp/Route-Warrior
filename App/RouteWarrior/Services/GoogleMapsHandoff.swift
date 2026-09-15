@@ -24,6 +24,23 @@ enum NavigationHandoff: String, CaseIterable, Sendable {
     /// route preview first — it has no launch option to start guidance
     /// directly — so choosing it means picking a route twice.
     var leavesTheApp: Bool { self != .routeRebel }
+
+    /// The hand-offs this phone can actually make (D-062). Google's link
+    /// opens the browser's directions page when the app is missing,
+    /// which is no use at the wheel, so the choice is offered only when
+    /// it can be honoured. Apple Maps is always there to hand off to.
+    static func available(googleMapsInstalled: Bool) -> [NavigationHandoff] {
+        allCases.filter { $0 != .googleMaps || googleMapsInstalled }
+    }
+
+    /// What Go does before anyone chooses (D-062). Google Maps when it
+    /// is installed: it starts guiding the moment Go is tapped and it
+    /// reaches the CarPlay screen, which Route Rebel cannot. Route Rebel
+    /// otherwise — Apple Maps is never a default, because it always
+    /// stops to ask for a route again (D-060).
+    static func preferred(googleMapsInstalled: Bool) -> NavigationHandoff {
+        googleMapsInstalled ? .googleMaps : .routeRebel
+    }
 }
 
 /// Hands the destination to the Google Maps app (D-057), the way
@@ -35,6 +52,16 @@ enum NavigationHandoff: String, CaseIterable, Sendable {
 /// the one Route Rebel snapshotted and is not guaranteed to be; the
 /// snapshot stays the baseline either way (D-010).
 enum GoogleMapsHandoff {
+    /// Whether the Google Maps app is on this phone (D-062). The scheme
+    /// is declared in `LSApplicationQueriesSchemes` (project.yml);
+    /// without that entry iOS answers false however many copies of
+    /// Google Maps are installed.
+    @MainActor
+    static var isAppInstalled: Bool {
+        guard let url = URL(string: "comgooglemaps://") else { return false }
+        return UIApplication.shared.canOpenURL(url)
+    }
+
     /// `https://www.google.com/maps/dir/?api=1&destination=lat,lng
     /// &travelmode=driving&dir_action=navigate` — Google's Maps URLs
     /// contract. Coordinates rather than a name, so the pin is exact.

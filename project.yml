@@ -80,6 +80,11 @@ targets:
           - UIInterfaceOrientationPortrait
         ITSAppUsesNonExemptEncryption: false
         NSSupportsLiveActivities: true
+        # Lets the app ask iOS whether Google Maps is installed (D-062),
+        # so the hand-off is offered only when it can be honoured. iOS
+        # answers false for any scheme not listed here.
+        LSApplicationQueriesSchemes:
+          - comgooglemaps
         NSLocationWhenInUseUsageDescription: >-
           Route Rebel records the routes you drive so you can compare them
           against Google's plan. Location is used only for recording your
