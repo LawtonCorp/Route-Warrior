@@ -4,8 +4,14 @@
 at https://routerebel.app/terms (keep `Legal.termsURL` pointing there).
 The effective date below is the Terms version: `Legal.termsVersion` must
 equal it as yyyy-MM-dd (LegalTests checks), and changing it asks every
-install to accept again. Have a lawyer licensed in your state review
-this before the app goes live; it was written without legal advice. -->
+install to accept again.
+
+A lawyer reviewed this text, including the limitation of liability in
+§9, and approved it as written (recorded 2026-09-15). The effective date
+is therefore unchanged and no install is asked to accept again. Any
+later edit to the wording needs a fresh review, a new effective date
+here, and the same date in `Legal.termsVersion` — which does ask every
+install to accept once. -->
 
 _Effective date: 10 September 2026._
 
@@ -164,8 +170,9 @@ informally for 30 days. Any claim that cannot be resolved that way will
 be brought in the state or federal courts located in Denver, Colorado,
 and you consent to their jurisdiction, except that either party may
 bring a qualifying claim in small-claims court.
-<!-- Confirm the state and venue with your lawyer; change both if
-LawtonCorp is organised elsewhere. -->
+<!-- Colorado and Denver were approved with the rest of the Terms
+(2026-09-15). Change both, with a fresh review, if LawtonCorp is ever
+organised elsewhere. -->
 
 ## 14. Apple
 

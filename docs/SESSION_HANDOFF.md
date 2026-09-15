@@ -138,7 +138,8 @@ the blurred Pro sections, the paywall counts, or the trial line.
   clauses (§14) so the same text is the ASC License Agreement. Links
   from `Legal`; onboarding's first Continue records
   `acceptedTermsVersion` (bump `Legal.termsVersion` to ask again).
-  Written without legal advice; a lawyer must read it before launch.
+  Reviewed by a lawyer and approved as written (2026-09-15); a later
+  edit needs a fresh review and a new effective date.
 - Privacy (D-006) still holds: no accounts, no LawtonCorp server; do
   not add network calls casually. D-017 forces Pro on Brian's personal
   build via `ROUTEWARRIOR_FORCE_PRO=1` in `scripts/signing.local`; he
@@ -218,10 +219,11 @@ the blurred Pro sections, the paywall counts, or the trial line.
    Monthly $3.99, Pro Annual $24.99, Introductory Offer *Free / 1 week*
    on each, Family Sharing on; sandbox-test with a fresh tester (a
    tester who has used a trial is not offered another).
-3. **Legal**: a lawyer reads `docs/TERMS_OF_USE.md` (confirm Colorado /
-   Denver in §13); host both documents (the website sessions below);
-   set the privacy URL in ASC App Information and paste the Terms as the
-   custom License Agreement.
+3. **Legal**: the lawyer's read is done — approved as written on
+   2026-09-15, Colorado / Denver included. What is left: host both
+   documents (the website sessions below); set the privacy URL in ASC
+   App Information and paste the Terms as the custom License
+   Agreement.
 4. **Website**: Brian has two prompts (given in chat on 2026-09-10) for
    separate sessions — a designer producing a static HTML/CSS prototype,
    then a coder building Next.js on Vercel with DNS on Cloudflare, no
