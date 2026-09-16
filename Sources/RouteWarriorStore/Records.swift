@@ -58,6 +58,13 @@ public final class PlaceRecord {
     public var kindRaw: String = Place.Kind.custom.rawValue
     public var address: String = ""
     public var createdAt: Date = Date.distantPast
+    /// Where the driver dragged this place to (D-074). Additive with a
+    /// zero default, so CloudKit accepts it and every place saved before
+    /// the list could be reordered ties at zero and keeps its
+    /// oldest-first order until someone moves something. The driver's
+    /// arrangement, not the place's — the kit's `Place` never carries it,
+    /// the same way it never carries a trip's label (D-060).
+    public var sortIndex: Int = 0
 
     public init() {}
 }

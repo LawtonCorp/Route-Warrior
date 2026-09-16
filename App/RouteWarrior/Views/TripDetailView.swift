@@ -14,7 +14,7 @@ struct TripDetailView: View {
     @Query private var allSnapshots: [SnapshotRecord]
     @Query private var allTrips: [TripRecord]
     @Query private var allVariants: [VariantRecord]
-    @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
+    @Query(sort: PlaceOrder.descriptors) private var places: [PlaceRecord]
     @State private var showPaywall = false
     @State private var draftLabel = ""
 
