@@ -369,10 +369,14 @@ struct TripRecorderTests {
         first.drive(speedMps: 15, seconds: 300)
         var outputs = feed(first.points, into: &recorder)
 
+        // Bound first throughout: `#expect` wraps a bare call in a
+        // closure whose receiver is immutable, and these are mutating.
         let pausedAt = t0.addingTimeInterval(299)
-        #expect(recorder.pauseRecording(at: pausedAt))
+        let didPause = recorder.pauseRecording(at: pausedAt)
+        #expect(didPause)
         let resumedAt = pausedAt.addingTimeInterval(pauseSeconds)
-        #expect(recorder.resumeRecording(at: resumedAt))
+        let didResume = recorder.resumeRecording(at: resumedAt)
+        #expect(didResume)
 
         var second = DriveBuilder(start: resumedAt)
         second.eastMeters = first.eastMeters + resumeEastOffsetM
@@ -441,7 +445,8 @@ struct TripRecorderTests {
         var driven = DriveBuilder(start: t0)
         driven.drive(speedMps: 15, seconds: 300)
         #expect(feed(driven.points, into: &recorder).isEmpty)
-        #expect(recorder.pauseRecording(at: t0.addingTimeInterval(299)))
+        let didPause = recorder.pauseRecording(at: t0.addingTimeInterval(299))
+        #expect(didPause)
         #expect(recorder.state == .paused)
         #expect(recorder.isPaused)
 
@@ -474,7 +479,8 @@ struct TripRecorderTests {
         var driven = DriveBuilder(start: t0)
         driven.drive(speedMps: 15, seconds: 300)
         #expect(feed(driven.points, into: &recorder).isEmpty)
-        #expect(recorder.pauseRecording(at: t0.addingTimeInterval(299)))
+        let didPause = recorder.pauseRecording(at: t0.addingTimeInterval(299))
+        #expect(didPause)
 
         let output = recorder.stopRecording(at: t0.addingTimeInterval(899))
         guard case .tripFinalized(let trip)? = output else {
@@ -490,11 +496,18 @@ struct TripRecorderTests {
 
     @Test func pauseAndResumeRefuseWhenThereIsNothingToPause() {
         var recorder = TripRecorder(timezoneID: tz)
-        #expect(!recorder.pauseRecording(at: t0))
-        #expect(!recorder.resumeRecording(at: t0))
+        let pausedWhileIdle = recorder.pauseRecording(at: t0)
+        #expect(!pausedWhileIdle)
+        let resumedWhileIdle = recorder.resumeRecording(at: t0)
+        #expect(!resumedWhileIdle)
+
         recorder.startManualRecording(at: t0)
-        #expect(!recorder.resumeRecording(at: t0))  // running, not paused
-        #expect(recorder.pauseRecording(at: t0))
-        #expect(!recorder.pauseRecording(at: t0))   // already paused
+        let resumedWhileRunning = recorder.resumeRecording(at: t0)
+        #expect(!resumedWhileRunning, "running, not paused")
+
+        let paused = recorder.pauseRecording(at: t0)
+        #expect(paused)
+        let pausedTwice = recorder.pauseRecording(at: t0)
+        #expect(!pausedTwice, "already paused")
     }
 }
