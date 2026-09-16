@@ -1851,3 +1851,34 @@ nag timer that shares state with it is one refactor away from a "Still
 here" tap changing a verdict); a second `UNUserNotificationCenterDelegate`
 (see above — it would have worked in every test and broken the feature
 on a phone).
+
+## D-073 — An alternate is named for whoever proposed it (2026-09-16)
+
+Brian sent a screenshot of the Plan tab: "Google's plan", then
+"Alternate 1", then "Alternate 2". He asked for the alternates to say
+Google too.
+
+**Chosen**: the row title is the provider's own name — `Google Alt 1`,
+`Google Alt 2` — taken from the same `provider.displayName` the
+recommendation row already uses, not from the literal word "Google". On
+a phone set to Apple's map the rows read `Apple's plan` and `Apple Alt
+1`, which is the point: hard-coding Google would put Google's name under
+Apple's plan on half the installs, and a test now asserts the Apple case
+so it cannot come back.
+
+Worth saying why the old label lasted this long and why it stopped
+working. When the list held one provider's routes and nothing else,
+"Alternate 1" was unambiguous — an alternate to the only plan on screen.
+Since D-066 the driver's own roads sit in the same list, so a row that
+does not say where it came from is the only row that does not, and the
+screen reads as three unrelated kinds of thing. Every row now names its
+source: the driver's ("Your way — via Maple Ave"), the provider's plan,
+and the provider's alternates.
+
+**Rejected**: the literal "Google Alt 1" Brian typed (correct on his
+screen, wrong on an Apple one — this is the same defect D-068 fixed from
+the other direction, where two rows said Google and neither said which);
+"Google Alternate 1" in full (the numbers and turn counts already crowd
+the row, and "Alt" next to a time and a distance is not ambiguous);
+renaming the recommendation row to match (it is not an alternate, and
+"Google's plan" is the sentence the whole app is built to argue with).

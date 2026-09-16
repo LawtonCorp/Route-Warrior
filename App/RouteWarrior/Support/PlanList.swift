@@ -43,10 +43,14 @@ enum PlanList {
             distanceM: snapshot.distanceM,
             polyline: snapshot.polyline
         )
+        // Named for whoever proposed them (D-073). "Alternate 1" sat under
+        // "Google's plan" saying nothing about whose alternate it was, and
+        // now that the driver's own roads share the list, every row says
+        // where it came from.
         let alternates = snapshot.alternates.enumerated().map { index, alternate in
             Row(
                 id: .route(index + 1),
-                title: "Alternate \(index + 1)",
+                title: "\(snapshot.provider.displayName) Alt \(index + 1)",
                 eta: alternate.trafficDuration,
                 distanceM: alternate.polyline.lengthMeters,
                 polyline: alternate.polyline
