@@ -3,6 +3,7 @@ import RouteWarriorKit
 import RouteWarriorStore
 import SwiftData
 import SwiftUI
+import UIKit
 
 @main
 struct RouteWarriorApp: App {
@@ -10,7 +11,7 @@ struct RouteWarriorApp: App {
     @State private var pipeline: RecordingPipeline
     @State private var locationService: LocationService
     @State private var store: StoreService
-    @State private var destinationPrompt: DestinationPromptService
+    @State private var prompts: PromptService
     @State private var mapSettings: MapSettings
     @State private var ghostRace: GhostRaceCoordinator
 
@@ -62,6 +63,7 @@ struct RouteWarriorApp: App {
             providers: providers,
             preference: { mapSettings.provider },
             arrivalStop: { mapSettings.stopOnArrival },
+            pauseWatch: { mapSettings.pauseWatch },
             tier: { store.tier },
             policy: store.policy,
             logStorage: Self.isTestHost ? nil : UserDefaults.standard
@@ -77,14 +79,23 @@ struct RouteWarriorApp: App {
             pipeline: pipeline,
             ghostRace: ghostRace
         ))
-        let prompt = DestinationPromptService(onPick: { placeID in
-            pipeline.requestSnapshot(to: placeID)
-        })
-        _destinationPrompt = State(initialValue: prompt)
+        let prompts = PromptService(
+            onPick: { placeID in pipeline.requestSnapshot(to: placeID) },
+            onStillHere: { pipeline.keepPaused() },
+            onEndDrive: { pipeline.stopManualRecording() }
+        )
+        _prompts = State(initialValue: prompts)
         if !Self.isTestHost {
             pipeline.onDestinationUnknown = { places in
-                prompt.prompt(with: places)
+                prompts.promptDestination(with: places)
             }
+            pipeline.onPauseStillThere = { limitMinutes in
+                // On screen, the alert asks (D-072). A notification as
+                // well would ask the same question twice.
+                guard UIApplication.shared.applicationState != .active else { return }
+                prompts.promptStillThere(limitMinutes: limitMinutes)
+            }
+            pipeline.onPauseAnswered = { prompts.clearStillThere() }
         }
     }
 

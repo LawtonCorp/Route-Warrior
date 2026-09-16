@@ -13,6 +13,34 @@ final class MapSettingsTests: XCTestCase {
         return (defaults, { defaults.removePersistentDomain(forName: name) })
     }
 
+    /// D-072: the pause limit is twenty minutes until the driver says
+    /// otherwise, it persists, and a value the picker does not offer is
+    /// ignored the way an unavailable map provider is (D-062).
+    func testThePauseLimitDefaultsToTwentyMinutesAndPersists() throws {
+        let (defaults, cleanup) = try freshDefaults()
+        defer { cleanup() }
+        let settings = MapSettings(defaults: defaults, googleAvailable: true)
+        XCTAssertEqual(settings.pauseLimitMinutes, 20)
+        XCTAssertEqual(settings.pauseWatch.limit, 20 * 60)
+        // The question follows the setting, not a second hard-coded number.
+        XCTAssertEqual(settings.pauseWatch.askAfter, 12 * 60)
+
+        settings.setPauseLimit(minutes: 45)
+        XCTAssertEqual(settings.pauseLimitMinutes, 45)
+        XCTAssertEqual(MapSettings(defaults: defaults, googleAvailable: true).pauseLimitMinutes, 45)
+
+        settings.setPauseLimit(minutes: 7)
+        XCTAssertEqual(settings.pauseLimitMinutes, 45, "7 is not on the picker")
+    }
+
+    func testAStoredPauseLimitTheAppNoLongerOffersFallsBackToTheDefault() throws {
+        let (defaults, cleanup) = try freshDefaults()
+        defer { cleanup() }
+        defaults.set(13, forKey: "pauseLimitMinutes")
+        let settings = MapSettings(defaults: defaults, googleAvailable: true)
+        XCTAssertEqual(settings.pauseLimitMinutes, 20)
+    }
+
     func testWithoutTheGoogleSurfaceOnlyAppleIsOffered() throws {
         let (defaults, cleanup) = try freshDefaults()
         defer { cleanup() }

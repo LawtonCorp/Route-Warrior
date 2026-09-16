@@ -99,10 +99,21 @@ struct SettingsView: View {
                     )) {
                         settingsLabel("Stop on arrival", symbol: "flag.checkered", color: Theme.win)
                     }
+                    Picker(selection: Binding(
+                        get: { mapSettings.pauseLimitMinutes },
+                        set: { mapSettings.setPauseLimit(minutes: $0) }
+                    )) {
+                        ForEach(MapSettings.pauseLimitChoices, id: \.self) { minutes in
+                            Text(PauseText.limitValue(minutes)).tag(minutes)
+                        }
+                    } label: {
+                        settingsLabel("Pause becomes a stop after", symbol: "pause.circle.fill", color: Theme.armed)
+                    }
                 } header: {
                     Text("Recording")
                 } footer: {
-                    Text("A planned drive ends itself once you have been within about 150 metres of the destination, moving at walking pace or slower, for 20 seconds. Driving past on the way somewhere else does not count. Drives without a plan still end on their own when the car stops.")
+                    Text("A planned drive ends itself once you have been within about 150 metres of the destination, moving at walking pace or slower, for 20 seconds. Driving past on the way somewhere else does not count. Drives without a plan still end on their own when the car stops. "
+                        + PauseText.settingsFooter(limitMinutes: mapSettings.pauseLimitMinutes))
                 }
 
                 Section {

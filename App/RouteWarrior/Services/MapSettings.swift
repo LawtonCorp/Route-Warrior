@@ -24,11 +24,21 @@ final class MapSettings {
     /// the voice. Both on by default; the voice can be silenced alone.
     private(set) var guidance: Bool
     private(set) var guidanceVoice: Bool
+    /// How long a paused drive may sit before it stops itself and saves
+    /// (D-072). Twenty minutes by default, Brian's number.
+    private(set) var pauseLimitMinutes: Int
     let availableProviders: [MapProvider]
     /// Which hand-offs this phone can make (D-062) — Google Maps only
     /// when its app is installed. Read at launch, so installing Google
     /// Maps takes effect the next time Route Rebel starts.
     let availableHandoffs: [NavigationHandoff]
+
+    /// What the picker offers. A stored value outside this list is
+    /// ignored the way an unavailable map provider is (D-062), so a
+    /// future change to the list cannot leave a phone on a limit the
+    /// app no longer understands.
+    static let pauseLimitChoices = [5, 10, 15, 20, 30, 45, 60]
+    static let defaultPauseLimitMinutes = 20
 
     private let defaults: UserDefaults
     private static let providerKey = "mapProvider"
@@ -37,6 +47,7 @@ final class MapSettings {
     private static let stopOnArrivalKey = "stopOnArrival"
     private static let guidanceKey = "guidance"
     private static let guidanceVoiceKey = "guidanceVoice"
+    private static let pauseLimitKey = "pauseLimitMinutes"
 
     init(defaults: UserDefaults = .standard, googleAvailable: Bool, googleMapsInstalled: Bool = false) {
         self.defaults = defaults
@@ -65,6 +76,21 @@ final class MapSettings {
             || defaults.bool(forKey: MapSettings.guidanceKey)
         guidanceVoice = defaults.object(forKey: MapSettings.guidanceVoiceKey) == nil
             || defaults.bool(forKey: MapSettings.guidanceVoiceKey)
+        let storedLimit = defaults.object(forKey: MapSettings.pauseLimitKey) as? Int
+        pauseLimitMinutes = MapSettings.pauseLimitChoices.contains(storedLimit ?? 0)
+            ? (storedLimit ?? MapSettings.defaultPauseLimitMinutes)
+            : MapSettings.defaultPauseLimitMinutes
+    }
+
+    /// The paused-drive rule this setting describes.
+    var pauseWatch: PauseWatch.Config {
+        PauseWatch.Config(limit: Double(pauseLimitMinutes) * 60)
+    }
+
+    func setPauseLimit(minutes: Int) {
+        guard Self.pauseLimitChoices.contains(minutes) else { return }
+        pauseLimitMinutes = minutes
+        defaults.set(minutes, forKey: Self.pauseLimitKey)
     }
 
     func select(_ provider: MapProvider) {
