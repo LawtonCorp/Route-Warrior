@@ -23,9 +23,17 @@ final class DriveMonitor {
     private var detector: OffPlanDetector
     private let rerouter: @MainActor (Coordinate) async -> PlanSnapshot?
 
-    init(plan: PlanSnapshot, rerouter: @escaping @MainActor (Coordinate) async -> PlanSnapshot?) {
+    /// `line` is what off-route is judged against; by default the plan's
+    /// own polyline. The drive view passes the driver's own route when
+    /// they picked one (FR-27, D-066): the plan stays the baseline, but
+    /// "off route" means off the road they chose to drive.
+    init(
+        plan: PlanSnapshot,
+        line: Polyline? = nil,
+        rerouter: @escaping @MainActor (Coordinate) async -> PlanSnapshot?
+    ) {
         self.plan = plan
-        self.detector = OffPlanDetector(plan: plan.polyline)
+        self.detector = OffPlanDetector(plan: line ?? plan.polyline)
         self.rerouter = rerouter
     }
 

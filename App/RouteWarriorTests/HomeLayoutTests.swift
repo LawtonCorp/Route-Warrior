@@ -88,14 +88,16 @@ final class HomeLayoutTests: XCTestCase {
     }
 }
 
-/// D-063: the route list is a list of choices, not a leaderboard that
-/// re-sorts itself. Row 0 is the provider's recommendation; the rest
-/// keep the numbers the provider gave them, whatever is picked.
+/// D-063/D-066: the route list is a list of choices, not a leaderboard
+/// that re-sorts itself. The provider's rows keep the provider's order
+/// and numbers; the driver's own routes sit ahead of them; a pick marks
+/// a row and never moves one.
 final class PlanListTests: XCTestCase {
+    private let line = Polyline(coordinates: [
+        Coordinate(latitude: 0, longitude: 0), Coordinate(latitude: 0, longitude: 0.02),
+    ])
+
     private func snapshot(alternates: [TimeInterval]) -> PlanSnapshot {
-        let line = Polyline(coordinates: [
-            Coordinate(latitude: 0, longitude: 0), Coordinate(latitude: 0, longitude: 0.02),
-        ])
         var plan = PlanSnapshot(
             provider: .googleRoutes, requestedAt: Date(timeIntervalSince1970: 1_700_000_000),
             polyline: line, distanceM: 2_224, staticDuration: 600, trafficDuration: 600
@@ -106,27 +108,51 @@ final class PlanListTests: XCTestCase {
         return plan
     }
 
-    func testTheRowsAreTheProvidersOrderWithItsOwnNumbers() {
+    private func personal(_ id: UUID, name: String, minutes: Double, claim: String? = nil) -> PersonalRoutes.Row {
+        PersonalRoutes.Row(
+            id: id, name: name, polyline: line, usualDuration: minutes * 60,
+            drivesCounted: 7, tier: .dayClassSlot, claim: claim
+        )
+    }
+
+    func testTheProviderRowsAreItsOrderWithItsOwnNumbers() {
         let rows = PlanList.rows(snapshot(alternates: [400, 800]))
-        XCTAssertEqual(rows.map(\.id), [0, 1, 2])
+        XCTAssertEqual(rows.map(\.id), [.route(0), .route(1), .route(2)])
         XCTAssertEqual(rows.map(\.title), ["Google's plan", "Alternate 1", "Alternate 2"])
         XCTAssertEqual(rows.map(\.eta), [600, 400, 800])
+        XCTAssertTrue(rows.allSatisfy { !$0.isPersonal && $0.caption == nil })
     }
 
     func testAPlanWithNoAlternatesIsStillOneRow() {
         XCTAssertEqual(PlanList.rows(snapshot(alternates: [])).map(\.title), ["Google's plan"])
     }
 
-    /// The pick decides what the drive departs with (D-010, FR-20) —
-    /// it just does not decide what the list looks like.
-    func testTheDepartureSnapshotCarriesThePickedRoute() {
+    /// A personal row says whose it is, what it usually takes, and what
+    /// that number rests on.
+    func testPersonalRowsCarryTheirClaimAndTheirEvidence() {
+        let maple = UUID()
+        let rows = PlanList.rows(personal: [
+            personal(maple, name: "via Maple Ave", minutes: 18, claim: "usually fastest on weekday mornings"),
+            personal(UUID(), name: "the back way", minutes: 20),
+        ])
+        XCTAssertEqual(rows[0].id, .personal(maple))
+        XCTAssertEqual(rows[0].title, "Your way — via Maple Ave")
+        XCTAssertEqual(rows[0].eta, 1_080)
+        XCTAssertEqual(rows[0].caption, "usually fastest on weekday mornings · 7 drives")
+        XCTAssertEqual(rows[1].caption, "7 drives", "no claim, just the evidence")
+        XCTAssertTrue(rows.allSatisfy(\.isPersonal))
+    }
+
+    /// A provider pick decides what the drive departs with (D-010,
+    /// FR-20). A personal pick decides nothing here: the provider's plan
+    /// stays the baseline (D-066).
+    func testTheDepartureSnapshotCarriesAProviderPickAndIgnoresAPersonalOne() {
         let plan = snapshot(alternates: [400, 800])
-        XCTAssertEqual(PlanList.departure(plan, selecting: 0), plan, "the recommendation is the snapshot itself")
-        XCTAssertEqual(PlanList.departure(plan, selecting: 1).trafficDuration, 400)
-        XCTAssertEqual(PlanList.departure(plan, selecting: 2).trafficDuration, 800)
-        // Still this departure's snapshot from this provider.
-        XCTAssertEqual(PlanList.departure(plan, selecting: 2).id, plan.id)
-        XCTAssertEqual(PlanList.departure(plan, selecting: 2).provider, plan.provider)
+        XCTAssertEqual(PlanList.departure(plan, selecting: .route(0)), plan)
+        XCTAssertEqual(PlanList.departure(plan, selecting: .route(1)).trafficDuration, 400)
+        XCTAssertEqual(PlanList.departure(plan, selecting: .route(2)).trafficDuration, 800)
+        XCTAssertEqual(PlanList.departure(plan, selecting: .route(2)).id, plan.id)
+        XCTAssertEqual(PlanList.departure(plan, selecting: .personal(UUID())), plan, "the baseline does not move")
     }
 
     /// Applied to the snapshot as it came back, every time — so the same
@@ -135,19 +161,21 @@ final class PlanListTests: XCTestCase {
         let plan = snapshot(alternates: [400, 800])
         for row in [1, 2, 1, 2, 2] {
             XCTAssertEqual(
-                PlanList.departure(plan, selecting: row).trafficDuration,
-                row == 1 ? 400 : 800,
-                "row \(row)"
+                PlanList.departure(plan, selecting: .route(row)).trafficDuration,
+                row == 1 ? 400 : 800, "row \(row)"
             )
         }
     }
 
-    func testARowThatIsNotThereFallsBackToTheRecommendation() {
+    func testAPickThatNamesNothingFallsBackToTheRecommendation() {
         let plan = snapshot(alternates: [400])
-        XCTAssertEqual(PlanList.departure(plan, selecting: 9), plan)
-        XCTAssertEqual(PlanList.departure(plan, selecting: -1), plan)
-        XCTAssertEqual(PlanList.clamped(9, to: plan), PlanList.recommendedRow)
-        XCTAssertEqual(PlanList.clamped(1, to: plan), 1)
-        XCTAssertEqual(PlanList.clamped(1, to: nil), PlanList.recommendedRow)
+        let mine = UUID()
+        let routes = [personal(mine, name: "mine", minutes: 18)]
+        XCTAssertEqual(PlanList.departure(plan, selecting: .route(9)), plan)
+        XCTAssertEqual(PlanList.clamped(.route(9), to: plan, personal: routes), .route(0))
+        XCTAssertEqual(PlanList.clamped(.route(1), to: plan, personal: routes), .route(1))
+        XCTAssertEqual(PlanList.clamped(.route(1), to: nil, personal: routes), .route(0))
+        XCTAssertEqual(PlanList.clamped(.personal(mine), to: nil, personal: routes), .personal(mine))
+        XCTAssertEqual(PlanList.clamped(.personal(UUID()), to: plan, personal: routes), .route(0))
     }
 }

@@ -12,6 +12,7 @@ struct HomeView: View {
     @Environment(LocationService.self) private var locationService
     @Environment(StoreService.self) private var store
     @Environment(MapSettings.self) private var mapSettings
+    @Environment(\.modelContext) private var context
     @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
 
     @State private var planner = DrivePlanner()
@@ -51,6 +52,9 @@ struct HomeView: View {
     private var scene: MapScene {
         MapScene(
             plans: planner.departurePlans(on: surface),
+            // Your own route, drawn beside the provider's line so the
+            // comparison is on the map, not only in the numbers (D-066).
+            routes: planner.chosenRoute.map { [MapScene.DrawnRoute(id: $0.id, polyline: $0.polyline, rank: 0)] } ?? [],
             trail: pipeline.isRecording ? pipeline.liveTrack.map(\.coordinate) : [],
             destinationName: planner.destination?.name,
             camera: .fitContent,
@@ -221,21 +225,25 @@ struct HomeView: View {
     @ViewBuilder
     private var planRows: some View {
         if let shown = planner.plan(on: surface) {
+            // Your own routes first, when you have any here (FR-25). The
+            // whole feature is Pro (D-065): the free tier sees that they
+            // exist and where to unlock them.
+            if !planner.personalRoutes.isEmpty {
+                if store.policy.personalRoutesAvailable(for: store.tier) {
+                    ForEach(PlanList.rows(personal: planner.personalRoutes)) { row in
+                        pickableRow(row)
+                    }
+                } else {
+                    ProLockRow(
+                        title: "\(planner.personalRoutes.count) of your own routes here",
+                        detail: "Drive your way and be judged against the nav — part of Pro."
+                    ) { showPaywall = true }
+                }
+            }
             // Fixed order, fixed numbers: a tap marks a row, it never
             // moves one (D-063).
             ForEach(PlanList.rows(shown)) { row in
-                Button {
-                    planner.select(route: row.id, on: surface)
-                } label: {
-                    planRow(
-                        title: row.title,
-                        eta: row.eta,
-                        distance: row.distanceM,
-                        turns: TurnCounter.count(along: row.polyline),
-                        highlighted: row.id == planner.selectedRoute
-                    )
-                }
-                .tint(.primary)
+                pickableRow(row)
             }
         } else if planner.loading {
             HStack(spacing: 10) {
@@ -275,6 +283,22 @@ struct HomeView: View {
         }
     }
 
+    private func pickableRow(_ row: PlanList.Row) -> some View {
+        Button {
+            planner.select(row.id, on: surface)
+        } label: {
+            planRow(
+                title: row.title,
+                eta: row.eta,
+                distance: row.distanceM,
+                turns: TurnCounter.count(along: row.polyline),
+                highlighted: row.id == planner.selected,
+                caption: row.caption
+            )
+        }
+        .tint(.primary)
+    }
+
     /// ETA, distance and turns per plan: the turns are counted from the
     /// plan's own line (D-043), so two plans can be weighed by how many
     /// lefts each asks for, not only by the minutes the provider claims.
@@ -284,7 +308,8 @@ struct HomeView: View {
         distance: Double,
         turns: TurnCount,
         highlighted: Bool,
-        pickable: Bool = true
+        pickable: Bool = true,
+        caption: String? = nil
     ) -> some View {
         HStack(spacing: 10) {
             // The pick is marked the way a chosen saved place is. A plan
@@ -297,8 +322,15 @@ struct HomeView: View {
                     // type-check: Color has no `.tertiary`.
                     .foregroundStyle(highlighted ? Theme.win : Color.secondary)
             }
-            Text(title)
-                .font(highlighted ? .headline : .body)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(highlighted ? .headline : .body)
+                if let caption {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
                 Text(Format.duration(eta))
@@ -385,7 +417,11 @@ struct HomeView: View {
 
     /// What Go does, in the words of whichever app will be guiding.
     private var goExplanation: String {
-        switch mapSettings.navigation {
+        if planner.chosenRoute != nil {
+            return "Recording starts now, and you drive your own route. Route Rebel's drive view draws it beside the provider's plan, which stays the baseline the drive is judged against. Turn-by-turn is off — it is your road."
+        }
+        // No longer the body's only expression, so the switch is returned.
+        return switch mapSettings.navigation {
         case .appleMaps:
             "Recording starts now, then Apple Maps takes over for turn-by-turn — on CarPlay too. Apple Maps will ask you to confirm a route on its own screen. Route Rebel keeps recording in the background, and the plan you left with stays the baseline."
         case .googleMaps:
@@ -554,6 +590,11 @@ struct HomeView: View {
             return
         }
         planner.beginFetch()
+        // The origin is known now, so the driver's own routes from here to
+        // there can be found (FR-25). A typed address has no history.
+        if let placeID = destination.placeID {
+            planner.setPersonalRoutes(PersonalRouteFinder.rows(from: origin, to: placeID, in: context))
+        }
         // Asked from the departure point, before the drive began: if Go is
         // tapped before the answer lands, the answer is still this
         // departure's plan (D-044). A fetch begun mid-drive is not.
@@ -574,8 +615,13 @@ struct HomeView: View {
         // Recording starts first, whatever happens next: the hand-off
         // sends the driver to another app, and the drive still has to be
         // recorded and compared.
-        pipeline.startPlannedDrive(with: planner.departurePlans(on: surface))
-        if let destination = planner.destination {
+        let chosen = planner.chosenRoute.map {
+            RecordingPipeline.ChosenRoute(variantID: $0.id, polyline: $0.polyline)
+        }
+        pipeline.startPlannedDrive(with: planner.departurePlans(on: surface), choosingRoute: chosen)
+        // Your own route is yours to drive: no maps app knows it, so the
+        // hand-off is skipped for this drive (D-066).
+        if chosen == nil, let destination = planner.destination {
             switch mapSettings.navigation {
             case .appleMaps:
                 if AppleMapsHandoff.navigate(to: destination.coordinate, named: destination.name) { return }

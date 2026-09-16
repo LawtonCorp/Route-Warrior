@@ -56,6 +56,12 @@ struct TierPolicyTests {
         #expect(policy.tripOrganizerAvailable(for: .pro))
     }
 
+    @Test func personalRoutesArePro() {
+        // D-065: the recommendation and the rows both, by Brian's decision.
+        #expect(!policy.personalRoutesAvailable(for: .free))
+        #expect(policy.personalRoutesAvailable(for: .pro))
+    }
+
     @Test func guidanceGoesWhereTheDriveViewGoes() {
         // D-052: turn-by-turn lives on the drive view, so it is Pro.
         #expect(!policy.guidanceAvailable(for: .free))

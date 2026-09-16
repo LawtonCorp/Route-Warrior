@@ -126,7 +126,7 @@ final class DrivePlannerTests: XCTestCase {
 
     func testPickingAnAlternateDepartsWithItAndTouchesNoOtherProvider() {
         let planner = plannerWithAlternates()
-        planner.select(route: 1, on: .appleMaps)
+        planner.select(.route(1), on: .appleMaps)
 
         let departure = planner.departurePlans(on: .appleMaps)
         XCTAssertEqual(departure.first { $0.provider == .appleMaps }?.trafficDuration, 400)
@@ -140,10 +140,10 @@ final class DrivePlannerTests: XCTestCase {
         let planner = plannerWithAlternates()
         let before = PlanList.rows(shown(planner.plan(on: .appleMaps)))
 
-        planner.select(route: 2, on: .appleMaps)
+        planner.select(.route(2), on: .appleMaps)
         XCTAssertEqual(PlanList.rows(shown(planner.plan(on: .appleMaps))), before)
 
-        planner.select(route: 1, on: .appleMaps)
+        planner.select(.route(1), on: .appleMaps)
         XCTAssertEqual(PlanList.rows(shown(planner.plan(on: .appleMaps))), before)
         // And the pick still means what it says after changing your mind.
         XCTAssertEqual(
@@ -154,33 +154,82 @@ final class DrivePlannerTests: XCTestCase {
     /// Picking the same row twice lands where picking it once did.
     func testPickingTheSameRowTwiceIsNotAPromotionOfAPromotion() {
         let planner = plannerWithAlternates()
-        planner.select(route: 2, on: .appleMaps)
+        planner.select(.route(2), on: .appleMaps)
         let once = planner.departurePlans(on: .appleMaps)
-        planner.select(route: 2, on: .appleMaps)
+        planner.select(.route(2), on: .appleMaps)
         XCTAssertEqual(planner.departurePlans(on: .appleMaps), once)
         XCTAssertEqual(once.first { $0.provider == .appleMaps }?.trafficDuration, 800)
     }
 
     func testANewAnswerClearsAPickMadeAgainstTheOldList() {
         let planner = plannerWithAlternates()
-        planner.select(route: 2, on: .appleMaps)
-        XCTAssertEqual(planner.selectedRoute, 2)
+        planner.select(.route(2), on: .appleMaps)
+        XCTAssertEqual(planner.selected, .route(2))
 
         let work = destination("Work")
         planner.beginFetch()
         planner.finish(with: [plan(.appleMaps, seconds: 700)], for: work)
-        XCTAssertEqual(planner.selectedRoute, PlanList.recommendedRow, "a row number means nothing here")
+        XCTAssertEqual(planner.selected, PlanList.recommendedRow, "a row number means nothing here")
 
-        planner.select(route: 4, on: .appleMaps)
-        XCTAssertEqual(planner.selectedRoute, PlanList.recommendedRow, "and a row that does not exist is refused")
+        planner.select(.route(4), on: .appleMaps)
+        XCTAssertEqual(planner.selected, PlanList.recommendedRow, "and a row that does not exist is refused")
+    }
+
+    // MARK: The driver's own routes (D-066)
+
+    private func personal(_ id: UUID, name: String) -> PersonalRoutes.Row {
+        PersonalRoutes.Row(
+            id: id, name: name,
+            polyline: Polyline(coordinates: [Coordinate(latitude: 0, longitude: 0), Coordinate(latitude: 0, longitude: 0.03)]),
+            usualDuration: 1_080, drivesCounted: 6, tier: .slot
+        )
+    }
+
+    func testPickingAPersonalRouteDrivesItAndLeavesTheProviderBaselineAlone() {
+        let planner = plannerWithAlternates()
+        let maple = UUID()
+        planner.setPersonalRoutes([personal(maple, name: "via Maple Ave")])
+        XCTAssertEqual(planner.selected, PlanList.recommendedRow, "offered, never pre-selected")
+        XCTAssertNil(planner.chosenRoute)
+
+        planner.select(.personal(maple), on: .appleMaps)
+        XCTAssertEqual(planner.chosenRoute?.id, maple)
+        // The provider's plan is untouched: it is still the baseline.
+        XCTAssertEqual(planner.departurePlans(on: .appleMaps).first { $0.provider == .appleMaps }?.trafficDuration, 600)
+    }
+
+    func testAPersonalPickSurvivesAFreshProviderAnswerAndAProviderPickSurvivesNewPersonalRoutes() {
+        let planner = plannerWithAlternates()
+        let maple = UUID()
+        planner.setPersonalRoutes([personal(maple, name: "via Maple Ave")])
+        planner.select(.personal(maple), on: .appleMaps)
+        planner.beginFetch()
+        planner.finish(with: [plan(.appleMaps, seconds: 700)], for: destination("Work"))
+        XCTAssertEqual(planner.selected, .personal(maple), "the variant did not change with the fetch")
+
+        planner.select(.route(0), on: .appleMaps)
+        planner.setPersonalRoutes([personal(UUID(), name: "another")])
+        XCTAssertEqual(planner.selected, .route(0))
+    }
+
+    func testAPersonalPickThatVanishesFallsBack() {
+        let planner = plannerWithAlternates()
+        let maple = UUID()
+        planner.setPersonalRoutes([personal(maple, name: "via Maple Ave")])
+        planner.select(.personal(maple), on: .appleMaps)
+        planner.setPersonalRoutes([])
+        XCTAssertEqual(planner.selected, PlanList.recommendedRow)
+        XCTAssertNil(planner.chosenRoute)
     }
 
     /// A new destination cannot inherit the last one's pick.
     func testANewDestinationClearsThePick() {
         let planner = plannerWithAlternates()
-        planner.select(route: 1, on: .appleMaps)
+        planner.select(.route(1), on: .appleMaps)
+        planner.setPersonalRoutes([personal(UUID(), name: "mine")])
         planner.start(destination("School"))
-        XCTAssertEqual(planner.selectedRoute, PlanList.recommendedRow)
+        XCTAssertEqual(planner.selected, PlanList.recommendedRow)
+        XCTAssertTrue(planner.personalRoutes.isEmpty, "another place's routes are not this one's")
     }
 
     func testOnlyTheEndOfARecordingTakesThePlanOffTheScreen() {

@@ -32,6 +32,11 @@ public final class TripRecord {
     /// never carries it, so nothing computed from a drive can depend on
     /// what it was called.
     public var label: String = ""
+    /// The route the driver picked on the Plan tab before departing
+    /// (D-066), if any. Kept apart from `variantID`, which is what the
+    /// matcher decided they actually drove; the two can disagree and
+    /// both facts are worth having. The kit's `Trip` never carries it.
+    public var chosenVariantID: UUID?
     @Attribute(.externalStorage) public var pointsBlob: Data = Data()
     public var stopEventsBlob: Data = Data()
 

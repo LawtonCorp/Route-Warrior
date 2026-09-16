@@ -34,7 +34,15 @@ struct DriveView: View {
     }
 
     private var rerouteAllowed: Bool { store.policy.rerouteAvailable(for: store.tier) }
-    private var guidanceOn: Bool { mapSettings.guidance && store.policy.guidanceAvailable(for: store.tier) }
+
+    /// The driver's own route for this drive, when they picked one.
+    private var chosenRoute: RecordingPipeline.ChosenRoute? { pipeline.chosenRouteForCurrentDrive }
+
+    /// Turn-by-turn follows a provider's steps; a personal route has none
+    /// and needs none — it is theirs because they know the way (FR-27).
+    private var guidanceOn: Bool {
+        mapSettings.guidance && store.policy.guidanceAvailable(for: store.tier) && chosenRoute == nil
+    }
 
     /// Following a reroute rather than the departure plan.
     private var guideOnReroute: Bool {
@@ -65,6 +73,9 @@ struct DriveView: View {
     private var scene: MapScene {
         MapScene(
             plans: pipeline.plansForCurrentDrive,
+            // Your own route, when you picked one, beside the plan's dashed
+            // line: the road you are on and the road you are judged against.
+            routes: chosenRoute.map { [MapScene.DrawnRoute(id: $0.variantID, polyline: $0.polyline, rank: 0)] } ?? [],
             reroute: monitor?.reroute,
             trail: pipeline.liveTrack.map(\.coordinate),
             offPlan: isOffPlan,
@@ -260,12 +271,19 @@ struct DriveView: View {
             guide = nil
             return
         }
-        monitor = DriveMonitor(plan: plan) { position in
+        monitor = DriveMonitor(plan: plan, line: chosenRoute?.polyline) { position in
             await pipeline.computePlan(
                 from: position, to: destination, destinationPlaceID: destinationID, provider: provider
             )
         }
         monitor?.ingest(track: pipeline.liveTrack, autoReroute: false)
+        // No guide at all on a personal route: nothing to show and nothing
+        // to say (FR-27). A guide that exists can speak, so it must not.
+        guard chosenRoute == nil else {
+            guide = nil
+            pipeline.note("Driving your own route: turn-by-turn off, off-route watched against it")
+            return
+        }
         let voice = self.voice ?? GuidanceVoice()
         self.voice = voice
         let guide = DriveGuide(plan: plan, units: DriveGuide.localUnits(), voice: voice)
