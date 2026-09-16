@@ -45,9 +45,17 @@ enum DestinationScope {
     /// and belong to no scope; they are counted only under `.all`, and
     /// the screen says so.
     static func origins(for trips: [Trip], places: [PlaceRecord]) -> [Origin] {
+        origins(countingOriginsOf: trips.map(\.originPlaceID), places: places)
+    }
+
+    /// The same count from the column alone (D-077). The screen builds
+    /// the picker from stored records rather than decoded drives: a
+    /// starting point is a `UUID?` on the row, and decoding every drive's
+    /// track to read one is what made the screen slow.
+    static func origins(countingOriginsOf originPlaceIDs: [UUID?], places: [PlaceRecord]) -> [Origin] {
         var counts: [UUID: Int] = [:]
-        for trip in trips {
-            guard let originID = trip.originPlaceID else { continue }
+        for originID in originPlaceIDs {
+            guard let originID else { continue }
             counts[originID, default: 0] += 1
         }
         let named = counts.compactMap { id, drives -> Origin? in
@@ -82,8 +90,16 @@ enum DestinationScope {
     }
 
     static func trips(_ trips: [Trip], in selection: Selection) -> [Trip] {
-        guard case let .origin(id) = selection else { return trips }
-        return trips.filter { $0.originPlaceID == id }
+        trips.filter { admits(originPlaceID: $0.originPlaceID, in: selection) }
+    }
+
+    /// Whether a drive belongs to this scope, from its stored column —
+    /// so the screen can narrow the rows *before* decoding them.
+    /// Expressed once and called by `trips(_:in:)`, so the cheap path and
+    /// the readable one cannot answer differently.
+    static func admits(originPlaceID: UUID?, in selection: Selection) -> Bool {
+        guard case let .origin(id) = selection else { return true }
+        return originPlaceID == id
     }
 
     static func variants(_ variants: [RouteVariant], in selection: Selection) -> [RouteVariant] {

@@ -1,3 +1,4 @@
+import RouteWarriorKit
 import RouteWarriorStore
 import SwiftData
 import SwiftUI
@@ -28,29 +29,40 @@ struct TripsView: View {
 
     private var isFiltered: Bool { destinationFilter != nil || outcome != .any }
 
-    private func placeName(_ id: UUID?) -> String? {
-        guard let id else { return nil }
-        return places.first { $0.id == id }?.name
+    /// Names by id, built once per pass rather than scanned per row
+    /// (D-077). The list renders every row on every filter and sort
+    /// change, so a linear scan here is a scan per row per keystroke.
+    private var placeNames: [UUID: String] {
+        Dictionary(places.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
     }
 
-    /// The road a drive was matched to, in the driver's words (D-067).
-    private func routeName(_ id: UUID?) -> String? {
-        guard let id else { return nil }
-        return variants.first { $0.id == id }.flatMap { try? $0.variant() }?.displayName
+    /// The road a drive was matched to, in the driver's words (D-067) —
+    /// read off the record. Building the whole variant to reach its name
+    /// decodes its polyline, which is a route's shape being read from
+    /// disk to print one string, once per row (D-077).
+    private var routeNames: [UUID: String] {
+        Dictionary(
+            variants.map {
+                ($0.id, RouteVariant.displayName(customName: $0.customName, autoName: $0.autoName))
+            },
+            uniquingKeysWith: { first, _ in first }
+        )
     }
 
     var body: some View {
         NavigationStack {
             List {
                 let sections = arranged
+                // Built here, so every row shares one lookup table.
+                let names = (places: placeNames, routes: routeNames)
                 if !sections.today.isEmpty {
                     Section("Today") {
-                        ForEach(sections.today) { row($0) }
+                        ForEach(sections.today) { row($0, names: names) }
                     }
                 }
                 if !sections.earlier.isEmpty {
                     Section(sections.today.isEmpty ? "All trips" : "Earlier") {
-                        ForEach(sections.earlier) { row($0) }
+                        ForEach(sections.earlier) { row($0, names: names) }
                     }
                 }
                 if gated.hiddenCount > 0 {
@@ -99,16 +111,19 @@ struct TripsView: View {
         }
     }
 
-    private func row(_ record: TripRecord) -> some View {
+    private func row(
+        _ record: TripRecord,
+        names: (places: [UUID: String], routes: [UUID: String])
+    ) -> some View {
         NavigationLink {
             TripDetailView(record: record)
         } label: {
             TripRowView(
                 record: record,
                 deltaSeconds: record.etaDeltaSeconds(in: snapshots),
-                routeName: routeName(record.variantID),
-                originName: placeName(record.originPlaceID),
-                destinationName: placeName(record.destinationPlaceID)
+                routeName: record.variantID.flatMap { names.routes[$0] },
+                originName: record.originPlaceID.flatMap { names.places[$0] },
+                destinationName: record.destinationPlaceID.flatMap { names.places[$0] }
             )
         }
         // Swipe to delete (D-058), the same delete the trip's own screen

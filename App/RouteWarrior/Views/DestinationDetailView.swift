@@ -30,16 +30,18 @@ struct DestinationDetailView: View {
     /// than being frozen at whatever it was when the screen opened.
     @State private var picked: DestinationScope.Selection?
 
-    /// Every drive that ended here, before scoping — what the picker is
-    /// built from and what `.all` shows.
-    private var allTripsHere: [Trip] {
-        allTrips
-            .filter { $0.destinationPlaceID == place.id }
-            .compactMap { try? $0.trip() }
+    /// Every drive that ended here, as stored. Nothing is decoded to
+    /// build this (D-077) — the picker and the scope are answered from
+    /// columns, and only the drives that survive the scope are turned
+    /// into kit values.
+    private var recordsHere: [TripRecord] {
+        allTrips.filter { $0.destinationPlaceID == place.id }
     }
 
     private var origins: [DestinationScope.Origin] {
-        DestinationScope.origins(for: allTripsHere, places: allPlaces)
+        DestinationScope.origins(
+            countingOriginsOf: recordsHere.map(\.originPlaceID), places: allPlaces
+        )
     }
 
     private var scope: DestinationScope.Selection {
@@ -48,11 +50,22 @@ struct DestinationDetailView: View {
         )
     }
 
+    /// How many drives here the current scope leaves out, for the footer.
+    /// Counted, not decoded.
+    private var unscopedDriveCount: Int {
+        let scope = self.scope
+        return recordsHere.filter { !DestinationScope.admits(originPlaceID: $0.originPlaceID, in: scope) }.count
+    }
+
     /// Everything below reads these two, so scoping them scopes the
     /// verdict, the stats, the race, the recommendation, the heatmap and
-    /// the trend in one place.
+    /// the trend in one place. Narrowed before decoding: a drive outside
+    /// the scope never has its track read off disk.
     private var trips: [Trip] {
-        DestinationScope.trips(allTripsHere, in: scope)
+        let scope = self.scope
+        return recordsHere
+            .filter { DestinationScope.admits(originPlaceID: $0.originPlaceID, in: scope) }
+            .compactMap { try? $0.trip() }
     }
 
     private var variants: [VariantRecord] {
@@ -71,13 +84,18 @@ struct DestinationDetailView: View {
     }
 
     var body: some View {
-        List {
+        // Decoded once per pass (D-077). Every section below reads the
+        // same drives, and reading them used to mean parsing every
+        // track off disk again — a dozen times over for one screen.
+        let scoped = trips
+        let snapshots = snapshotsByID
+        return List {
             scopeSection
-            verdictSection
-            statsSection
-            variantsSection
-            heatmapSection
-            trendSection
+            verdictSection(scoped, snapshots: snapshots)
+            statsSection(scoped)
+            variantsSection(scoped)
+            heatmapSection(scoped)
+            trendSection(scoped)
         }
         .navigationTitle(place.name)
         .sheet(isPresented: $showPaywall) { PaywallView() }
@@ -117,7 +135,7 @@ struct DestinationDetailView: View {
                 Text(DestinationScopeText.footer(
                     scope: scope,
                     destination: place.name,
-                    unscopedDrives: allTripsHere.count - trips.count
+                    unscopedDrives: unscopedDriveCount
                 ))
             }
         }
@@ -135,15 +153,18 @@ struct DestinationDetailView: View {
 
     /// Providers with at least one plan among this destination's trips,
     /// Apple first (the default map).
-    private var providersWithPlans: [PlanSnapshot.Provider] {
+    private func providersWithPlans(
+        _ trips: [Trip], snapshots: [UUID: PlanSnapshot]
+    ) -> [PlanSnapshot.Provider] {
         [PlanSnapshot.Provider.appleMaps, .googleRoutes].filter { provider in
-            trips.contains { VerdictEngine.plan(of: $0, from: provider, snapshotsByID: snapshotsByID) != nil }
+            trips.contains { VerdictEngine.plan(of: $0, from: provider, snapshotsByID: snapshots) != nil }
         }
     }
 
-    private var verdictSection: some View {
-        Section("Your route vs. the plans") {
-            if providersWithPlans.isEmpty {
+    private func verdictSection(_ trips: [Trip], snapshots: [UUID: PlanSnapshot]) -> some View {
+        let providers = providersWithPlans(trips, snapshots: snapshots)
+        return Section("Your route vs. the plans") {
+            if providers.isEmpty {
                 verdictCard(
                     symbol: "hourglass",
                     color: .gray,
@@ -151,9 +172,9 @@ struct DestinationDetailView: View {
                     detail: "Plans arrive with drives that start from the Plan screen, or when a destination is predicted at departure."
                 )
             }
-            ForEach(providersWithPlans, id: \.self) { provider in
+            ForEach(providers, id: \.self) { provider in
                 providerVerdictCard(
-                    VerdictEngine.verdict(forDestination: trips, snapshotsByID: snapshotsByID, provider: provider),
+                    VerdictEngine.verdict(forDestination: trips, snapshotsByID: snapshots, provider: provider),
                     provider: provider
                 )
             }
@@ -214,7 +235,7 @@ struct DestinationDetailView: View {
 
     // MARK: Overall stats
 
-    private var statsSection: some View {
+    private func statsSection(_ trips: [Trip]) -> some View {
         Section(scope.comparesRoutes ? "Trips from \(DestinationScope.label(for: scope, in: origins))" : "All trips here") {
             if let stats = StatsEngine.durationStats(for: trips) {
                 LabeledContent("Trips", value: "\(stats.count)")
@@ -237,24 +258,25 @@ struct DestinationDetailView: View {
         Dictionary(variants.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
-    /// "Which of my own ways here is faster?" — answered from this
-    /// destination's history (D-029), from one starting point (D-076).
-    private var race: RouteRaceEngine.Race {
-        RouteRaceEngine.race(variants: kitVariants, trips: trips)
-    }
-
     /// The same question asked of this moment — the driver's weekday and
-    /// hour, in the zone they are standing in (D-065).
-    private var recommendation: RouteRecommender.Recommendation? {
+    /// hour, in the zone they are standing in (D-065). Only asked inside
+    /// a scope that can compare routes, so it takes the decoded variants
+    /// rather than rebuilding them (D-077).
+    private func recommendation(
+        variants: [RouteVariant], trips: [Trip]
+    ) -> RouteRecommender.Recommendation? {
         RouteRecommender.recommend(
-            variants: kitVariants,
+            variants: variants,
             trips: trips,
             context: RouteRecommender.Context(now: .now, timezoneID: TimeZone.current.identifier)
         )
     }
 
-    private var variantsSection: some View {
-        let race = self.race
+    /// "Which of my own ways here is faster?" — answered from this
+    /// destination's history (D-029), from one starting point (D-076).
+    private func variantsSection(_ trips: [Trip]) -> some View {
+        let kitVariants = self.kitVariants
+        let race = RouteRaceEngine.race(variants: kitVariants, trips: trips)
         return Section {
             if deepLocked {
                 ProLockRow(
@@ -272,7 +294,8 @@ struct DestinationDetailView: View {
                 // them would produce a winner that means nothing.
                 if scope.comparesRoutes {
                     headToHead(race)
-                    if let line = RecommendationLine.text(for: recommendation) {
+                    let suggestion = recommendation(variants: kitVariants, trips: trips)
+                    if let line = RecommendationLine.text(for: suggestion) {
                         Label(line, systemImage: "clock")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -409,10 +432,10 @@ struct DestinationDetailView: View {
 
     // MARK: Heatmap
 
-    private var heatmapSection: some View {
+    private func heatmapSection(_ trips: [Trip]) -> some View {
         Section {
             ProLock(locked: deepLocked, title: "Your best hours — Pro", onUnlock: { showPaywall = true }) {
-                heatmapBody
+                heatmapBody(trips)
             }
         } header: {
             Text("By day and time (median)")
@@ -422,7 +445,7 @@ struct DestinationDetailView: View {
     }
 
     @ViewBuilder
-    private var heatmapBody: some View {
+    private func heatmapBody(_ trips: [Trip]) -> some View {
             let matrix = StatsEngine.weekdayBucketMatrix(for: trips)
             if matrix.isEmpty {
                 Text("Not enough trips yet.").foregroundStyle(.secondary)
@@ -482,16 +505,16 @@ struct DestinationDetailView: View {
 
     // MARK: Trend
 
-    private var trendSection: some View {
+    private func trendSection(_ trips: [Trip]) -> some View {
         Section("Month over month (median)") {
             ProLock(locked: deepLocked, title: "Month over month — Pro", onUnlock: { showPaywall = true }) {
-                trendBody
+                trendBody(trips)
             }
         }
     }
 
     @ViewBuilder
-    private var trendBody: some View {
+    private func trendBody(_ trips: [Trip]) -> some View {
             let trend = StatsEngine.monthlyTrend(for: trips)
             if trend.count < 2 {
                 Text("Trends appear after a second month of driving.")

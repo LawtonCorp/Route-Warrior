@@ -308,3 +308,13 @@ bank account holder and IRS records. Apple cross-checks them.
   drives in one weekday-and-slot cell is a lot to ask, and if it never
   happens the sharpest sentence the feature can say is one it never
   says.
+- **D-077, the latency**: this is the one CI is least able to speak to.
+  The three screens Brian named are the test: open a destination from the
+  Places tab, filter the Trips list by departure, and rename a route from
+  its detail screen. Each should feel immediate on a phone with real
+  history. What is proved here is only that the cheap paths answer the
+  same as the ones they replaced; that the screen now decodes the history
+  once per pass instead of a dozen times is read off the call graph, not
+  timed. Renaming is the sharpest of the three to judge: it used to
+  decode every drive on the route twice per keystroke, so if typing is
+  still not smooth, the remaining cost is elsewhere and worth saying so.
