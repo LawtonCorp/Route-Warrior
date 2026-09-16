@@ -37,6 +37,7 @@ struct StoreRoundTripTests {
             distanceM: 8_400,
             movingTime: 780,
             idleTime: 120,
+            pausedTime: 240,
             stopEvents: [
                 StopEvent(
                     coordinate: Coordinate(latitude: 41.905, longitude: -87.605),
@@ -67,6 +68,22 @@ struct StoreRoundTripTests {
         let trip = makeTrip()
         let restored = try TripRecord(trip).trip()
         #expect(restored == trip)
+    }
+
+    /// D-069: the paused seconds are part of the drive's measurement, so
+    /// they persist with it — and every trip recorded before the pause
+    /// button existed reads as zero, which is what it was.
+    @Test func pausedTimeSurvivesTheRoundTripAndDefaultsToZero() throws {
+        let restored = try TripRecord(makeTrip()).trip()
+        #expect(restored.pausedTime == 240)
+        // 900 s of wall clock, 240 of them excluded.
+        #expect(restored.elapsedIncludingPauses == 900)
+        #expect(restored.duration == 660)
+
+        // A record as CloudKit hands one back before anyone paused
+        // anything: the field is additive with a zero default, which is
+        // what makes it safe to add (D-066's precedent).
+        #expect(TripRecord().pausedTime == 0)
     }
 
     @Test func placeRecordRoundTrip() {

@@ -1594,3 +1594,92 @@ with Route Rebel's own guidance is a real combination, and so is Apple's
 map with a Google Maps hand-off); leaving it and explaining it in the
 footer (the footer already explained it, at the bottom of four
 settings, which is where it was when it failed).
+
+## D-069 — Pause stops the clock, because a pause button that does not is a lie (2026-09-16)
+
+Brian asked for a pause button beside Stop, a play button in its place
+while paused, and "Paused" over the map. The controls were the easy
+half. The question the request did not answer is what a pause *means*
+for the one number this app exists to produce.
+
+**Chosen: the paused seconds are not part of the drive.** That is what
+a pause button means everywhere else, and it is the only reading that
+does not poison the comparison. The alternative — pause merely stops
+collecting points while the clock runs — is a button that hands the
+driver a ten-minute loss against Google's plan for stopping to buy
+coffee, and does it silently, in the one number the driver bought the
+app for.
+
+So `Trip` gains `pausedTime`, and `Trip.duration` subtracts it.
+`startedAt` and `endedAt` stay exactly what they were — true wall-clock
+facts about when the drive began and ended — and
+`elapsedIncludingPauses` is there for the one screen that wants the
+afternoon rather than the drive. Every median, verdict, race and
+scoreboard reads `duration`, so all of them became pause-aware by
+subtracting in one place.
+
+The recorder gains a fourth state. While `.paused`:
+
+- **No sample is kept.** Location points are dropped, not buffered and
+  not counted as rejected. The driver said this is not the drive.
+- **Nothing can end the drive.** Pedestrian motion is ignored — walking
+  into the shop is the *reason* to pause — and so is the idle window
+  that would otherwise close the trip after three minutes at rest.
+- **A resume is not a gap.** `gapSplitDuration` exists to notice a dead
+  location stream, so after a resume the gap is measured from the resume
+  rather than from the last sample before the pause. An hour-long pause
+  leaves one trip, not two.
+- **The pair of samples bracketing a pause contributes nothing** —
+  neither the straight line across it nor the time it took. Pause at
+  home, resume two miles away, and those two miles are not in your
+  distance.
+
+Three consequences that are the honest answer rather than the tidy one:
+
+- **A pause you never resume is trailing time, and is not subtracted.**
+  Pause, then Stop, and the drive ended when the clock did — the seconds
+  the phone sat paused are dropped like the trailing idle the recorder
+  already trims. Subtracting them instead would shorten a real drive by
+  however long it sat, and could discard it as too brief.
+- **A paused drive cannot be a ghost-race reference.** The reference is
+  a distance→elapsed curve built from a past trip, and a pause puts a
+  hole in it exactly where the pause was. `Trip` stores the total paused,
+  not where it fell, so `ReferenceProfile(trip:along:)` refuses such a
+  trip outright rather than racing the driver against a curve with a
+  step in it.
+- **The GPS stays on while paused.** The samples are dropped, so this
+  costs battery for nothing — but `syncPowerMode` only ever runs off an
+  arriving sample, so stopping the updates would remove the thing that
+  starts them again, and play would be tapped onto a dead map. Worth
+  revisiting with a phone in hand and a long pause.
+
+A paused drive is still a drive, which is a rule the app has to hold in
+several places at once: `HomeLayout.driveInProgress` keeps Record and Go
+off a screen that already has a drive to finish, the recorder row keeps
+its buttons and its card, the drive view does not dismiss itself, the
+live trail stays drawn, the ghost race is not ended (ending it would
+drop the Live Activity and forget the matched variant), and Go on a
+paused drive resumes it rather than throwing the driven track away. Each
+of those was a place the obvious `isRecording` check would have been
+wrong, and each is now `isDriveInProgress`.
+
+"Paused" is one badge on `MapSurfaceView`, above whichever surface is
+showing, driven by `MapScene.paused` — so Apple's map and Google's can
+never disagree about whether the drive is running. It ignores taps: it
+is a statement, and the control is the play button beside Stop.
+
+**Rejected**: pause as "stop recording, keep the clock running" (the
+smaller change by far, and it silently converts every coffee stop into a
+loss against the nav — the defect would have shipped and been field-
+reported as "it says I lost by ten minutes"); shifting the timestamps of
+the points after a pause so the curve stays continuous (it makes the
+track lie about when the driver was where, and the map, the stop events
+and the matcher all read those timestamps); storing the spans on the
+trip so a paused drive could still be a ghost reference (a schema change
+and a migration for a curve that will be rare; the total is what the
+verdict needs); auto-resuming on automotive motion (the driver paused on
+purpose, and a recorder that restarts itself is the thing pause exists
+to prevent); putting pause only on the drive view (Brian asked for it
+beside Stop, and Stop is on the Plan tab's recorder row too — a drive
+paused from one screen must be resumable from the other); turning the
+GPS off while paused (see above — nothing would turn it back on).

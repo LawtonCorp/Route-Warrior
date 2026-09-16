@@ -53,6 +53,19 @@ protocol TripSortable {
     var distanceM: Double { get }
     var destinationPlaceID: UUID? { get }
     var excludedFromStats: Bool { get }
+    /// Seconds the driver excluded with the pause button (D-069), so
+    /// "longest" ranks driving and not waiting.
+    var pausedTime: Double { get }
+}
+
+extension TripSortable {
+    /// Nothing recorded before D-069 was ever paused.
+    var pausedTime: Double { 0 }
+
+    /// The drive's own length, pauses removed.
+    var sortableDuration: TimeInterval {
+        max(0, endedAt.timeIntervalSince(startedAt) - pausedTime)
+    }
 }
 
 /// Filters, sorts, and splits today off the top of the trip list. Pure,
@@ -102,8 +115,8 @@ struct TripOrganizer {
         case .oldest:
             return tieBreak(a, b, a.startedAt < b.startedAt, a.startedAt == b.startedAt)
         case .longest:
-            let left = a.endedAt.timeIntervalSince(a.startedAt)
-            let right = b.endedAt.timeIntervalSince(b.startedAt)
+            let left = a.sortableDuration
+            let right = b.sortableDuration
             return tieBreak(a, b, left > right, left == right)
         case .farthest:
             return tieBreak(a, b, a.distanceM > b.distanceM, a.distanceM == b.distanceM)

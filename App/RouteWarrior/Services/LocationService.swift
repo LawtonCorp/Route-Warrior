@@ -95,12 +95,21 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     /// recorded sample, feed the live track, end when the trip does (FR-15).
     private func syncGhostRace() {
         guard let ghostRace else { return }
-        if pipeline.recorderState == .recording, let startedAt = pipeline.recordingStartedAt {
+        if pipeline.isDriveInProgress, let startedAt = pipeline.recordingStartedAt {
             if !raceActive {
                 ghostRace.tripBegan()
                 raceActive = true
             }
-            ghostRace.ingest(track: pipeline.liveTrack, startedAt: startedAt)
+            // A pause must not end the race (D-069). Ending it would drop
+            // the Live Activity and forget the matched variant, and the
+            // drive is not over — it is waiting. There is nothing to push
+            // either way: no sample is being kept.
+            guard !pipeline.isPaused else { return }
+            ghostRace.ingest(
+                track: pipeline.liveTrack,
+                startedAt: startedAt,
+                pausedSeconds: pipeline.pausedSeconds()
+            )
         } else if raceActive {
             ghostRace.tripEnded()
             raceActive = false
@@ -140,7 +149,11 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
                 highPowerActive = false
                 pipeline.note("GPS off (idle)")
             }
-        case .armed, .recording:
+        // Paused keeps the GPS on, deliberately (D-069). The samples are
+        // dropped, but this method only ever runs off an arriving sample:
+        // stopping the updates would remove the thing that starts them
+        // again, and the driver would tap play onto a dead map.
+        case .armed, .recording, .paused:
             applyBackgroundPolicy()
             if !highPowerActive {
                 manager.startUpdatingLocation()

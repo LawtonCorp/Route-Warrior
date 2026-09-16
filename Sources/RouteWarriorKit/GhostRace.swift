@@ -30,6 +30,11 @@ public enum GhostRace {
         /// against the variant's line. Nil when the trip cannot be
         /// projected (too few points).
         public init?(trip: Trip, along polyline: Polyline) {
+            // A paused drive has a hole in its elapsed curve exactly where
+            // the pause was, and the curve is what the ghost is raced
+            // against. `Trip` keeps the total paused, not where it fell,
+            // so such a drive cannot be a reference at all (D-069).
+            guard trip.pausedTime == 0 else { return nil }
             var built: [Sample] = []
             for point in trip.points {
                 guard let hit = polyline.nearestPoint(to: point.coordinate) else { continue }

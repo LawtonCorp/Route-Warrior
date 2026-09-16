@@ -14,12 +14,37 @@ struct MapSurfaceView: View {
     var follow: MapFollowState? = nil
 
     var body: some View {
+        surface
+            .overlay { if scene.paused { PausedBadge() } }
+    }
+
+    @ViewBuilder
+    private var surface: some View {
         switch mapSettings.provider {
         case .apple:
             AppleMapSurface(scene: scene, follow: follow)
         case .google:
             GoogleMapSurface(scene: scene, follow: follow)
         }
+    }
+}
+
+/// "Paused" over the map (D-069). One badge, on both surfaces, because
+/// the two map implementations must never disagree about whether the
+/// drive is running.
+struct PausedBadge: View {
+    var body: some View {
+        Label("Paused", systemImage: "pause.fill")
+            .font(.headline)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+            .background(Theme.armed.opacity(0.92), in: Capsule())
+            .shadow(radius: 6, y: 2)
+            .accessibilityLabel("The drive is paused")
+            // Taps belong to the map underneath; this is a statement,
+            // not a control — the play button is beside Stop.
+            .allowsHitTesting(false)
     }
 }
 

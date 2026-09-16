@@ -121,6 +121,37 @@ public struct TripRecorder: Sendable {
         case idle
         case armed
         case recording
+        /// Recording, but the driver stopped the clock (D-069). No sample
+        /// is kept and nothing can end the drive; only `resumeRecording`
+        /// or `stopRecording` leaves this state.
+        case paused
+    }
+
+    /// A span the driver excluded from the drive by pausing.
+    public struct PauseSpan: Sendable, Equatable {
+        public var startedAt: Date
+        public var endedAt: Date
+
+        public var duration: TimeInterval { max(0, endedAt.timeIntervalSince(startedAt)) }
+
+        public init(startedAt: Date, endedAt: Date) {
+            self.startedAt = startedAt
+            self.endedAt = endedAt
+        }
+
+        /// True when this pause sits between two consecutive samples —
+        /// the pair that must contribute no distance and no moving time,
+        /// because whatever happened in it is not part of the drive.
+        ///
+        /// `to` is exclusive on purpose. A pause almost always begins at
+        /// the instant of the last sample before it, and an inclusive
+        /// upper bound matched *two* adjacent pairs: the one ending at
+        /// that sample as well as the one beginning there. That threw
+        /// away the last second and the last few metres the driver
+        /// genuinely drove before pausing.
+        func spans(from: Date, to: Date) -> Bool {
+            startedAt >= from && startedAt < to
+        }
     }
 
     // MARK: Stored state
@@ -132,9 +163,29 @@ public struct TripRecorder: Sendable {
     public var liveTrack: [TrackPoint] { buffer }
 
     /// When the current recording's first retained point was taken;
-    /// nil unless recording.
+    /// nil unless a drive is under way. A paused drive still has a start —
+    /// it is the clock that stopped, not the drive.
     public var recordingStartedAt: Date? {
-        state == .recording ? buffer.first?.timestamp : nil
+        (state == .recording || state == .paused) ? buffer.first?.timestamp : nil
+    }
+
+    /// True while the driver has the clock stopped.
+    public var isPaused: Bool { state == .paused }
+
+    /// Seconds excluded from this drive so far, counting an open pause up
+    /// to `date`. Every elapsed figure the app shows — the scoreboard, the
+    /// ghost race — subtracts this, or a coffee stop reads as losing to
+    /// the nav by the length of the coffee stop.
+    public func pausedSeconds(at date: Date) -> TimeInterval {
+        let closed = pauseSpans.reduce(0) { $0 + $1.duration }
+        guard let pausedAt else { return closed }
+        return closed + max(0, date.timeIntervalSince(pausedAt))
+    }
+
+    /// Time on this drive that counts, at `date`.
+    public func drivingElapsed(at date: Date) -> TimeInterval {
+        guard let start = recordingStartedAt else { return 0 }
+        return max(0, date.timeIntervalSince(start) - pausedSeconds(at: date))
     }
 
     /// Diagnostics for the most recent finalize (D-019).
@@ -154,6 +205,14 @@ public struct TripRecorder: Sendable {
     private var pedestrianSince: Date?
     private var rejectedPoints = 0
     private var source: Trip.Source = .auto
+    /// Closed pauses in the current segment (D-069).
+    private var pauseSpans: [PauseSpan] = []
+    /// When the open pause began, while one is open.
+    private var pausedAt: Date?
+    /// Set on resume and cleared by the next sample, so the pause itself
+    /// cannot look like the dead location stream `gapSplitDuration` is
+    /// there to catch.
+    private var resumedAt: Date?
 
     public init(timezoneID: String, config: Config = Config()) {
         self.timezoneID = timezoneID
@@ -182,6 +241,10 @@ public struct TripRecorder: Sendable {
             return nil
         case .recording:
             return ingestWhileRecording(motion: motion)
+        case .paused:
+            // Walking into the shop is the reason the driver paused. No
+            // motion sample may arm, end or otherwise move a paused drive.
+            return nil
         }
     }
 
@@ -226,6 +289,10 @@ public struct TripRecorder: Sendable {
             return ingestWhileArmed(point)
         case .recording:
             return ingestWhileRecording(point)
+        case .paused:
+            // Dropped, not buffered and not counted as rejected: the
+            // driver said this is not the drive.
+            return nil
         }
     }
 
@@ -260,12 +327,15 @@ public struct TripRecorder: Sendable {
     }
 
     private mutating func ingestWhileRecording(_ point: TrackPoint) -> Output? {
-        if let last = buffer.last,
-           point.timestamp.timeIntervalSince(last.timestamp) >= config.gapSplitDuration {
+        // A pause is not a dead stream, so the gap is measured from the
+        // resume rather than from the last sample before the pause.
+        if let since = resumedAt ?? buffer.last?.timestamp,
+           point.timestamp.timeIntervalSince(since) >= config.gapSplitDuration {
             // The stream died (app killed, tunnel). Close out what we have;
             // the next automotive motion sample re-arms for the remainder.
             return finalize(cause: .gapSplit)
         }
+        resumedAt = nil
 
         let speed = effectiveSpeed(of: point, after: buffer.last)
         buffer.append(point)
@@ -302,8 +372,46 @@ public struct TripRecorder: Sendable {
         rejectedPoints = 0
     }
 
+    /// Pause button (D-069): stop the clock without ending the drive.
+    /// Returns false when there was nothing to pause. No sample is kept
+    /// while paused and nothing can end the drive, so a stop for fuel or
+    /// a passenger neither splits the trip nor counts against the nav's
+    /// plan.
+    @discardableResult
+    public mutating func pauseRecording(at date: Date) -> Bool {
+        guard state == .recording else { return false }
+        state = .paused
+        pausedAt = date
+        return true
+    }
+
+    /// Play button: the clock starts again and the drive continues, in
+    /// the same trip. Returns false when nothing was paused.
+    @discardableResult
+    public mutating func resumeRecording(at date: Date) -> Bool {
+        guard state == .paused, let pausedAt else { return false }
+        pauseSpans.append(PauseSpan(startedAt: pausedAt, endedAt: max(pausedAt, date)))
+        self.pausedAt = nil
+        state = .recording
+        // The drive resumes here, not wherever it left off: the idle
+        // window must not end a drive over time the driver excluded, and
+        // there is no pedestrian suspicion left to carry across a pause.
+        lastMovingAt = date
+        lastDrivingAt = nil
+        pedestrianSince = nil
+        resumedAt = date
+        return true
+    }
+
     /// Manual stop. Also the path the app uses on graceful shutdown.
-    public mutating func stopRecording() -> Output? {
+    /// Works from a paused drive: the open pause closes first, so the
+    /// seconds between the pause and the stop are excluded like any other.
+    public mutating func stopRecording(at date: Date) -> Output? {
+        if state == .paused, let pausedAt {
+            pauseSpans.append(PauseSpan(startedAt: pausedAt, endedAt: max(pausedAt, date)))
+            self.pausedAt = nil
+            state = .recording
+        }
         guard state == .recording else { return nil }
         return finalize(cause: .manualStop)
     }
@@ -313,6 +421,7 @@ public struct TripRecorder: Sendable {
     private mutating func finalize(cause: EndCause) -> Output {
         let walkBegan = pedestrianSince
         let rejected = rejectedPoints
+        let pauses = pauseSpans
         defer {
             state = .idle
             buffer.removeAll()
@@ -322,6 +431,9 @@ public struct TripRecorder: Sendable {
             pedestrianSince = nil
             rejectedPoints = 0
             source = .auto
+            pauseSpans = []
+            pausedAt = nil
+            resumedAt = nil
         }
         lastEndCause = cause
 
@@ -357,16 +469,29 @@ public struct TripRecorder: Sendable {
             return .tripDiscarded(.tooBrief)
         }
 
+        // Only pauses *inside* the retained drive. A pause the driver
+        // never resumed begins at or after the last retained point, and
+        // is trailing time like the parking the trimming above removed —
+        // subtracting it would shorten a real drive by however long the
+        // phone sat paused, and could discard it as too brief.
+        let spans = pauses.filter { $0.startedAt >= first.timestamp && $0.startedAt < last.timestamp }
+        let pausedTime = spans.reduce(0) { $0 + $1.duration }
+
         var distance = 0.0
         var movingTime = 0.0
         for i in 1..<points.count {
-            let dt = points[i].timestamp.timeIntervalSince(points[i - 1].timestamp)
+            let from = points[i - 1].timestamp
+            let to = points[i].timestamp
+            // The driver excluded whatever happened in a pause, so the
+            // pair that brackets one contributes neither the straight
+            // line across it nor the time it took.
+            if spans.contains(where: { $0.spans(from: from, to: to) }) { continue }
             distance += Geo.distanceMeters(from: points[i - 1].coordinate, to: points[i].coordinate)
             if effectiveSpeed(of: points[i], after: points[i - 1]) >= config.endSpeedMps {
-                movingTime += dt
+                movingTime += to.timeIntervalSince(from)
             }
         }
-        let duration = last.timestamp.timeIntervalSince(first.timestamp)
+        let duration = max(0, last.timestamp.timeIntervalSince(first.timestamp) - pausedTime)
         lastSegment = SegmentSummary(
             points: points.count,
             duration: duration,
@@ -384,6 +509,7 @@ public struct TripRecorder: Sendable {
             distanceM: distance,
             movingTime: movingTime,
             idleTime: max(0, duration - movingTime),
+            pausedTime: pausedTime,
             source: source
         )
         return .tripFinalized(trip)

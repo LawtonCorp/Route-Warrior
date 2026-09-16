@@ -226,7 +226,7 @@ struct TripDetailView: View {
 
     /// The headline of the whole screen: did you beat the plan you saw?
     private func comparisonCard(snapshot: PlanSnapshot) -> some View {
-        let delta = record.endedAt.timeIntervalSince(record.startedAt) - snapshot.trafficDuration
+        let delta = record.duration - snapshot.trafficDuration
         let tone = TripTone.forTrip(deltaSeconds: delta, excluded: false)
         let name = snapshot.provider.displayName
         return HStack(spacing: 12) {
@@ -255,10 +255,15 @@ struct TripDetailView: View {
 
     private var statsSection: some View {
         Section("Drive") {
-            LabeledContent("Duration", value: Format.duration(record.endedAt.timeIntervalSince(record.startedAt)))
+            LabeledContent("Duration", value: Format.duration(record.duration))
             LabeledContent("Distance", value: Format.distance(record.distanceM))
             LabeledContent("Moving", value: Format.duration(record.movingTime))
             LabeledContent("Idle", value: Format.duration(record.idleTime))
+            // Only when there was one: every drive before D-069 reads
+            // zero, and a row of zeroes teaches nothing.
+            if record.pausedTime > 0 {
+                LabeledContent("Paused", value: "\(Format.duration(record.pausedTime)), not counted")
+            }
             if let trip {
                 LabeledContent("Stops", value: "\(trip.stopEvents.count)")
                 if fullDetail {
@@ -281,7 +286,7 @@ struct TripDetailView: View {
             }
             ForEach(plans) { entry in
                 let name = entry.plan.provider.displayName
-                let delta = record.endedAt.timeIntervalSince(record.startedAt) - entry.plan.trafficDuration
+                let delta = record.duration - entry.plan.trafficDuration
                 LabeledContent("\(name)'s ETA was", value: Format.duration(entry.plan.trafficDuration))
                 LabeledContent("You vs. \(name)") {
                     Text(Format.signedDelta(delta))

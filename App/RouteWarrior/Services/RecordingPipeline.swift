@@ -105,8 +105,26 @@ final class RecordingPipeline {
     }
 
     var isRecording: Bool { recorderState == .recording }
+    /// The clock is stopped but the drive is not over (D-069).
+    var isPaused: Bool { recorderState == .paused }
+    /// A drive is under way, running or paused. The controls and the live
+    /// trail key off this; `isRecording` alone would make them vanish the
+    /// moment the driver pressed pause.
+    var isDriveInProgress: Bool { isRecording || isPaused }
     var liveTrack: [TrackPoint] { recorder.liveTrack }
     var recordingStartedAt: Date? { recorder.recordingStartedAt }
+
+    /// Seconds excluded from this drive so far (D-069).
+    func pausedSeconds(at date: Date = .now) -> TimeInterval {
+        recorder.pausedSeconds(at: date)
+    }
+
+    /// Time on this drive that counts — what the scoreboard and the ghost
+    /// race are built from, so a pause freezes them instead of running up
+    /// a loss against the nav's plan.
+    func drivingElapsed(at date: Date = .now) -> TimeInterval {
+        recorder.drivingElapsed(at: date)
+    }
     /// Providers this build can ask, Apple first (the default map).
     var availableProviders: [PlanSnapshot.Provider] {
         [PlanSnapshot.Provider.appleMaps, .googleRoutes].filter { providers[$0] != nil }
@@ -130,7 +148,9 @@ final class RecordingPipeline {
     var chosenRouteForCurrentDrive: ChosenRoute? { pendingChosenRoute }
 
     func ingest(location point: TrackPoint) {
-        if recorder.state != .idle {
+        // Paused samples are not this segment's: counting them would put
+        // a number in the recorder log for points that were dropped.
+        if recorder.state != .idle, !recorder.isPaused {
             samplesThisSegment += 1
             if samplesThisSegment == 1 {
                 note("First location sample since arming (±\(Int(point.horizontalAccuracyM)) m, \(Int(max(0, point.speedMps))) m/s)")
@@ -144,7 +164,7 @@ final class RecordingPipeline {
            arrivalDetector.ingest(point, destination: destination) == .arrived {
             note("Arrived at the destination — recording stopped")
             arrivalDetector.reset()
-            handle(recorder.stopRecording())
+            handle(recorder.stopRecording(at: point.timestamp))
             return
         }
         handle(recorder.ingest(location: point))
@@ -172,7 +192,11 @@ final class RecordingPipeline {
     /// starts now (unless a drive is already being recorded) and those
     /// plans become the departure snapshots — no second fetch.
     func startPlannedDrive(with snapshots: [PlanSnapshot], choosingRoute chosen: ChosenRoute? = nil) {
-        if recorder.state != .recording {
+        if recorder.state == .paused {
+            // Go on a paused drive continues it. Starting again would
+            // throw away the track already driven (D-069).
+            resumeRecording()
+        } else if recorder.state != .recording {
             recorder.startManualRecording(at: .now)
             recorderState = recorder.state
             samplesThisSegment = 0
@@ -203,7 +227,7 @@ final class RecordingPipeline {
     /// so it is adopted — but only into a drive that has none. A drive
     /// that already carries plans keeps them (D-010: never replaced).
     func adoptDeparturePlans(_ snapshots: [PlanSnapshot]) {
-        guard isRecording, pendingSnapshots.isEmpty, !snapshots.isEmpty else { return }
+        guard isDriveInProgress, pendingSnapshots.isEmpty, !snapshots.isEmpty else { return }
         supersedePendingFetch()
         pendingSnapshots = snapshots
         arrivalDetector.reset()
@@ -211,7 +235,27 @@ final class RecordingPipeline {
     }
 
     func stopManualRecording() {
-        handle(recorder.stopRecording())
+        handle(recorder.stopRecording(at: .now))
+    }
+
+    /// Pause button (D-069). The drive stays open and the clock stops;
+    /// no sample is kept and nothing can end the drive until the driver
+    /// says so.
+    func pauseRecording() {
+        guard recorder.pauseRecording(at: .now) else { return }
+        recorderState = recorder.state
+        lastOutcome = "Paused"
+        note("Recording paused — the clock and the track stop until you resume")
+    }
+
+    /// Play button. The same drive continues; the paused seconds are
+    /// excluded from it.
+    func resumeRecording() {
+        let excluded = recorder.pausedSeconds(at: .now)
+        guard recorder.resumeRecording(at: .now) else { return }
+        recorderState = recorder.state
+        lastOutcome = "Recording"
+        note("Recording resumed — \(Format.duration(excluded)) excluded from this drive so far")
     }
 
     // MARK: Plans on demand (FR-20 preview, FR-22 reroute)
@@ -277,6 +321,13 @@ final class RecordingPipeline {
             log.removeFirst(log.count - Self.logCapacity)
         }
         saveLog()
+    }
+
+    /// The recorder log answers "why is this drive shorter than my
+    /// afternoon" without the driver having to remember pausing.
+    private func pausedDetail(_ trip: Trip) -> String {
+        guard trip.pausedTime > 0 else { return "" }
+        return " (\(Format.duration(trip.pausedTime)) paused, excluded)"
     }
 
     func clearLog() {
@@ -521,7 +572,7 @@ final class RecordingPipeline {
             case (let p?, nil): "vs. \(p.provider.displayName)"
             case (let p?, let a?): "vs. \(p.provider.displayName) and \(a.provider.displayName)"
             }
-            note("Trip saved: \(Format.duration(trip.endedAt.timeIntervalSince(trip.startedAt))), \(Format.distance(trip.distanceM)), \(comparison)\(endDetailCauseOnly)")
+            note("Trip saved: \(Format.duration(trip.duration)), \(Format.distance(trip.distanceM))\(pausedDetail(trip)), \(comparison)\(endDetailCauseOnly)")
         } catch {
             // Never lose a drive silently: surface the failure.
             lastOutcome = "Could not save trip: \(error.localizedDescription)"

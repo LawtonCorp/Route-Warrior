@@ -37,6 +37,8 @@ enum Theme {
         case .idle: route
         case .armed: armed
         case .recording: recording
+        // Not the recording red: nothing is being recorded.
+        case .paused: armed
         }
     }
 
@@ -46,6 +48,7 @@ enum Theme {
         case .idle: "car.fill"
         case .armed: "car.side.fill"
         case .recording: "record.circle"
+        case .paused: "pause.circle.fill"
         }
     }
 }
