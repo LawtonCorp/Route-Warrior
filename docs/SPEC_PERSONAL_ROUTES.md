@@ -242,6 +242,11 @@ Slice 1 is the whole algorithm. Slices 2–4 are wiring.
    all-time race on the Destination screen keeps `RouteRaceEngine`'s
    floor of three — it makes a different, wider claim.
 
+   **Revised 2026-09-16 to four (D-070)**, still flat and still one
+   value. The ladder was described again and not taken. Four is the
+   floor the code carries; five is what this section recorded on the
+   day, and is left standing as the decision that was made then.
+
 ## 9. Sequencing
 
 **Building for v1.0, on Brian's decision (2026-09-16).** The

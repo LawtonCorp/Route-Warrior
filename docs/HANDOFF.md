@@ -248,9 +248,12 @@ bank account holder and IRS records. Apple cross-checks them.
 
 ### Open questions carried forward
 
-- The recommender's floor is a **flat 5 drives at every tier**, built
-  from Brian's "3." answer in §8 of the spec; the proposed 3/4/5 ladder
-  was not taken. Confirm before changing it.
+- ~~The recommender's floor~~ — settled 2026-09-16 as **D-070**: a flat
+  **4** drives per route at every tier, one `RouteRecommender.Config`
+  value. The 3/4/5 ladder was described again and not taken. The
+  Destination screen's all-time race still uses `RouteRaceEngine`'s
+  floor of three, so a route can carry a verdict there and no claim on
+  the Plan tab — deliberate, and the thing to watch in real data.
 - ~~Whether to relabel "Map & routes" and "Navigate with"~~ — settled
   2026-09-16 as **D-068**: the two settings keep their labels and move
   into separate sections, "In Route Rebel" and "When you tap Go".
@@ -274,3 +277,8 @@ bank account holder and IRS records. Apple cross-checks them.
 - **D-069, the screen**: "Paused" over the map on both surfaces, the play
   button where pause was, and Stop still reachable — on the Plan tab's
   recorder row and on the drive view.
+- **D-070, the floor**: CI proves four behaves as four; only Brian's own
+  history says whether four is right. Watch for a destination whose
+  Plan-tab rows sit on "collecting" while the Destination screen has
+  already called the same race — that is the 4-vs-3 asymmetry showing,
+  and it is the evidence for or against the ladder.

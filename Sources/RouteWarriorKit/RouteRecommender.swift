@@ -9,10 +9,14 @@ import Foundation
 /// comparison app that blurs them loses the trust it is selling.
 public enum RouteRecommender {
     public struct Config: Sendable {
-        /// Drives per route before any tier may call it (Brian, D-065): a
-        /// flat five, stricter than the all-time race's three, because a
-        /// claim narrowed to one weekday and slot rests on less.
-        public var minSamplesPerRoute: Int = 5
+        /// Drives per route before any tier may call it: a flat four
+        /// (Brian, D-070; five in D-065). Still stricter than the
+        /// all-time race's three, because a claim narrowed to one weekday
+        /// and slot rests on less — but one drive closer to speaking,
+        /// which on a twice-a-week route is a fortnight sooner. Flat
+        /// rather than a ladder per tier, so there is one number to
+        /// explain and one to change.
+        public var minSamplesPerRoute: Int = 4
         /// Passed through to the race unchanged.
         public var tieMarginSeconds: Double = 30
         public var highConfidenceSamples: Int = 8

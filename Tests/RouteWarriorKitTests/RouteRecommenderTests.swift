@@ -66,16 +66,30 @@ final class RouteRecommenderTests: XCTestCase {
         guard case .winner = rec.race.outcome else { return XCTFail("expected a winner") }
     }
 
-    /// Three Tuesday drives per route is under the floor; two more on
-    /// Wednesdays bring the weekday-morning tier to five and it answers.
+    /// Three Tuesday drives per route is one under the floor; a single
+    /// Wednesday each brings the weekday-morning tier to exactly four,
+    /// and it answers there rather than widening further (D-070).
     func testItBacksOffOnlyAsFarAsTheFloorForces() throws {
         let trips = drives(maple, count: 3, weekday: 3, hour: 9, minutes: 18)
             + drives(backWay, count: 3, weekday: 3, hour: 9, minutes: 22)
-            + drives(maple, count: 2, weekday: 4, hour: 10, minutes: 18)
-            + drives(backWay, count: 2, weekday: 4, hour: 10, minutes: 22)
+            + drives(maple, count: 1, weekday: 4, hour: 10, minutes: 18)
+            + drives(backWay, count: 1, weekday: 4, hour: 10, minutes: 22)
         let rec = try XCTUnwrap(recommend(trips))
         XCTAssertEqual(rec.tier, .dayClassSlot, "Tuesday alone was thin; weekday mornings were not")
         XCTAssertEqual(rec.race.fastest?.id, maple)
+    }
+
+    /// The floor is met exactly, at the narrowest tier: four drives per
+    /// route on Tuesday mornings is a Tuesday-morning claim (D-070). Under
+    /// D-065's flat five this same history said nothing at all.
+    func testFourDrivesPerRouteIsEnoughForTheNarrowestClaim() throws {
+        let trips = drives(maple, count: 4, weekday: 3, hour: 9, minutes: 18)
+            + drives(backWay, count: 4, weekday: 3, hour: 9, minutes: 22)
+        let rec = try XCTUnwrap(recommend(trips))
+        XCTAssertEqual(rec.tier, .weekdaySlot)
+        XCTAssertEqual(rec.drivesCounted, 8)
+        XCTAssertEqual(rec.race.fastest?.id, maple)
+        guard case .winner = rec.race.outcome else { return XCTFail("four per route meets the floor") }
     }
 
     /// Weekend drives do not count toward a weekday-morning claim, but do
@@ -103,18 +117,23 @@ final class RouteRecommenderTests: XCTestCase {
         guard case .tie = rec.race.outcome else { return XCTFail("a narrow tie must not be widened into a win") }
     }
 
-    func testTheFloorIsFivePerRouteAtEveryTier() throws {
-        let trips = drives(maple, count: 4, weekday: 3, hour: 9, minutes: 18)
-            + drives(backWay, count: 4, weekday: 3, hour: 9, minutes: 22)
+    /// Three per route is under the floor everywhere, including the
+    /// widest tier — where the Destination screen's all-time race, which
+    /// keeps `RouteRaceEngine`'s floor of three, would call it. The two
+    /// surfaces answer different questions and are allowed to disagree
+    /// about when there is enough history (D-070).
+    func testTheFloorIsFourPerRouteAtEveryTier() throws {
+        let trips = drives(maple, count: 3, weekday: 3, hour: 9, minutes: 18)
+            + drives(backWay, count: 3, weekday: 3, hour: 9, minutes: 22)
         let rec = try XCTUnwrap(recommend(trips), "routes exist, so the widest race comes back")
         XCTAssertEqual(rec.tier, .all)
-        guard case let .collecting(needed) = rec.race.outcome else { return XCTFail("four is under the floor") }
+        guard case let .collecting(needed) = rec.race.outcome else { return XCTFail("three is under the floor") }
         XCTAssertEqual(needed, 1)
         XCTAssertNil(rec.headline, "nothing to say until the floor is met")
     }
 
     func testExcludedDrivesNeverLiftARouteOverTheFloor() {
-        let trips = drives(maple, count: 4, weekday: 3, hour: 9, minutes: 18)
+        let trips = drives(maple, count: 3, weekday: 3, hour: 9, minutes: 18)
             + drives(maple, count: 3, weekday: 3, hour: 9, minutes: 18, excluded: true)
             + drives(backWay, count: 5, weekday: 3, hour: 9, minutes: 22)
         guard let rec = recommend(trips) else { return }   // nil is also "no winner"

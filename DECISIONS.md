@@ -1683,3 +1683,49 @@ to prevent); putting pause only on the drive view (Brian asked for it
 beside Stop, and Stop is on the Plan tab's recorder row too — a drive
 paused from one screen must be resumable from the other); turning the
 GPS off while paused (see above — nothing would turn it back on).
+
+## D-070 — The recommender's floor is four, still flat (2026-09-16)
+
+D-065 set it at five per route at every tier, from Brian's answer to §8.3
+of the spec. He asked for the 3/4/5 ladder to be described once more
+before changing anything, then chose **four, flat**.
+
+The ladder was: 3 at tiers 3–4, 4 at tier 2, 5 at tier 1 — narrower
+claims earn a higher floor. Its argument is real. "Maple Ave is faster
+on Tuesday mornings" is a sharp statement about a thin slice of history
+and three drives can produce one by coincidence; "Maple Ave is faster"
+pools everything and is harder to get wrong by luck. The bottom two
+tiers sat at 3 because that is `RouteRaceEngine`'s floor on the
+Destination screen, and at the widest tier the recommender makes the
+same claim that screen makes.
+
+Flat four keeps what the ladder was for — a floor above the all-time
+race's three, because a narrowed claim rests on less — while leaving one
+number to explain and one to change. After a month of real data the
+question will be "is the floor right", not "is the slope right", and a
+flat floor is the one that can be answered.
+
+**The consequence to watch**, now in the handoff: at the widest tier the
+Plan tab is stricter than the Destination screen, which keeps its floor
+of three. A route can therefore carry a verdict on one screen and no
+claim on the other. That asymmetry is defensible — the Destination
+screen looks backwards at history, the Plan tab tells the driver what to
+do in the next thirty seconds, and the second deserves the higher bar —
+but it is new with four, and it is the evidence that decides whether the
+ladder comes back.
+
+One drive lower also means the feature speaks sooner, which matters more
+than it sounds: on a twice-a-week route, four rather than five is a
+fortnight earlier, and D-065 already accepted that this feature is
+invisible on a fresh install.
+
+**Rejected**: the 3/4/5 ladder (described in full and declined —
+three numbers to explain and three to tune, for a slope no data
+supports yet); dropping the widest tier to three to match the
+Destination screen (it would erase the asymmetry by making the Plan tab
+speak on evidence this decision just said is too thin, and the two
+screens ask different questions); leaving it at five (Brian's call, and
+the cost is a fortnight of silence per route); rewriting D-065 or §8 of
+the spec to say four (a decision log edited to match the present stops
+being evidence — both record what was decided on the day, and the spec
+carries a dated revision note pointing here).
