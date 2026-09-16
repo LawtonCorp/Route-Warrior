@@ -60,6 +60,19 @@ struct SettingsView: View {
                         settingsLabel("Spoken directions", symbol: "speaker.wave.2.fill", color: Theme.route)
                     }
                     .disabled(!store.policy.guidanceAvailable(for: store.tier) || !mapSettings.guidance)
+                } header: {
+                    Text(SettingsText.inAppHeader)
+                } footer: {
+                    Text(SettingsText.inAppFooter(
+                        providerCount: mapSettings.availableProviders.count,
+                        rerouteAvailable: store.policy.rerouteAvailable(for: store.tier),
+                        guidanceAvailable: store.policy.guidanceAvailable(for: store.tier)
+                    ))
+                }
+
+                // Its own section since D-068: the header is what tells
+                // this "Google" from the one three rows above it.
+                Section {
                     Picker(selection: Binding(
                         get: { mapSettings.navigation },
                         set: { mapSettings.setNavigation($0) }
@@ -71,9 +84,12 @@ struct SettingsView: View {
                         settingsLabel("Navigate with", symbol: "arrow.triangle.turn.up.right.circle.fill", color: Theme.win)
                     }
                 } header: {
-                    Text("Map")
+                    Text(SettingsText.goHeader)
                 } footer: {
-                    Text(mapFooter)
+                    Text(SettingsText.goFooter(
+                        navigation: mapSettings.navigation,
+                        googleMapsOffered: mapSettings.availableHandoffs.contains(.googleMaps)
+                    ))
                 }
 
                 Section {
@@ -160,35 +176,6 @@ struct SettingsView: View {
 
     private var locationLabel: String {
         LocationService.label(locationService.authorizationStatus)
-    }
-
-    private var mapFooter: String {
-        var lines: [String] = []
-        if mapSettings.availableProviders.count == 1 {
-            lines.append("Apple's map and routes. The Google map arrives in a later update; Google's plan is still compared on every trip when a key is present.")
-        } else {
-            lines.append("Whose map and routes you see. Both providers' plans are compared on every trip.")
-        }
-        lines.append(store.policy.rerouteAvailable(for: store.tier)
-            ? "Automatic reroute asks for a fresh plan when you leave the one you started with. The original plan stays the baseline for the verdict."
-            : "Automatic reroute is part of Pro.")
-        lines.append(store.policy.guidanceAvailable(for: store.tier)
-            ? "Turn-by-turn shows the next maneuver above the scoreboard and speaks it, through the car's speakers when the phone is connected. It follows the plan you left with, then a reroute if you ask for one; the verdict is always against the plan you left with."
-            : "Turn-by-turn on the drive view is part of Pro.")
-        let navigationLine = switch mapSettings.navigation {
-        case .appleMaps:
-            "Go hands the destination to Apple Maps for turn-by-turn, which is what puts guidance on the CarPlay screen. Apple Maps always opens on its own route preview, so you choose a route there as well as here; Route Rebel keeps recording in the background either way."
-        case .googleMaps:
-            "Go hands the destination to Google Maps for turn-by-turn, on the CarPlay screen when Google Maps is your car's navigation app. Google Maps starts driving straight away and chooses its own route, usually the one Route Rebel shows; the plan you left with stays the baseline, and Route Rebel keeps recording in the background."
-        case .routeRebel:
-            "Go stays here: the drive view guides you, speaks the turns and keeps the scoreboard on screen, with no second route to pick. Choose a maps app instead to get guidance on the CarPlay screen, which Route Rebel cannot reach."
-        }
-        lines.append(navigationLine)
-        if !mapSettings.availableHandoffs.contains(.googleMaps) {
-            // Otherwise its absence from the picker reads as a bug.
-            lines.append("Google Maps is not on this phone, so it is not offered; install it and Route Rebel will hand off to it.")
-        }
-        return lines.joined(separator: " ")
     }
 
     private var motionLabel: String {
