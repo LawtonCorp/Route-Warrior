@@ -89,7 +89,7 @@ App Store Connect → iOS App → 1.0 Prepare for Submission.
 
 ### Screenshots
 
-Six shots, in the order of `docs/APP_STORE_LISTING.md` → Screenshots.
+Seven shots, in the order of `docs/APP_STORE_LISTING.md` → Screenshots.
 The 6.9" slot is the only required one; it accepts 1320×2868 (iPhone
 16 Pro Max) or 1290×2796 (iPhone 15 Pro Max / 16 Plus). Take them on
 the phone: **Side button + Volume up**, then AirDrop to the Mac. Pro
