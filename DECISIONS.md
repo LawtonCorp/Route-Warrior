@@ -1729,3 +1729,51 @@ the cost is a fortnight of silence per route); rewriting D-065 or §8 of
 the spec to say four (a decision log edited to match the present stops
 being evidence — both record what was decided on the day, and the spec
 carries a dated revision note pointing here).
+
+## D-071 — The floor is the 3/4/5 ladder after all (2026-09-16)
+
+D-070 set a flat four an hour ago, on the understanding that the ladder
+was the thing being declined. Brian read the description and chose the
+ladder: **five at tier 1, four at tier 2, three at tiers 3 and 4.**
+
+The argument the ladder rests on, which is the spec's own from §8.3:
+narrower claims earn a higher floor. "Maple Ave is faster on Tuesday
+mornings" is a sharp statement about a thin slice of history, and three
+drives can produce one by coincidence; "Maple Ave is faster" pools every
+drive and is harder to get wrong by luck. The sharper the sentence, the
+more evidence it buys its way in with.
+
+**What the ladder fixes that flat four did not.** D-070 noted, as the
+thing to watch, that a flat four at the widest tier made the Plan tab
+stricter than the Destination screen, which keeps `RouteRaceEngine`'s
+floor of three — so a route could carry a verdict on one screen and no
+claim on the other. At `.all` the recommender is making *exactly* the
+claim the all-time race makes, and two surfaces answering the same
+question from different amounts of evidence is a disagreement a driver
+would rightly read as a bug. The ladder's bottom rung is three, so that
+asymmetry is gone rather than merely defended. A test now asserts the
+equality directly, so the two cannot drift apart.
+
+**What it costs.** Tier 1 is back to five, which is the rung that
+matters least often and is hardest to reach: five drives in one
+weekday-and-slot cell is a lot of Tuesday mornings. The narrowest, most
+useful sentence the feature can say is now also its rarest, and whether
+it is ever said at all is a question only real history answers — it is
+in the handoff as the number to watch.
+
+Behaviour, stated as the tests state it: four drives per route all on
+Tuesday mornings is not a Tuesday-morning claim any more, it is a
+weekday-morning one, and it says so. Three per route widens to the time
+of day rather than going silent. Two per route clears nothing.
+
+**Rejected**: leaving the flat four (Brian's call, made with the
+argument in front of him — and it left the two-surface asymmetry in
+place as a documented quirk rather than removing it); a ladder with a
+different bottom rung, say 4/4/3/3 or 5/4/4/3 (the two values that are
+load-bearing are tier 1's five, which is the whole point, and the widest
+tier's three, which is forced by `RouteRaceEngine`; inventing a shape
+between them adds a number nobody can defend); making the floors a
+single scalar plus per-tier offsets (the same four numbers with
+arithmetic in front of them); rewriting D-070 or D-065 (both record what
+was decided on the day — the spec carries a dated note pointing here,
+and D-070's "thing to watch" is precisely why this decision exists).

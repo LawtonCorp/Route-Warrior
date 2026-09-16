@@ -9,23 +9,45 @@ import Foundation
 /// comparison app that blurs them loses the trust it is selling.
 public enum RouteRecommender {
     public struct Config: Sendable {
-        /// Drives per route before any tier may call it: a flat four
-        /// (Brian, D-070; five in D-065). Still stricter than the
-        /// all-time race's three, because a claim narrowed to one weekday
-        /// and slot rests on less — but one drive closer to speaking,
-        /// which on a twice-a-week route is a fortnight sooner. Flat
-        /// rather than a ladder per tier, so there is one number to
-        /// explain and one to change.
-        public var minSamplesPerRoute: Int = 4
+        /// Drives per route before a tier may call it — a ladder, not a
+        /// flat floor (Brian, D-071; flat four in D-070, flat five in
+        /// D-065). **Narrower claims earn a higher floor.**
+        ///
+        /// "Maple Ave is faster on Tuesday mornings" is a sharp statement
+        /// about a thin slice of history, and three drives can produce one
+        /// by coincidence; "Maple Ave is faster" pools every drive and is
+        /// harder to get wrong by luck. So the sharper the sentence, the
+        /// more evidence it buys its way in with.
+        ///
+        /// The two widest tiers sit at three, which is `RouteRaceEngine`'s
+        /// own floor: at `.all` the recommender makes exactly the claim
+        /// the Destination screen's all-time race makes, and two surfaces
+        /// answering the same question from different amounts of evidence
+        /// is the kind of disagreement a driver would rightly read as a
+        /// bug.
+        public var weekdaySlotFloor: Int = 5
+        public var dayClassSlotFloor: Int = 4
+        public var slotFloor: Int = 3
+        public var allFloor: Int = 3
         /// Passed through to the race unchanged.
         public var tieMarginSeconds: Double = 30
         public var highConfidenceSamples: Int = 8
 
         public init() {}
 
-        var raceConfig: RouteRaceEngine.Config {
+        /// The floor this tier must clear.
+        public func floor(for tier: Tier) -> Int {
+            switch tier {
+            case .weekdaySlot: weekdaySlotFloor
+            case .dayClassSlot: dayClassSlotFloor
+            case .slot: slotFloor
+            case .all: allFloor
+            }
+        }
+
+        func raceConfig(for tier: Tier) -> RouteRaceEngine.Config {
             var config = RouteRaceEngine.Config()
-            config.minSamplesPerRoute = minSamplesPerRoute
+            config.minSamplesPerRoute = floor(for: tier)
             config.tieMarginSeconds = tieMarginSeconds
             config.highConfidenceSamples = highConfidenceSamples
             return config
@@ -97,12 +119,12 @@ public enum RouteRecommender {
         }
     }
 
-    /// Narrowest tier first. A `.winner` or a `.tie` answers — a tie at
-    /// "Tuesday mornings" is a real finding, not a reason to look at
-    /// Wednesdays. `.collecting` and `.oneRouteOnly` widen. If no tier
-    /// decides, the all-drives race is returned so the caller can say
-    /// how many more drives it wants; nil only when no route has a
-    /// counted drive at all.
+    /// Narrowest tier first, each against its own floor (D-071). A
+    /// `.winner` or a `.tie` answers — a tie at "Tuesday mornings" is a
+    /// real finding, not a reason to look at Wednesdays. `.collecting`
+    /// and `.oneRouteOnly` widen. If no tier decides, the all-drives race
+    /// is returned so the caller can say how many more drives it wants;
+    /// nil only when no route has a counted drive at all.
     public static func recommend(
         variants: [RouteVariant],
         trips: [Trip],
@@ -112,7 +134,7 @@ public enum RouteRecommender {
         var widest: Recommendation?
         for tier in Tier.allCases {
             let subset = trips.filter { context.admits(StatsEngine.cell(for: $0), at: tier) }
-            let race = RouteRaceEngine.race(variants: variants, trips: subset, config: config.raceConfig)
+            let race = RouteRaceEngine.race(variants: variants, trips: subset, config: config.raceConfig(for: tier))
             let counted = race.routes.reduce(0) { $0 + $1.stats.count }
             let candidate = Recommendation(race: race, tier: tier, context: context, drivesCounted: counted)
             switch race.outcome {

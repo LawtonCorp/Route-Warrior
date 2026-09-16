@@ -248,12 +248,12 @@ bank account holder and IRS records. Apple cross-checks them.
 
 ### Open questions carried forward
 
-- ~~The recommender's floor~~ — settled 2026-09-16 as **D-070**: a flat
-  **4** drives per route at every tier, one `RouteRecommender.Config`
-  value. The 3/4/5 ladder was described again and not taken. The
-  Destination screen's all-time race still uses `RouteRaceEngine`'s
-  floor of three, so a route can carry a verdict there and no claim on
-  the Plan tab — deliberate, and the thing to watch in real data.
+- ~~The recommender's floor~~ — settled 2026-09-16 as **D-071**: the
+  **3/4/5 ladder**, five at tier 1, four at tier 2, three at tiers 3–4.
+  (D-070's flat four stood for about an hour; the ladder is what ships.)
+  Narrower claims earn a higher floor, and the widest tier matches
+  `RouteRaceEngine`'s three, so the Plan tab and the Destination screen
+  no longer disagree about when there is enough history.
 - ~~Whether to relabel "Map & routes" and "Navigate with"~~ — settled
   2026-09-16 as **D-068**: the two settings keep their labels and move
   into separate sections, "In Route Rebel" and "When you tap Go".
@@ -277,8 +277,10 @@ bank account holder and IRS records. Apple cross-checks them.
 - **D-069, the screen**: "Paused" over the map on both surfaces, the play
   button where pause was, and Stop still reachable — on the Plan tab's
   recorder row and on the drive view.
-- **D-070, the floor**: CI proves four behaves as four; only Brian's own
-  history says whether four is right. Watch for a destination whose
-  Plan-tab rows sit on "collecting" while the Destination screen has
-  already called the same race — that is the 4-vs-3 asymmetry showing,
-  and it is the evidence for or against the ladder.
+- **D-071, the ladder**: CI proves the rungs behave as written; only
+  Brian's own history says whether they are the right rungs. The number
+  to watch is how often a recommendation actually lands at tier 1
+  ("usually fastest on Tuesday mornings") rather than widening — five
+  drives in one weekday-and-slot cell is a lot to ask, and if it never
+  happens the sharpest sentence the feature can say is one it never
+  says.
