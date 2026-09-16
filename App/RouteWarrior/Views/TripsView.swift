@@ -246,7 +246,7 @@ struct TripRowView: View {
                             .font(.subheadline)
                     }
                     Spacer()
-                    Text(Format.duration(record.endedAt.timeIntervalSince(record.startedAt)))
+                    Text(Format.duration(record.duration))
                         .font(.subheadline.monospacedDigit())
                 }
                 HStack(spacing: 8) {

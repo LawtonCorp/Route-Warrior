@@ -21,6 +21,11 @@ public final class TripRecord {
     public var distanceM: Double = 0
     public var movingTime: Double = 0
     public var idleTime: Double = 0
+    /// Seconds the driver excluded with the pause button (D-069).
+    /// Additive with a default, so CloudKit accepts it and every trip
+    /// recorded before the button existed reads as zero — which is what
+    /// it was.
+    public var pausedTime: Double = 0
     public var snapshotID: UUID?
     public var followedPlan: Bool?
     public var altSnapshotID: UUID?

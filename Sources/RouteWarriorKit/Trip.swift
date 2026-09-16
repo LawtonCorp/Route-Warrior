@@ -52,6 +52,10 @@ public struct Trip: Sendable, Equatable, Codable, Identifiable {
     public var distanceM: Double
     public var movingTime: TimeInterval
     public var idleTime: TimeInterval
+    /// Seconds between `startedAt` and `endedAt` that the driver excluded
+    /// with the pause button (D-069). Not part of the drive: `duration`
+    /// subtracts it, and `movingTime`/`idleTime` never counted it.
+    public var pausedTime: TimeInterval
     public var stopEvents: [StopEvent]
     /// The plan the driver saw (the preferred provider's) at departure.
     public var snapshotID: UUID?
@@ -65,7 +69,18 @@ public struct Trip: Sendable, Equatable, Codable, Identifiable {
     public var source: Source
     public var excludedFromStats: Bool
 
-    public var duration: TimeInterval { endedAt.timeIntervalSince(startedAt) }
+    /// How long the drive took, with any paused time removed. The one
+    /// number every comparison, median and verdict is built from, so the
+    /// subtraction lives here rather than at each call site.
+    public var duration: TimeInterval {
+        max(0, endedAt.timeIntervalSince(startedAt) - pausedTime)
+    }
+
+    /// Wall-clock start to finish, pauses and all. Only for showing a
+    /// driver where their afternoon went; never for a comparison.
+    public var elapsedIncludingPauses: TimeInterval {
+        endedAt.timeIntervalSince(startedAt)
+    }
 
     public init(
         id: UUID = UUID(),
@@ -79,6 +94,7 @@ public struct Trip: Sendable, Equatable, Codable, Identifiable {
         distanceM: Double = 0,
         movingTime: TimeInterval = 0,
         idleTime: TimeInterval = 0,
+        pausedTime: TimeInterval = 0,
         stopEvents: [StopEvent] = [],
         snapshotID: UUID? = nil,
         followedPlan: Bool? = nil,
@@ -98,6 +114,7 @@ public struct Trip: Sendable, Equatable, Codable, Identifiable {
         self.distanceM = distanceM
         self.movingTime = movingTime
         self.idleTime = idleTime
+        self.pausedTime = pausedTime
         self.stopEvents = stopEvents
         self.snapshotID = snapshotID
         self.followedPlan = followedPlan

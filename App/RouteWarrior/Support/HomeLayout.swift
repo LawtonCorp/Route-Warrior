@@ -10,14 +10,22 @@ enum HomeLayout {
     /// arming itself is not a drive yet, so Record stays for a missed
     /// detection.
     static func showsRecordButton(hasDestination: Bool, state: TripRecorder.State) -> Bool {
-        state != .recording && !hasDestination
+        !driveInProgress(state) && !hasDestination
+    }
+
+    /// A drive is under way, running or paused (D-069). Paused is a drive
+    /// with its clock stopped, so every rule that asks "is one already
+    /// running" must answer yes — otherwise pausing puts Record and Go
+    /// back on a screen that already has a drive to finish.
+    static func driveInProgress(_ state: TripRecorder.State) -> Bool {
+        state == .recording || state == .paused
     }
 
     /// Go is on the screen once there is somewhere to go and the drive
     /// has not already started — Stop belongs to a drive in progress,
     /// and two ways to start one is the mistake D-045 fixed.
     static func showsGoButton(hasDestination: Bool, state: TripRecorder.State) -> Bool {
-        hasDestination && state != .recording
+        hasDestination && !driveInProgress(state)
     }
 
     /// Where the recorder's one line sits (D-061).
@@ -41,7 +49,7 @@ enum HomeLayout {
     static func recorderSlot(state: TripRecorder.State, showsGo: Bool) -> RecorderSlot {
         // Recording keeps its own card: the line carries buttons of its
         // own, and Go is never beside it to be explained.
-        if state == .recording { return .ownCard }
+        if driveInProgress(state) { return .ownCard }
         if showsGo { return .underGo }
         return state == .armed ? .ownCard : .hidden
     }
@@ -51,6 +59,7 @@ enum HomeLayout {
     static func recorderCaption(_ state: TripRecorder.State) -> String {
         switch state {
         case .recording: "Rec"
+        case .paused: "Paused — nothing is being recorded"
         default: "Drive detected — recording starts on its own"
         }
     }

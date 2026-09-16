@@ -55,7 +55,10 @@ struct HomeView: View {
             // Your own route, drawn beside the provider's line so the
             // comparison is on the map, not only in the numbers (D-066).
             routes: planner.chosenRoute.map { [MapScene.DrawnRoute(id: $0.id, polyline: $0.polyline, rank: 0)] } ?? [],
-            trail: pipeline.isRecording ? pipeline.liveTrack.map(\.coordinate) : [],
+            trail: pipeline.isDriveInProgress ? pipeline.liveTrack.map(\.coordinate) : [],
+            // "Paused" over the map, on whichever surface is showing
+            // (D-069): the reason no trail is growing.
+            paused: pipeline.isPaused,
             destinationName: planner.destination?.name,
             camera: .fitContent,
             userLocation: locationService.lastKnownCoordinate
@@ -125,7 +128,7 @@ struct HomeView: View {
                 // The fix arrived after the destination was chosen.
                 if planner.hasDestination, planner.plans.isEmpty, !planner.loading { fetchPlans() }
             }
-            .onChange(of: pipeline.isRecording) { was, now in
+            .onChange(of: pipeline.isDriveInProgress) { was, now in
                 // The trip is saved; the route it was driven against has
                 // nothing left to say on the Plan tab (D-041).
                 if DrivePlanner.planEnds(recordingWas: was, now: now, hasDestination: planner.hasDestination) {
@@ -471,6 +474,7 @@ struct HomeView: View {
     /// empty field did not.
     private var recorderRow: some View {
         let tint = Theme.statusTint(for: pipeline.recorderState)
+        let underway = pipeline.isDriveInProgress
         return HStack(spacing: 10) {
             if pipeline.isRecording {
                 BlinkingDot(color: tint)
@@ -478,11 +482,11 @@ struct HomeView: View {
                 IconTile(symbol: Theme.statusSymbol(for: pipeline.recorderState), color: tint, size: 24)
             }
             Text(HomeLayout.recorderCaption(pipeline.recorderState))
-                .font(pipeline.isRecording ? .subheadline.weight(.semibold) : .footnote)
-                .foregroundStyle(pipeline.isRecording ? .primary : .secondary)
+                .font(underway ? .subheadline.weight(.semibold) : .footnote)
+                .foregroundStyle(underway ? .primary : .secondary)
                 .lineLimit(2)
             Spacer(minLength: 8)
-            if pipeline.isRecording {
+            if underway {
                 Button {
                     if store.policy.driveViewAvailable(for: store.tier) {
                         showDrive = true
@@ -494,6 +498,21 @@ struct HomeView: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(tint)
+                // Pause and Stop are different questions — "not now" and
+                // "done" — so they are different buttons (D-069).
+                Button {
+                    if pipeline.isPaused {
+                        pipeline.resumeRecording()
+                    } else {
+                        pipeline.pauseRecording()
+                    }
+                } label: {
+                    Image(systemName: pipeline.isPaused ? "play.fill" : "pause.fill")
+                        .frame(width: 16)
+                }
+                .buttonStyle(.bordered)
+                .tint(Theme.armed)
+                .accessibilityLabel(pipeline.isPaused ? "Resume recording" : "Pause recording")
                 Button("Stop") {
                     pipeline.stopManualRecording()
                 }
@@ -598,7 +617,7 @@ struct HomeView: View {
         // Asked from the departure point, before the drive began: if Go is
         // tapped before the answer lands, the answer is still this
         // departure's plan (D-044). A fetch begun mid-drive is not.
-        let askedBeforeDeparture = !pipeline.isRecording
+        let askedBeforeDeparture = !pipeline.isDriveInProgress
         Task {
             let fetched = await pipeline.computePlans(
                 from: origin, to: destination.coordinate, destinationPlaceID: destination.placeID

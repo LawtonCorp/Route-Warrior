@@ -7,7 +7,29 @@ import XCTest
 /// recorder takes space only while it is doing something. D-061 moved
 /// its line beneath Go, where it discloses what Go does.
 final class HomeLayoutTests: XCTestCase {
-    private let states: [TripRecorder.State] = [.idle, .armed, .recording]
+    private let states: [TripRecorder.State] = [.idle, .armed, .recording, .paused]
+
+    /// D-069: a paused drive is still a drive. Nothing that would start
+    /// a second one may appear while one is waiting to be resumed.
+    func testAPausedDriveCountsAsADriveInProgress() {
+        XCTAssertTrue(HomeLayout.driveInProgress(.paused))
+        XCTAssertTrue(HomeLayout.driveInProgress(.recording))
+        XCTAssertFalse(HomeLayout.driveInProgress(.armed))
+        XCTAssertFalse(HomeLayout.driveInProgress(.idle))
+
+        XCTAssertFalse(HomeLayout.showsRecordButton(hasDestination: false, state: .paused))
+        XCTAssertFalse(HomeLayout.showsGoButton(hasDestination: true, state: .paused))
+        // It carries the play and Stop buttons, so it keeps its own card.
+        XCTAssertEqual(HomeLayout.recorderSlot(state: .paused, showsGo: false), .ownCard)
+        XCTAssertEqual(HomeLayout.recorderSlot(state: .paused, showsGo: true), .ownCard)
+    }
+
+    func testThePausedCaptionSaysNothingIsBeingRecorded() {
+        let caption = HomeLayout.recorderCaption(.paused)
+        XCTAssertTrue(caption.hasPrefix("Paused"))
+        XCTAssertTrue(caption.contains("nothing is being recorded"))
+        XCTAssertNotEqual(caption, HomeLayout.recorderCaption(.recording))
+    }
 
     func testRecordShowsOnlyWhenNothingElseWouldStartADrive() {
         XCTAssertTrue(HomeLayout.showsRecordButton(hasDestination: false, state: .idle))

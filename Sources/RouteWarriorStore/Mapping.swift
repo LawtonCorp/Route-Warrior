@@ -27,6 +27,7 @@ public extension TripRecord {
         distanceM = trip.distanceM
         movingTime = trip.movingTime
         idleTime = trip.idleTime
+        pausedTime = trip.pausedTime
         snapshotID = trip.snapshotID
         followedPlan = trip.followedPlan
         altSnapshotID = trip.altSnapshotID
@@ -56,6 +57,7 @@ public extension TripRecord {
             distanceM: distanceM,
             movingTime: movingTime,
             idleTime: idleTime,
+            pausedTime: pausedTime,
             stopEvents: stopEvents,
             snapshotID: snapshotID,
             followedPlan: followedPlan,

@@ -33,6 +33,10 @@ struct MapScene: Equatable {
     var trail: [Coordinate] = []
     /// True while the driver is off the plan: the trail turns win-green.
     var offPlan = false
+    /// True while the drive is paused (D-069). The surface says so over
+    /// the map, because a trail that has stopped growing otherwise looks
+    /// like a recorder that has stopped working.
+    var paused = false
     var destinationName: String?
     var showsTraffic = true
     var camera: Camera = .fitContent

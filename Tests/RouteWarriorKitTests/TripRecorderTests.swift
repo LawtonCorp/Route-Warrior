@@ -257,7 +257,7 @@ struct TripRecorderTests {
         var noisy = DriveBuilder(start: t0)
         noisy.drive(speedMps: 15, seconds: 30, accuracyM: 500)
         #expect(feed(noisy.points, into: &recorder).isEmpty)
-        #expect(recorder.stopRecording() == .tripDiscarded(.tooBrief))
+        #expect(recorder.stopRecording(at: t0.addingTimeInterval(30)) == .tripDiscarded(.tooBrief))
         #expect(recorder.lastEndCause == .manualStop)
         #expect(recorder.lastSegment?.points == 0)
         #expect(recorder.lastSegment?.rejectedPoints == 30)
@@ -325,7 +325,7 @@ struct TripRecorderTests {
         var builder = DriveBuilder(start: t0)
         builder.drive(speedMps: 10, seconds: 200)
         var outputs = feed(builder.points, into: &recorder)
-        if let output = recorder.stopRecording() { outputs.append(output) }
+        if let output = recorder.stopRecording(at: t0.addingTimeInterval(200)) { outputs.append(output) }
         guard let trip = finalizedTrip(in: outputs) else {
             Issue.record("manual stop after a real drive must finalize")
             return
@@ -350,8 +350,151 @@ struct TripRecorderTests {
     @Test func manualStopWithNothingRecordedDiscards() {
         var recorder = TripRecorder(timezoneID: tz)
         recorder.startManualRecording(at: t0)
-        let output = recorder.stopRecording()
+        let output = recorder.stopRecording(at: t0)
         #expect(output == .tripDiscarded(.tooBrief))
-        #expect(recorder.stopRecording() == nil) // already idle
+        #expect(recorder.stopRecording(at: t0) == nil) // already idle
+    }
+
+    // MARK: Pause and resume (D-069)
+
+    /// Drives 300 s, pauses for 20 minutes, drives 300 s more, parks.
+    /// Returns the outputs and the recorder for the caller to inspect.
+    private func drivePauseDrive(
+        pauseSeconds: TimeInterval,
+        resumeEastOffsetM: Double = 0
+    ) -> (outputs: [TripRecorder.Output], recorder: TripRecorder) {
+        var recorder = TripRecorder(timezoneID: tz)
+        recorder.startManualRecording(at: t0)
+        var first = DriveBuilder(start: t0)
+        first.drive(speedMps: 15, seconds: 300)
+        var outputs = feed(first.points, into: &recorder)
+
+        let pausedAt = t0.addingTimeInterval(299)
+        #expect(recorder.pauseRecording(at: pausedAt))
+        let resumedAt = pausedAt.addingTimeInterval(pauseSeconds)
+        #expect(recorder.resumeRecording(at: resumedAt))
+
+        var second = DriveBuilder(start: resumedAt)
+        second.eastMeters = first.eastMeters + resumeEastOffsetM
+        second.drive(speedMps: 15, seconds: 300)
+        second.drive(speedMps: 0, seconds: 200)
+        outputs += feed(second.points, into: &recorder)
+        return (outputs, recorder)
+    }
+
+    @Test func pausingStopsTheClockAndResumingContinuesTheSameTrip() {
+        let (outputs, recorder) = drivePauseDrive(pauseSeconds: 1_200)
+
+        // One drive, not two: the only output in the whole sequence is
+        // the single finalize at the end. A pause is not a gap in the
+        // location stream, and nothing was discarded along the way.
+        #expect(outputs.count == 1)
+        #expect(recorder.lastEndCause == .idleTimeout)
+        guard let trip = finalizedTrip(in: outputs) else {
+            Issue.record("a paused-and-resumed drive must finalize as one trip")
+            return
+        }
+        #expect(trip.startedAt == t0)
+        #expect(trip.endedAt == t0.addingTimeInterval(1_798))
+        // The wall clock ran 1798 s; 1200 of them were the driver's to
+        // exclude, so the drive took 598 s and says so.
+        #expect(trip.elapsedIncludingPauses == 1_798)
+        #expect(trip.pausedTime == 1_200)
+        #expect(trip.duration == 598)
+        // 299 one-second hops at 15 m/s on each side of the pause.
+        #expect(abs(trip.distanceM - 2 * 299 * 15) < 2 * 299 * 15 * 0.01)
+        #expect(abs(trip.movingTime - 598) < 1)
+    }
+
+    /// The pause is longer than `gapSplitDuration`, which is what ends a
+    /// trip when the location stream dies. The driver's own pause must
+    /// not look like that.
+    @Test func aPauseLongerThanTheGapSplitDoesNotSplitTheTrip() {
+        let (outputs, recorder) = drivePauseDrive(pauseSeconds: 3_600)
+        #expect(!outputs.contains { $0 == .tripDiscarded(.tooBrief) })
+        #expect(recorder.lastEndCause != .gapSplit)
+        guard let trip = finalizedTrip(in: outputs) else {
+            Issue.record("an hour-long pause must not split the drive")
+            return
+        }
+        #expect(trip.pausedTime == 3_600)
+        #expect(trip.duration == 598)
+    }
+
+    /// Whatever happened while paused is not the drive — including the
+    /// two kilometres the driver covered getting there.
+    @Test func groundCoveredWhilePausedIsNotCounted() {
+        let (outputs, _) = drivePauseDrive(pauseSeconds: 600, resumeEastOffsetM: 2_000)
+        guard let trip = finalizedTrip(in: outputs) else {
+            Issue.record("expected a finalized trip")
+            return
+        }
+        // Two driven stretches only: the 2 km jump across the pause adds
+        // neither distance nor moving time.
+        #expect(abs(trip.distanceM - 2 * 299 * 15) < 2 * 299 * 15 * 0.01)
+        #expect(abs(trip.movingTime - 598) < 1)
+    }
+
+    @Test func nothingReachesAPausedRecorder() {
+        var recorder = TripRecorder(timezoneID: tz)
+        recorder.startManualRecording(at: t0)
+        var driven = DriveBuilder(start: t0)
+        driven.drive(speedMps: 15, seconds: 300)
+        #expect(feed(driven.points, into: &recorder).isEmpty)
+        #expect(recorder.pauseRecording(at: t0.addingTimeInterval(299)))
+        #expect(recorder.state == .paused)
+        #expect(recorder.isPaused)
+
+        // Walking into the shop is the reason to pause, so pedestrian
+        // motion must not end the drive...
+        let walking = TripRecorder.MotionSample(
+            kind: .walking, confidence: .high, timestamp: t0.addingTimeInterval(400)
+        )
+        #expect(recorder.ingest(motion: walking) == nil)
+        // ...and neither must ten minutes of standing still, which is far
+        // past the idle window that ends a running drive.
+        var parked = DriveBuilder(start: t0.addingTimeInterval(400))
+        parked.eastMeters = driven.eastMeters
+        parked.drive(speedMps: 0, seconds: 600)
+        #expect(feed(parked.points, into: &recorder).isEmpty)
+
+        #expect(recorder.state == .paused)
+        // Not one sample kept: the driver said this is not the drive.
+        #expect(recorder.liveTrack.count == 300)
+        #expect(recorder.pausedSeconds(at: t0.addingTimeInterval(1_299)) == 1_000)
+        #expect(recorder.drivingElapsed(at: t0.addingTimeInterval(1_299)) == 299)
+    }
+
+    /// Pause, then Stop. The drive ended when the clock did; the seconds
+    /// the phone sat paused are not subtracted from it, or a real drive
+    /// could be shortened into a discard.
+    @Test func stoppingFromPausedEndsTheDriveAtThePause() {
+        var recorder = TripRecorder(timezoneID: tz)
+        recorder.startManualRecording(at: t0)
+        var driven = DriveBuilder(start: t0)
+        driven.drive(speedMps: 15, seconds: 300)
+        #expect(feed(driven.points, into: &recorder).isEmpty)
+        #expect(recorder.pauseRecording(at: t0.addingTimeInterval(299)))
+
+        let output = recorder.stopRecording(at: t0.addingTimeInterval(899))
+        guard case .tripFinalized(let trip)? = output else {
+            Issue.record("Stop from paused must finalize the drive, not discard it")
+            return
+        }
+        #expect(recorder.lastEndCause == .manualStop)
+        #expect(recorder.state == .idle)
+        #expect(trip.endedAt == t0.addingTimeInterval(299))
+        #expect(trip.pausedTime == 0)
+        #expect(trip.duration == 299)
+    }
+
+    @Test func pauseAndResumeRefuseWhenThereIsNothingToPause() {
+        var recorder = TripRecorder(timezoneID: tz)
+        #expect(!recorder.pauseRecording(at: t0))
+        #expect(!recorder.resumeRecording(at: t0))
+        recorder.startManualRecording(at: t0)
+        #expect(!recorder.resumeRecording(at: t0))  // running, not paused
+        #expect(recorder.pauseRecording(at: t0))
+        #expect(!recorder.pauseRecording(at: t0))   // already paused
     }
 }

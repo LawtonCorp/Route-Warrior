@@ -62,7 +62,10 @@ struct DriveView: View {
     /// Where the drive stands against the plan, right now (D-035).
     private var board: DriveScoreboard {
         DriveScoreboard.board(
-            elapsed: pipeline.recordingStartedAt.map { Date.now.timeIntervalSince($0) } ?? 0,
+            // Paused seconds are not this drive's (D-069): the scoreboard
+            // freezes rather than running up a loss against the plan
+            // while the car is parked outside the coffee shop.
+            elapsed: pipeline.drivingElapsed(at: .now),
             position: pipeline.liveTrack.last?.coordinate ?? Coordinate(latitude: 0, longitude: 0),
             plan: pipeline.liveTrack.isEmpty ? nil : plan,
             ghost: ghostRace.status,
@@ -79,6 +82,7 @@ struct DriveView: View {
             reroute: monitor?.reroute,
             trail: pipeline.liveTrack.map(\.coordinate),
             offPlan: isOffPlan,
+            paused: pipeline.isPaused,
             camera: .followUser,
             // A fallback for the moment before the map SDK has its own fix.
             userLocation: pipeline.liveTrack.last?.coordinate
@@ -125,8 +129,9 @@ struct DriveView: View {
         .onChange(of: mapSettings.guidanceVoice) {
             guide?.voiceEnabled = mapSettings.guidanceVoice
         }
-        .onChange(of: pipeline.isRecording) {
-            if !pipeline.isRecording { dismiss() }
+        .onChange(of: pipeline.isDriveInProgress) {
+            // A pause is not the end of the drive, so the drive view stays.
+            if !pipeline.isDriveInProgress { dismiss() }
         }
     }
 
@@ -236,6 +241,20 @@ struct DriveView: View {
                 .disabled(monitor == nil || monitor?.rerouting == true)
             }
             Spacer(minLength: 0)
+            Button {
+                if pipeline.isPaused {
+                    pipeline.resumeRecording()
+                } else {
+                    pipeline.pauseRecording()
+                }
+            } label: {
+                Image(systemName: pipeline.isPaused ? "play.fill" : "pause.fill")
+                    .font(.body.weight(.semibold))
+                    .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.bordered)
+            .tint(Theme.armed)
+            .accessibilityLabel(pipeline.isPaused ? "Resume the drive" : "Pause the drive")
             Button(role: .destructive) {
                 pipeline.stopManualRecording()
                 dismiss()

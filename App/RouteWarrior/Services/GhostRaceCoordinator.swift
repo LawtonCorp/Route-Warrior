@@ -62,7 +62,9 @@ final class GhostRaceCoordinator {
     }
 
     /// Fed by LocationService with the live track after every sample.
-    func ingest(track: [TrackPoint], startedAt: Date) {
+    /// `pausedSeconds` is what the driver excluded with the pause button
+    /// (D-069); without it the ghost inherits every coffee stop.
+    func ingest(track: [TrackPoint], startedAt: Date, pausedSeconds: TimeInterval = 0) {
         guard policy.ghostRaceAvailable(for: tierProvider()) else { return }
         guard let last = track.last else { return }
         guard last.timestamp.timeIntervalSince(lastPushAt) >= Self.pushInterval else { return }
@@ -74,7 +76,7 @@ final class GhostRaceCoordinator {
         }
         guard let profile, let routeLine else { return }
         guard let raceStatus = GhostRace.status(
-            myElapsed: last.timestamp.timeIntervalSince(startedAt),
+            myElapsed: max(0, last.timestamp.timeIntervalSince(startedAt) - pausedSeconds),
             position: last.coordinate,
             along: routeLine,
             reference: profile
