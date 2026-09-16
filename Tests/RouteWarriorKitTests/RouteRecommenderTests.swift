@@ -66,9 +66,10 @@ final class RouteRecommenderTests: XCTestCase {
         guard case .winner = rec.race.outcome else { return XCTFail("expected a winner") }
     }
 
-    /// Three Tuesday drives per route is one under the floor; a single
-    /// Wednesday each brings the weekday-morning tier to exactly four,
-    /// and it answers there rather than widening further (D-070).
+    /// Three Tuesday drives per route is two under tier 1's five; a
+    /// single Wednesday each brings the weekday-morning tier to exactly
+    /// its floor of four, and it answers there rather than widening
+    /// further (D-071).
     func testItBacksOffOnlyAsFarAsTheFloorForces() throws {
         let trips = drives(maple, count: 3, weekday: 3, hour: 9, minutes: 18)
             + drives(backWay, count: 3, weekday: 3, hour: 9, minutes: 22)
@@ -79,17 +80,32 @@ final class RouteRecommenderTests: XCTestCase {
         XCTAssertEqual(rec.race.fastest?.id, maple)
     }
 
-    /// The floor is met exactly, at the narrowest tier: four drives per
-    /// route on Tuesday mornings is a Tuesday-morning claim (D-070). Under
-    /// D-065's flat five this same history said nothing at all.
-    func testFourDrivesPerRouteIsEnoughForTheNarrowestClaim() throws {
+    /// The ladder's signature case (D-071). Four drives per route, all on
+    /// Tuesday mornings, is *not* a Tuesday-morning claim — tier 1 wants
+    /// five — but it is a weekday-morning one, and that is what it says.
+    /// The same history under D-070's flat four claimed the narrower
+    /// sentence; under D-065's flat five it said nothing at all.
+    func testFourTuesdayDrivesMakeAWeekdayClaimAndNotATuesdayOne() throws {
         let trips = drives(maple, count: 4, weekday: 3, hour: 9, minutes: 18)
             + drives(backWay, count: 4, weekday: 3, hour: 9, minutes: 22)
         let rec = try XCTUnwrap(recommend(trips))
-        XCTAssertEqual(rec.tier, .weekdaySlot)
+        XCTAssertEqual(rec.tier, .dayClassSlot, "four is tier 2's floor, one short of tier 1's")
         XCTAssertEqual(rec.drivesCounted, 8)
         XCTAssertEqual(rec.race.fastest?.id, maple)
-        guard case .winner = rec.race.outcome else { return XCTFail("four per route meets the floor") }
+        guard case .winner = rec.race.outcome else { return XCTFail("four per route meets tier 2's floor") }
+    }
+
+    /// The ladder itself, stated once so a change to it is a change to a
+    /// test: narrower claims earn a higher floor, and the two widest
+    /// tiers sit on `RouteRaceEngine`'s own three.
+    func testTheFloorsAreAFiveFourThreeThreeLadder() {
+        let config = RouteRecommender.Config()
+        XCTAssertEqual(config.floor(for: .weekdaySlot), 5)
+        XCTAssertEqual(config.floor(for: .dayClassSlot), 4)
+        XCTAssertEqual(config.floor(for: .slot), 3)
+        XCTAssertEqual(config.floor(for: .all), 3)
+        XCTAssertEqual(config.floor(for: .all), RouteRaceEngine.Config().minSamplesPerRoute,
+                       "the widest tier makes the Destination screen's claim, so it uses its evidence")
     }
 
     /// Weekend drives do not count toward a weekday-morning claim, but do
@@ -117,23 +133,35 @@ final class RouteRecommenderTests: XCTestCase {
         guard case .tie = rec.race.outcome else { return XCTFail("a narrow tie must not be widened into a win") }
     }
 
-    /// Three per route is under the floor everywhere, including the
-    /// widest tier — where the Destination screen's all-time race, which
-    /// keeps `RouteRaceEngine`'s floor of three, would call it. The two
-    /// surfaces answer different questions and are allowed to disagree
-    /// about when there is enough history (D-070).
-    func testTheFloorIsFourPerRouteAtEveryTier() throws {
+    /// Three per route is under tiers 1 and 2 but meets tier 3's floor,
+    /// so the claim widens to the time of day rather than going silent —
+    /// and the Destination screen, on the same three drives, no longer
+    /// calls a race the Plan tab refuses to (D-071).
+    func testThreePerRouteWidensToTheTimeOfDayRatherThanGoingSilent() throws {
         let trips = drives(maple, count: 3, weekday: 3, hour: 9, minutes: 18)
             + drives(backWay, count: 3, weekday: 3, hour: 9, minutes: 22)
-        let rec = try XCTUnwrap(recommend(trips), "routes exist, so the widest race comes back")
-        XCTAssertEqual(rec.tier, .all)
-        guard case let .collecting(needed) = rec.race.outcome else { return XCTFail("three is under the floor") }
-        XCTAssertEqual(needed, 1)
-        XCTAssertNil(rec.headline, "nothing to say until the floor is met")
+        let rec = try XCTUnwrap(recommend(trips))
+        XCTAssertEqual(rec.tier, .slot)
+        guard case .winner = rec.race.outcome else { return XCTFail("three per route meets tier 3's floor") }
     }
 
+    /// Two per route is under every floor on the ladder, so nothing is
+    /// claimed and the widest race comes back saying how much more it
+    /// wants.
+    func testUnderEveryFloorNothingIsClaimed() throws {
+        let trips = drives(maple, count: 2, weekday: 3, hour: 9, minutes: 18)
+            + drives(backWay, count: 2, weekday: 3, hour: 9, minutes: 22)
+        let rec = try XCTUnwrap(recommend(trips), "routes exist, so the widest race comes back")
+        XCTAssertEqual(rec.tier, .all)
+        guard case let .collecting(needed) = rec.race.outcome else { return XCTFail("two is under every floor") }
+        XCTAssertEqual(needed, 1)
+        XCTAssertNil(rec.headline, "nothing to say until a floor is met")
+    }
+
+    /// Two real drives and three passenger rides is two drives, at every
+    /// rung of the ladder including the lowest.
     func testExcludedDrivesNeverLiftARouteOverTheFloor() {
-        let trips = drives(maple, count: 3, weekday: 3, hour: 9, minutes: 18)
+        let trips = drives(maple, count: 2, weekday: 3, hour: 9, minutes: 18)
             + drives(maple, count: 3, weekday: 3, hour: 9, minutes: 18, excluded: true)
             + drives(backWay, count: 5, weekday: 3, hour: 9, minutes: 22)
         guard let rec = recommend(trips) else { return }   // nil is also "no winner"
