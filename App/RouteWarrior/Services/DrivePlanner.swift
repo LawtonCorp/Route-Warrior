@@ -18,12 +18,16 @@ final class DrivePlanner {
     private(set) var plans: [PlanSnapshot] = []
     private(set) var loading = false
     private(set) var failed = false
-    /// Which row of the shown plan's route list the driver picked
-    /// (D-063). Row 0 is the provider's recommendation. Held here
-    /// rather than folded into `plans`, so the list on screen keeps its
-    /// order and its numbers while the drive still departs with the
-    /// route that was picked.
-    private(set) var selectedRoute = PlanList.recommendedRow
+    /// Which row of the route list the driver picked (D-063, D-066): a
+    /// provider row by number, or one of their own routes by variant.
+    /// Held here rather than folded into `plans`, so the list on screen
+    /// keeps its order and its numbers while the drive still departs with
+    /// what was picked.
+    private(set) var selected = PlanList.recommendedRow
+    /// The driver's own routes to this destination from where they are
+    /// (FR-25), found once the origin is known. Empty for a destination
+    /// with no history, or a typed address.
+    private(set) var personalRoutes: [PersonalRoutes.Row] = []
 
     var hasDestination: Bool { destination != nil }
 
@@ -44,7 +48,8 @@ final class DrivePlanner {
         plans = []
         failed = false
         loading = false
-        selectedRoute = PlanList.recommendedRow
+        selected = PlanList.recommendedRow
+        personalRoutes = []
     }
 
     func beginFetch() {
@@ -59,15 +64,28 @@ final class DrivePlanner {
         self.plans = plans
         loading = false
         failed = plans.isEmpty
-        // A new set of routes is a new list; the old row number would
-        // point at something else.
-        selectedRoute = PlanList.recommendedRow
+        // A new set of provider routes is a new list; a provider row
+        // number would point at something else. A personal pick names a
+        // variant, which the fetch did not change, so it stands.
+        if case .route = selected { selected = PlanList.recommendedRow }
+    }
+
+    /// The driver's own routes, once the origin resolved (D-066). Offered,
+    /// never pre-selected: the check stays where it was.
+    func setPersonalRoutes(_ routes: [PersonalRoutes.Row]) {
+        personalRoutes = routes
+        // A personal pick that the new list no longer names falls back;
+        // a provider pick is untouched by a change in personal routes.
+        if case let .personal(id) = selected, !routes.contains(where: { $0.id == id }) {
+            selected = PlanList.recommendedRow
+        }
     }
 
     func clear() {
         destination = nil
         plans = []
-        selectedRoute = PlanList.recommendedRow
+        selected = PlanList.recommendedRow
+        personalRoutes = []
         loading = false
         failed = false
     }
@@ -85,19 +103,26 @@ final class DrivePlanner {
         plans.first { $0.provider == surface }
     }
 
-    /// Pick a route off the list. Out-of-range picks fall back to the
-    /// provider's recommendation rather than being stored and acted on.
-    func select(route row: Int, on surface: PlanSnapshot.Provider) {
-        selectedRoute = PlanList.clamped(row, to: plan(on: surface))
+    /// Pick a row off the list. A pick that names nothing falls back to
+    /// the provider's recommendation rather than being stored and acted on.
+    func select(_ id: PlanList.RowID, on surface: PlanSnapshot.Provider) {
+        selected = PlanList.clamped(id, to: plan(on: surface), personal: personalRoutes)
     }
 
     /// The plans as the drive would depart with them (D-063): the shown
-    /// surface's snapshot with the driver's pick promoted, every other
-    /// provider's untouched. The stored plans are never rewritten, so
-    /// nothing on screen moves when the pick changes.
+    /// surface's snapshot with a provider pick promoted, every other
+    /// provider's untouched. A personal pick promotes nothing — the
+    /// provider's plan stays the baseline (D-010, D-066). The stored
+    /// plans are never rewritten, so nothing on screen moves.
     func departurePlans(on surface: PlanSnapshot.Provider) -> [PlanSnapshot] {
         guard let shown = plan(on: surface) else { return plans }
-        let departure = PlanList.departure(shown, selecting: selectedRoute)
+        let departure = PlanList.departure(shown, selecting: selected)
         return plans.map { $0.id == shown.id ? departure : $0 }
+    }
+
+    /// The driver's own route to drive, when one is picked (FR-25).
+    var chosenRoute: PersonalRoutes.Row? {
+        guard case let .personal(variantID) = selected else { return nil }
+        return personalRoutes.first { $0.id == variantID }
     }
 }

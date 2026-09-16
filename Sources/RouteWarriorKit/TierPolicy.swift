@@ -102,4 +102,11 @@ public struct TierPolicy: Sendable {
     public func tripOrganizerAvailable(for tier: Tier) -> Bool {
         tier == .pro
     }
+
+    /// The driver's own routes offered at departure, and the "right now"
+    /// recommendation between them (D-065, D-066). The whole feature is
+    /// Pro, the insight included — Brian's call.
+    public func personalRoutesAvailable(for tier: Tier) -> Bool {
+        tier == .pro
+    }
 }

@@ -2,7 +2,8 @@
 
 _Status: APPROVED 2026-09-16 (Brian's answers in §8, logged as D-065).
 Numbering continues docs/REQUIREMENTS.md and SPEC_IN_APP_MAP.md (FR-25+).
-Building for v1.0 — Brian's call, over the sequencing concern in §9._
+Building for v1.0 — Brian's call, over the sequencing concern in §9.
+Slice 1 landed as D-065 (#69); slice 2 (FR-25/26/27) as D-066._
 
 ## 1. Goal
 

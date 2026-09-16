@@ -53,6 +53,16 @@ struct StoreRoundTripTests {
         )
     }
 
+    /// D-066: the pick lives on the record, not on the kit's `Trip`, so a
+    /// rewrite from a recomputed drive cannot wipe it.
+    @Test func theChosenRouteSurvivesARewriteFromTheTrip() throws {
+        let record = try TripRecord(makeTrip())
+        let picked = UUID()
+        record.chosenVariantID = picked
+        try record.update(from: makeTrip())
+        #expect(record.chosenVariantID == picked)
+    }
+
     @Test func tripRecordRoundTrip() throws {
         let trip = makeTrip()
         let restored = try TripRecord(trip).trip()

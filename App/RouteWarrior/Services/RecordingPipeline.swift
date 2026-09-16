@@ -57,6 +57,10 @@ final class RecordingPipeline {
     private let policy: TierPolicy
     private let logStorage: UserDefaults?
     private var pendingSnapshots: [PlanSnapshot] = []
+    /// The driver's own route for this drive, when they picked one
+    /// (FR-25, D-066): drawn by the drive view, watched for off-route,
+    /// and written to the trip as the pick — never as the baseline.
+    private var pendingChosenRoute: ChosenRoute?
     /// Whether to end a planned drive on arrival (D-038), read per sample
     /// so a Settings change applies to the drive in progress.
     private let arrivalStop: @MainActor () -> Bool
@@ -116,6 +120,15 @@ final class RecordingPipeline {
     /// The plans held for the current drive (for the drive view).
     var plansForCurrentDrive: [PlanSnapshot] { pendingSnapshots }
 
+    /// One of the driver's own routes, chosen on the Plan tab (D-066).
+    struct ChosenRoute: Equatable, Sendable {
+        let variantID: UUID
+        let polyline: Polyline
+    }
+
+    /// The route the driver chose to drive this time, if any.
+    var chosenRouteForCurrentDrive: ChosenRoute? { pendingChosenRoute }
+
     func ingest(location point: TrackPoint) {
         if recorder.state != .idle {
             samplesThisSegment += 1
@@ -158,7 +171,7 @@ final class RecordingPipeline {
     /// FR-20: the driver chose a destination and saw the plans. Recording
     /// starts now (unless a drive is already being recorded) and those
     /// plans become the departure snapshots — no second fetch.
-    func startPlannedDrive(with snapshots: [PlanSnapshot]) {
+    func startPlannedDrive(with snapshots: [PlanSnapshot], choosingRoute chosen: ChosenRoute? = nil) {
         if recorder.state != .recording {
             recorder.startManualRecording(at: .now)
             recorderState = recorder.state
@@ -168,10 +181,12 @@ final class RecordingPipeline {
         // for an auto-detected start is superseded (D-055).
         supersedePendingFetch()
         pendingSnapshots = snapshots
+        pendingChosenRoute = chosen
         predictOnFirstSample = false
         arrivalDetector.reset()
         lastOutcome = "Recording (planned)"
-        note("Recording started from the plan screen with \(snapshots.count) plan(s)")
+        let route = chosen.map { _ in ", driving your own route" } ?? ""
+        note("Recording started from the plan screen with \(snapshots.count) plan(s)\(route)")
     }
 
     /// A newer intent replaces whatever fetch was in flight: its answer,
@@ -434,6 +449,7 @@ final class RecordingPipeline {
 
     private func clearPendingSnapshots() {
         pendingSnapshots.removeAll()
+        pendingChosenRoute = nil
         // A plan still in flight for a drive that has ended belongs to
         // no drive (D-055).
         supersedePendingFetch()
@@ -493,7 +509,11 @@ final class RecordingPipeline {
             for snapshot in [primary, alt].compactMap({ $0 }) {
                 context.insert(try SnapshotRecord(snapshot))
             }
-            context.insert(try TripRecord(result.trip))
+            let record = try TripRecord(result.trip)
+            // The pick is the driver's annotation; `variantID` above is
+            // the matcher's answer. Both are kept (D-066).
+            record.chosenVariantID = pendingChosenRoute?.variantID
+            context.insert(record)
             try context.save()
             lastOutcome = "Trip saved"
             let comparison = switch (primary, alt) {

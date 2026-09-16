@@ -1480,3 +1480,50 @@ avoid); shipping in 1.1 (my recommendation — the feature is invisible on
 a fresh install, cannot appear in the review video except on Brian's
 own history, and needs the recorder in hands to become real; Brian
 weighed that and chose 1.0, and the spec's §9 carries the consequences).
+
+## D-066 — Your own routes on the Plan tab, driven in the app, judged against the nav (2026-09-16)
+
+FR-25/26/27 from SPEC_PERSONAL_ROUTES.md, slice 2. The driver's own
+routes to a destination now sit at the top of the Plan tab's route list,
+ahead of the provider's, each with its usual duration, the drives that
+number rests on, and — on the top row — the recommendation's claim at
+the tier it answered at ("usually fastest on weekday mornings", or "no
+clear winner on Tuesday mornings"). Offered, never pre-selected (D-065):
+the check stays on the provider's plan until the driver moves it.
+
+**The baseline does not move.** Picking your own route changes what you
+drive, not what you are judged against. The provider snapshot is still
+fetched, stored and compared; `PlanList.departure` promotes nothing for
+a personal pick. The drive view draws the personal line beside the
+provider's dashed one, watches off-route against the personal line
+(`DriveMonitor` takes it as `line:`), and creates no guide at all —
+nothing to show and nothing to say, because a guide that exists can
+speak. It is your road because you know the way. Go skips the maps-app
+hand-off for that drive: no maps app knows this road, so handing off
+would drive the provider's route under a personal pick.
+
+The pick is written to the trip as `chosenVariantID`, kept apart from
+`variantID`, which is the matcher's answer to what was actually driven.
+The two can disagree and both are worth having; the kit's `Trip` carries
+neither the label nor the pick, so a rewrite cannot wipe it (tested).
+
+Rows are found once the origin is known, in `fetchPlans`, by whichever
+saved Place the driver is standing in; a typed address has no history
+and shows the provider list exactly as before. The whole feature is Pro
+(D-065): the free tier sees one locked row saying how many of its own
+routes are here.
+
+Row identity moved from an Int to `PlanList.RowID` — `.route(n)` for
+the provider's, `.personal(variantID)` for the driver's — so personal
+rows ahead of provider rows cannot renumber them and a personal pick
+survives a fresh provider answer, which changes the numbered list but
+not the variant.
+
+**Rejected**: numbering rows with the answering tier's median only
+(a route the tier never saw is still the driver's to pick; it is
+numbered from every drive and says so); hiding routes below the floor
+(no claim is made, but the rows and their counts are honest as they
+stand); handing off to Google Maps with a personal route picked
+(drives Google's road, not yours); a synthetic snapshot for the personal
+route so the guide could run (steps invented from geometry, spoken while
+driving — no); pre-selecting the recommended route (D-065: offer first).
