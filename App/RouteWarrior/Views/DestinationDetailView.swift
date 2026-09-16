@@ -170,6 +170,16 @@ struct DestinationDetailView: View {
         RouteRaceEngine.race(variants: kitVariants, trips: trips)
     }
 
+    /// The same question asked of this moment — the driver's weekday and
+    /// hour, in the zone they are standing in (D-065).
+    private var recommendation: RouteRecommender.Recommendation? {
+        RouteRecommender.recommend(
+            variants: kitVariants,
+            trips: trips,
+            context: RouteRecommender.Context(now: .now, timezoneID: TimeZone.current.identifier)
+        )
+    }
+
     private var variantsSection: some View {
         let race = self.race
         return Section {
@@ -183,7 +193,14 @@ struct DestinationDetailView: View {
             } else if race.routes.count >= 2 {
                 routesMap(race)
             }
-            if !deepLocked { headToHead(race) }
+            if !deepLocked {
+                headToHead(race)
+                if let line = RecommendationLine.text(for: recommendation) {
+                    Label(line, systemImage: "clock")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
             ForEach(Array((deepLocked ? [] : race.routes).enumerated()), id: \.element.id) { rank, route in
                 if let record = recordsByID[route.id] {
                     NavigationLink {

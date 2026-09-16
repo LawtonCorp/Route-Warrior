@@ -1440,3 +1440,43 @@ record is keyed to them, and Brian's standing instruction is to leave
 them as they are); rewriting "LawtonCorp" out of past DECISIONS entries
 (a decision log that is edited to match the present stops being
 evidence).
+
+## D-065 — Personal routes: Pro, offered not pre-selected, five drives, in v1.0 (2026-09-16)
+
+SPEC_PERSONAL_ROUTES.md asked three questions and recommended a
+sequencing; Brian answered all four.
+
+**Chosen**: the whole feature is Pro — the "right now" line and the
+personal routes as departure choices both. Personal routes are offered
+on the Plan tab and never pre-selected; the check stays on the
+provider's plan until the driver moves it. The recommender's floor is a
+flat five drives per route at every tier (one `Config` value), while the
+all-time race on the Destination screen keeps `RouteRaceEngine`'s three,
+because "fastest overall" and "fastest on Tuesday mornings" are
+different claims and the narrower one rests on less. And it ships in
+v1.0.
+
+Slice 1 lands `RouteRecommender` in the kit: `RouteRaceEngine` run over
+four narrowing subsets of the drives — this weekday and slot, weekday-
+or-weekend and slot, this slot, everything — returning the first tier
+that yields a winner **or a tie**. A tie at "Tuesday mornings" is a
+finding, not a reason to look at Wednesdays; only "collecting" and "one
+route" widen. The recommendation carries the moment it answered for, so
+its wording cannot be paired with another. `StatsEngine.cell(at:
+timezoneID:)` buckets "now" by the same rule a trip's start is bucketed,
+so the two can never disagree about which cell a moment is in. On the
+Destination screen the line sits under the head-to-head card and is
+suppressed when the answering tier is "every drive" — the card already
+says that.
+
+**Rejected**: the split I recommended, insight free and acting Pro
+(Brian: Pro throughout); pre-selecting the recommended route (wrong in
+front of the driver when it is wrong; offer first, revisit with real
+tier-1 data); a 3/4/5 ladder of floors (Brian: five flat — simpler to
+explain and one value to change); widening past a narrow-tier tie to
+find a winner (turns "no clear winner on Tuesday mornings" into
+"fastest overall", which is the blur this whole feature exists to
+avoid); shipping in 1.1 (my recommendation — the feature is invisible on
+a fresh install, cannot appear in the review video except on Brian's
+own history, and needs the recorder in hands to become real; Brian
+weighed that and chose 1.0, and the spec's §9 carries the consequences).

@@ -1,8 +1,8 @@
 # Personal routes at departure — draft spec (v1.1 candidate)
 
-_Status: DRAFT 2026-09-16, awaiting three decisions from Brian (§8).
+_Status: APPROVED 2026-09-16 (Brian's answers in §8, logged as D-065).
 Numbering continues docs/REQUIREMENTS.md and SPEC_IN_APP_MAP.md (FR-25+).
-Plan only — no code has been written against this document._
+Building for v1.0 — Brian's call, over the sequencing concern in §9._
 
 ## 1. Goal
 
@@ -228,34 +228,29 @@ wording.
 
 Slice 1 is the whole algorithm. Slices 2–4 are wiring.
 
-## 8. Decisions needed (Brian)
+## 8. Decisions (Brian, 2026-09-16 — D-065)
 
-1. **Pro or free?** Comparing the driver's own routes is arguably the
-   strongest Pro hook the app has; the Google comparison is already Pro.
-   Recommendation: the recommendation *line* free, personal routes as
-   *departure choices* Pro — the free tier sees the insight, Pro acts on
-   it.
-2. **Offer or pre-select?** Does the check land on the recommended
-   personal route by default, or on the provider's plan with the
-   personal route offered above it? Pre-selecting is bolder and is wrong
-   in front of the driver when it is wrong. Recommendation: offer in
-   1.1, pre-select in a later release once tier-1 answers are common in
-   real data.
-3. **How many drives before it speaks, per tier?** `RouteRaceEngine`
-   wants 3 per route. For a tier-1 claim ("Tuesday mornings") that is
-   thin. Recommendation: 3 at tiers 3–4, 4 at tier 2, 5 at tier 1 —
-   narrower claims earn a higher floor.
+1. **Pro.** Both the recommendation line and personal routes as
+   departure choices. (Recommended split — insight free, acting Pro —
+   not taken; the whole feature is Pro.)
+2. **Offer.** The check lands on the provider's plan; personal routes
+   are listed above it and chosen by hand. Pre-selection is not built.
+3. **Five drives per route, at every tier.** A flat floor rather than
+   the 3/4/5 ladder proposed; one `RouteRecommender.Config` value. The
+   all-time race on the Destination screen keeps `RouteRaceEngine`'s
+   floor of three — it makes a different, wider claim.
 
 ## 9. Sequencing
 
-**Ship 1.0 first; build this as 1.1.** Not out of caution: this feature
-is invisible on a fresh install. A new user has no variants, so there is
-nothing to recommend. It cannot be shown in the App Review video, cannot
-be tested by TestFlight users in their first week, and only becomes real
-as drives accumulate — which needs the recorder in people's hands.
-Shipping 1.0 sooner is the prerequisite for this feature, not a delay to
-it, and Brian's own history is the best test data that will exist for
-months.
+**Building for v1.0, on Brian's decision (2026-09-16).** The
+recommendation here was 1.0 first and this as 1.1, because the feature
+is invisible on a fresh install: a new user has no variants, so there is
+nothing to recommend, it cannot be shown in the App Review video, and it
+only becomes real as drives accumulate. Brian weighed that and chose to
+ship it in 1.0. Consequences to carry: the review video shows the
+feature on Brian's own history (the only account with any), and the
+listing describes it as something the app grows into rather than shows
+on day one.
 
 ## 10. Risks
 
