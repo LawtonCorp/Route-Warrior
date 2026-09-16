@@ -286,6 +286,15 @@ bank account holder and IRS records. Apple cross-checks them.
   see at all: check that answering it from the lock screen works, and
   that a destination-pick notification still works afterwards — both
   prompts now share one delegate.
+- **D-075/076, one destination, several starting points**: open a
+  destination you drive to from more than one place. The picker should
+  appear, default to the place you drive from most, and everything below
+  it — totals, routes, heatmap, trend — should change when you switch.
+  On "All starting points" the head-to-head should be replaced by the
+  reason it is missing, and each route row should say where it began.
+  The number to sanity-check is the heatmap: the cell that looked wrong
+  (Brian's 61-minute Saturday) should look right once scoped, because it
+  was one long drive from far away pooled with short ones.
 - **D-074, dragging places**: tap Edit on the Places tab and drag a place
   to the top. It should stay there after a relaunch, the Plan tab's saved
   places should show the same order, and — on the free tier — the lock
