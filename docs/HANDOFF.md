@@ -251,5 +251,26 @@ bank account holder and IRS records. Apple cross-checks them.
 - The recommender's floor is a **flat 5 drives at every tier**, built
   from Brian's "3." answer in §8 of the spec; the proposed 3/4/5 ladder
   was not taken. Confirm before changing it.
-- Whether to relabel "Map & routes" and "Navigate with" so two settings
-  do not both read "Google". Offered, not decided.
+- ~~Whether to relabel "Map & routes" and "Navigate with"~~ — settled
+  2026-09-16 as **D-068**: the two settings keep their labels and move
+  into separate sections, "In Route Rebel" and "When you tap Go".
+
+### Field tests this session's work still needs (phone in hand)
+
+- **D-068**: read the two new section headers on the Settings screen and
+  say whether "In Route Rebel" / "When you tap Go" actually separates the
+  two Googles. CI can only prove the footers no longer explain each
+  other's settings.
+- **D-069, battery**: the GPS stays on while a drive is paused, on
+  purpose (the thing that restarts it only runs off an arriving sample).
+  A long pause — an hour at a restaurant — is the case to watch. If the
+  drain is bad, the fix is a way to restart location from the play
+  button rather than from the sample stream.
+- **D-069, the numbers**: pause mid-drive, stop for a few minutes, resume
+  and finish. Check the trip detail: Duration should exclude the pause,
+  a "Paused" row should show it, and the delta against the nav's plan
+  should be what it would have been without the stop. The recorder log
+  says how long was excluded.
+- **D-069, the screen**: "Paused" over the map on both surfaces, the play
+  button where pause was, and Stop still reachable — on the Plan tab's
+  recorder row and on the drive view.
