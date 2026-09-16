@@ -300,7 +300,12 @@ struct DestinationDetailView: View {
             Text("Your routes")
         } footer: {
             if race.routes.count >= 2, !deepLocked {
+<<<<<<< HEAD
                 Text(DestinationScopeText.routesFooter(scope: scope, destination: place.name))
+=======
+                Text("Each route is coloured to match its line on the map. Tap one to name it and see its drives. "
+                    + "Every route here ends at \(place.name), but they do not all start in the same place — each says where it began.")
+>>>>>>> origin/main
             }
         }
     }
