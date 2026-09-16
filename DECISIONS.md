@@ -1851,3 +1851,52 @@ nag timer that shares state with it is one refactor away from a "Still
 here" tap changing a verdict); a second `UNUserNotificationCenterDelegate`
 (see above — it would have worked in every test and broken the feature
 on a phone).
+
+## D-074 — The driver arranges their own places (2026-09-16)
+
+Brian asked for the Places list to be rearrangeable by dragging. It is —
+and the interesting part is that the order was never only cosmetic.
+
+**Order was already load-bearing, and was already arbitrary.** The free
+tier analyses the first few destinations *by position in the list*
+(`TierPolicy.canAnalyzeDestination(atRank:)`), and until now that
+position was whenever the place happened to be saved. A driver on the
+free tier had no way to say which destinations mattered; the app decided
+for them, by accident of history. Dragging is what makes that choice
+theirs. The consequence is real and deliberate: moving a place above the
+line brings it inside the allowance and moving one below takes it out.
+
+**One order, everywhere.** Five screens query places, and two of them
+compute the same free-tier rank — the Places tab and a trip's detail
+screen. Two orders would put a place inside the allowance on one screen
+and outside it on the other, so all five now sort by `PlaceOrder.
+descriptors`, and the services that fetch places themselves use
+`PlaceOrder.fetchDescriptor`. That last one is a quiet improvement: the
+"Where are you headed?" notification offers the first four places, and
+those are now the four the driver put at the top rather than four the
+store happened to hand back first.
+
+`PlaceRecord.sortIndex` is additive with a zero default, so CloudKit
+takes it and every place saved before today ties at zero and keeps the
+oldest-first order drivers already had — the list does not rearrange
+itself on update. It lives on the record and not on the kit's `Place`,
+the way a trip's label does (D-060), so rewriting a record from a kit
+value cannot drag a place back to where it started. A test asserts
+exactly that.
+
+A drag renumbers **every** row from zero rather than nudging the moved
+one, so the stored order can never develop the ties that would let a
+later save land in the middle of the list. A new place takes the highest
+index plus one: saving never reshuffles what the driver arranged.
+
+**Rejected**: long-press to drag without entering edit mode (tapping a
+row opens that destination's analytics, and a list that reorders on
+long-press fights that tap on every row — `EditButton` is what iOS
+drivers already know from Reminders and Settings); sorting the list by
+drive count or by how recently each was visited (a computed order cannot
+be dragged, and the free tier's allowance would then move under the
+driver as they drove); renumbering on delete as well (a gap in the
+indices changes no order, and the fewer writes touch CloudKit the
+better); putting the index on the kit's `Place` (it is the driver's
+arrangement of a list, not a fact about the place — and D-060 already
+paid for that distinction).

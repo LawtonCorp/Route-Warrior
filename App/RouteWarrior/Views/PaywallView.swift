@@ -10,7 +10,7 @@ struct PaywallView: View {
     @Environment(StoreService.self) private var store
     @Environment(\.dismiss) private var dismiss
     @Query private var trips: [TripRecord]
-    @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
+    @Query(sort: PlaceOrder.descriptors) private var places: [PlaceRecord]
 
     private var locked: LockedDataSummary {
         LockedDataSummary.compute(

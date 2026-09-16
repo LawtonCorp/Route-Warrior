@@ -13,7 +13,7 @@ struct HomeView: View {
     @Environment(StoreService.self) private var store
     @Environment(MapSettings.self) private var mapSettings
     @Environment(\.modelContext) private var context
-    @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
+    @Query(sort: PlaceOrder.descriptors) private var places: [PlaceRecord]
 
     @State private var planner = DrivePlanner()
     @State private var query = ""

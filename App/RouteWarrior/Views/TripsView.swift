@@ -9,7 +9,7 @@ struct TripsView: View {
     @Environment(StoreService.self) private var store
     @Environment(\.modelContext) private var context
     @Query(sort: \TripRecord.startedAt, order: .reverse) private var trips: [TripRecord]
-    @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
+    @Query(sort: PlaceOrder.descriptors) private var places: [PlaceRecord]
     @Query private var snapshots: [SnapshotRecord]
     @Query private var variants: [VariantRecord]
     @State private var sort: TripSort = .newest

@@ -501,7 +501,10 @@ final class RecordingPipeline {
 
     private func fetchSnapshots(originPoint: TrackPoint, departure: Date, generation: Int) async {
         do {
-            let places = try context.fetch(FetchDescriptor<PlaceRecord>()).map { $0.place() }
+            // In the driver's own order (D-074): the notification offers
+            // the first few, and those should be the ones they put at the
+            // top rather than the ones they happened to save first.
+            let places = try context.fetch(PlaceOrder.fetchDescriptor).map { $0.place() }
             let origin = RouteMatcher.place(containing: originPoint.coordinate, in: places)
             let history = try context.fetch(FetchDescriptor<TripRecord>())
                 .compactMap { try? $0.trip() }
