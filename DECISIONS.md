@@ -1527,3 +1527,31 @@ stand); handing off to Google Maps with a personal route picked
 (drives Google's road, not yours); a synthetic snapshot for the personal
 route so the guide could run (steps invented from geometry, spoken while
 driving — no); pre-selecting the recommended route (D-065: offer first).
+
+## D-067 — The verdict names the road (2026-09-16)
+
+SPEC_PERSONAL_ROUTES §4.5, slice 3 — the last of three. "You beat
+Google's ETA" is the verdict; the card under it now says which of the
+driver's routes did it, and the Trips row carries the road beside the
+distance, so the list reads as evidence for a choice rather than a list
+of wins.
+
+Two facts can sit on a trip since D-066: the route the driver picked
+before departing (`chosenVariantID`) and the route the matcher says
+they drove (`variantID`). `VerdictText.road` reads both and says what
+it sees — "Your route: via Maple Ave", "Your route: via Maple Ave, as
+picked", "Picked the back way, drove via Maple Ave", or "Picked via
+Maple Ave; this drive matched none of your routes". A disagreement is
+shown, not resolved: the matcher's answer is what the analytics count,
+the pick is what the driver meant, and hiding either would be the app
+deciding the driver was wrong. A route that has since been deleted
+reads as no route on that side.
+
+**Rejected**: rewriting the headline to personify the route ("via Maple
+Ave beat Google's plan" — a custom name like "the back way" makes that
+ungrammatical, and the win is the driver's); using the pick when the
+matcher disagrees (the pick did not happen, on the evidence); hiding
+the disagreement (it is the one signal that `RouteMatcher` and the
+driver see the road differently, worth surfacing rather than burying);
+putting the road on the variant's own drive list (every row there is
+the same road).

@@ -11,6 +11,7 @@ struct TripsView: View {
     @Query(sort: \TripRecord.startedAt, order: .reverse) private var trips: [TripRecord]
     @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
     @Query private var snapshots: [SnapshotRecord]
+    @Query private var variants: [VariantRecord]
     @State private var sort: TripSort = .newest
     @State private var destinationFilter: UUID?
     @State private var outcome: TripOutcome = .any
@@ -30,6 +31,12 @@ struct TripsView: View {
     private func placeName(_ id: UUID?) -> String? {
         guard let id else { return nil }
         return places.first { $0.id == id }?.name
+    }
+
+    /// The road a drive was matched to, in the driver's words (D-067).
+    private func routeName(_ id: UUID?) -> String? {
+        guard let id else { return nil }
+        return variants.first { $0.id == id }.flatMap { try? $0.variant() }?.displayName
     }
 
     var body: some View {
@@ -99,6 +106,7 @@ struct TripsView: View {
             TripRowView(
                 record: record,
                 deltaSeconds: record.etaDeltaSeconds(in: snapshots),
+                routeName: routeName(record.variantID),
                 originName: placeName(record.originPlaceID),
                 destinationName: placeName(record.destinationPlaceID)
             )
@@ -176,6 +184,12 @@ struct TripRowView: View {
     /// Actual duration minus the provider's ETA (see
     /// `TripRecord.etaDeltaSeconds`); nil when the trip has no comparison.
     var deltaSeconds: Double? = nil
+    /// The road this drive was matched to (D-067), so the list reads as
+    /// evidence for a route rather than a list of wins. A variant's own
+    /// drive list passes none: every row there is the same road.
+    /// Declared here because the memberwise init reads arguments in
+    /// declaration order and the list passes it before the place names.
+    var routeName: String? = nil
     /// The saved places' names, when the list knows them. A variant's
     /// drives all share one journey, so that list passes none.
     var originName: String? = nil
@@ -240,6 +254,10 @@ struct TripRowView: View {
                         dateText
                     }
                     Text(Format.distance(record.distanceM))
+                    if let routeName {
+                        Text(routeName)
+                            .lineLimit(1)
+                    }
                     if record.excludedFromStats {
                         Text("excluded")
                     }

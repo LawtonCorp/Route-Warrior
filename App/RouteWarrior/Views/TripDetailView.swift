@@ -13,11 +13,17 @@ struct TripDetailView: View {
     let record: TripRecord
     @Query private var allSnapshots: [SnapshotRecord]
     @Query private var allTrips: [TripRecord]
+    @Query private var allVariants: [VariantRecord]
     @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
     @State private var showPaywall = false
     @State private var draftLabel = ""
 
     private var trip: Trip? { try? record.trip() }
+
+    /// What the driver calls one of their routes; nil once it is gone.
+    private func variantName(_ id: UUID) -> String? {
+        allVariants.first { $0.id == id }.flatMap { try? $0.variant() }?.displayName
+    }
 
     /// The map, the times and "you vs the plan" are free; the stops,
     /// the turns and the way into the destination's analytics are Pro
@@ -231,6 +237,15 @@ struct TripDetailView: View {
                 Text("\(Format.signedDelta(delta)) against a \(Format.duration(snapshot.trafficDuration)) plan")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
+                // Which of your routes did it — and, when the pick and the
+                // drive disagree, both (D-067).
+                if let road = VerdictText.road(
+                    picked: record.chosenVariantID, driven: record.variantID, name: variantName
+                ) {
+                    Text(road)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
         }
