@@ -1931,3 +1931,50 @@ indices changes no order, and the fewer writes touch CloudKit the
 better); putting the index on the kit's `Place` (it is the driver's
 arrangement of a list, not a fact about the place — and D-060 already
 paid for that distinction).
+
+## D-075 — A route says where it started (2026-09-16)
+
+Brian's screenshot of the Home destination screen: three routes, all
+called "Route A", with 4, 12 and 43 signals on them.
+
+The names were not wrong, they were scoped differently from the screen.
+`RouteMatcher` names a new route by counting the routes that already
+share **both** its endpoints (`nextAutoName(after: candidates.count)`,
+where candidates are filtered on origin *and* destination), so each of
+those three was genuinely the first route from its own starting point.
+The Destination screen lists every route that shares the **destination**,
+from anywhere. Two axes, one label.
+
+**Chosen**: each row says where it started — "Route A · from Work". The
+origin is the fact that tells the rows apart, so it sits beside the name
+rather than in the caption, which already carries three facts. The
+section footer says plainly that every route here ends at this place but
+they do not all start in the same one.
+
+`RouteOrigin` returns nothing rather than guessing in the three cases
+that would otherwise read badly: a route whose origin place has since
+been deleted, a route recorded before the app knew where a drive began,
+and a place saved with an empty name. A row that cannot say where it
+started says nothing, the way a route with no OSM data simply omits the
+counts.
+
+**This is the smaller half of the problem.** The same pooled set feeds
+the head-to-head race, the "fastest right now" line, the heatmap and the
+month-over-month trend, so the screen is currently prepared to rank a
+corner-shop run against a cross-town commute, and Brian's heatmap
+already shows a 61-minute Saturday cell that is one long drive from far
+away averaged in with six-minute hops. The floor of three drives per
+route is the only reason no wrong verdict has appeared yet. D-076 scopes
+the screen; this decision makes today's screen honest in the meantime,
+and the row text keeps earning its place there as the thing that tells
+routes apart when every starting point is shown at once.
+
+**Rejected**: naming routes per destination instead of per pair, so they
+would read A, B, C (it gives three different journeys three distinct
+labels and thereby implies they are comparable, which is worse than the
+collision — the collision at least looked like a bug); putting the
+origin in the caption line under the name (it is what distinguishes the
+rows, so burying it below the signals and stop signs is backwards);
+"Work → Home" as the whole title (the driver's own name for a route,
+when they give it one, is the title, and D-030's naming should not be
+crowded out by a journey description).

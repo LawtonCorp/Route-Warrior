@@ -21,6 +21,9 @@ struct DestinationDetailView: View {
     @Query private var allTrips: [TripRecord]
     @Query private var allVariants: [VariantRecord]
     @Query private var allSnapshots: [SnapshotRecord]
+    /// For naming where each route starts (D-075). Unsorted on purpose —
+    /// this is a lookup by id, not a list.
+    @Query private var allPlaces: [PlaceRecord]
 
     private var trips: [Trip] {
         allTrips
@@ -218,7 +221,8 @@ struct DestinationDetailView: View {
             Text("Your routes")
         } footer: {
             if race.routes.count >= 2, !deepLocked {
-                Text("Each route is coloured to match its line on the map. Tap one to name it and see its drives.")
+                Text("Each route is coloured to match its line on the map. Tap one to name it and see its drives. "
+                    + "Every route here ends at \(place.name), but they do not all start in the same place — each says where it began.")
             }
         }
     }
@@ -282,6 +286,11 @@ struct DestinationDetailView: View {
         return "across \(fastest.stats.count) and \(runnerUp.stats.count) drives"
     }
 
+    /// Where a route starts, for the row (D-075).
+    private func originCaption(_ route: RouteRaceEngine.Route) -> String? {
+        RouteOrigin.caption(of: recordsByID[route.id]?.originPlaceID, in: allPlaces)
+    }
+
     private func routeRow(_ route: RouteRaceEngine.Route, rank: Int) -> some View {
         HStack(spacing: 12) {
             RoundedRectangle(cornerRadius: 2)
@@ -291,6 +300,15 @@ struct DestinationDetailView: View {
                 HStack {
                     Text(route.name)
                         .font(.headline)
+                    // Beside the name rather than in the caption below:
+                    // it is the thing that tells two routes apart, and
+                    // the caption is already three facts long.
+                    if let origin = originCaption(route) {
+                        Text(origin)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                     Spacer()
                     Text(Format.duration(route.stats.median))
                         .font(.subheadline.monospacedDigit())
