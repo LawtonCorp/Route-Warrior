@@ -145,3 +145,111 @@ in `project.yml`, add the CarPlay scene to the scene manifest, and wire a
 signs with `-allowProvisioningUpdates`, and Apple refuses to issue a
 profile carrying an entitlement the account has not been granted — the
 build to your phone would start failing.
+
+## Session log — 2026-09-15/16
+
+Ten PRs, all green first time, all squash-merged to main.
+
+| PR | Decision | SHA | What |
+|---|---|---|---|
+| #62 | D-060 | `8591a93` | A drive can be named; Go defaults to Route Rebel |
+| #63 | D-061 | `5d28de7` | What Go does moved under the button, behind a tap |
+| #64 | D-062 | `56acaff` | Go defaults to Google Maps where Google Maps exists |
+| #65 | D-063 | `5ccc14b` | The route list stays put when you pick a route |
+| #66 | — | `48fb296` | The Terms are lawyer-approved as written (docs) |
+| #67 | D-064 | `35962fc` | The contracting party is Lawton, LLC |
+| #68 | — | `6e1f103` | Spec: personal routes as departure choices |
+| #69 | D-065 | `ff4bf22` | RouteRecommender: which of my routes to take now |
+| #70 | D-066 | `3626a11` | Your own routes on the Plan tab |
+| #71 | D-067 | `798f5de` | The verdict names the road |
+
+### The feature that landed: personal routes (D-065/066/067)
+
+Brian's decisions, 2026-09-16: **Pro** (whole feature, insight included),
+**offer not pre-select**, **five drives per route at every tier**, and
+**in v1.0** — over the recommendation to ship 1.0 first because the
+feature is invisible on a fresh install. `docs/SPEC_PERSONAL_ROUTES.md`
+§9 carries the consequences: the review video shows it on Brian's own
+history, and the listing should describe it as something the app grows
+into.
+
+- `RouteRecommender` (kit, pure) runs `RouteRaceEngine` over four
+  narrowing subsets — this weekday+slot, weekday/weekend+slot, this
+  slot, everything — and returns the first tier yielding a winner **or a
+  tie**. A tie at "Tuesday mornings" is a finding, not a reason to look
+  at Wednesdays. The answering tier is named in every claim.
+- `PersonalRoutes.rows` turns variants into Plan-tab rows. The number is
+  the median at the answering tier when that tier counted the route, the
+  all-time median otherwise, always with the drive count.
+- **The baseline never moves (D-010).** The provider snapshot is still
+  fetched, stored and compared. A personal pick promotes nothing.
+- Picking your own route: line drawn beside the provider's, off-route
+  watched against *your* line, **no guide object created at all**, and
+  the maps-app hand-off skipped — no maps app knows this road.
+- `TripRecord.chosenVariantID` holds the pick, apart from `variantID`
+  (the matcher's answer). They can disagree; `VerdictText.road` shows
+  both rather than choosing.
+- Slice 4 (pre-selection) is deliberately **not built**.
+
+### Other decisions this session
+
+- **D-061**: the Go explanation is disclosed behind a tap. The line has
+  two faces — "Drive detected…" when armed, "What happens when you tap
+  Go" otherwise — because the chip only exists once motion says
+  automotive, and the explanation must be reachable from a parked car.
+  The D-044 loading sentence stays visible: it is about now.
+- **D-062**: Google Maps is the default hand-off **only where the app is
+  installed**. Our link is a universal link; without the app it opens
+  Safari, which is useless at the wheel and is what a reviewer would
+  hit. Detection is `canOpenURL("comgooglemaps://")`, which needs
+  `comgooglemaps` in `LSApplicationQueriesSchemes` (project.yml), read
+  once at launch.
+- **D-063**: tapping an alternate used to rewrite the stored plans, so a
+  second tap promoted a promotion and there was no way back to the
+  provider's own route. The pick is now a `PlanList.RowID`.
+- **D-064**: the contracting party is **Lawton, LLC**. Both legal
+  documents are effective **15 September 2026** and
+  `Legal.termsVersion = "2026-09-15"` — done pre-launch, when the
+  re-acceptance prompt costs one tap. Left alone: the bundle id and its
+  containers (identifiers, not names), `brian@lawtoncorp.com`, the
+  GitHub org, and D-001's entry in DECISIONS.md.
+
+### Confirmed facts worth not re-deriving
+
+- **Apple Maps always shows its own route preview.** There is no launch
+  option to start guidance directly; `openInMaps(launchOptions:)` with
+  the driving key lands on the preview every time. Google's
+  `dir_action=navigate` does start immediately. The double-Go is
+  Apple's, not ours.
+- **CarPlay navigation entitlement**: request at
+  developer.apple.com/contact/carplay/ as Account Holder; key is
+  `com.apple.developer.carplay-maps`. Unverified and worth asking Apple:
+  whether holding it forecloses the *driving-task* entitlement this
+  repo's §"CarPlay scoreboard" plans. Do not add either to project.yml
+  before it is granted.
+- **Two settings both say "Google"** and this confused the app's own
+  author: "Map & routes" is the embedded SDK and route provider;
+  "Navigate with" is the hand-off to the separate app. Relabelling was
+  offered and not yet decided.
+
+### App Store, step 0 as it stands
+
+| | Status |
+|---|---|
+| 0.1 Lawyer review | Done, with one caveat: approval was given for text naming "LawtonCorp"; the party was corrected to Lawton, LLC the same day. One line back from the lawyer is wanted. |
+| 0.2 Privacy Policy date | Done — now 15 September 2026, moved with the rename (supersedes the 10 September confirmation, because the text changed). |
+| 0.3 Website /terms /privacy /support | Done (confirm live before pressing Release). |
+| 0.4 Google Cloud key restrictions | Brian's, in progress. |
+| 0.5 Paid Apps → tax → banking | Open. Account Holder only; each step unlocks the next; done when Paid Apps reads **Active**. |
+| 0.5a Small Business Program | Open. Needs 0.5 signed first. 15% not retroactive — starts 15 days after the fiscal month-end of approval, so enrol before there are subscribers. |
+
+**Lawton, LLC** must match character for character across the W-9, the
+bank account holder and IRS records. Apple cross-checks them.
+
+### Open questions carried forward
+
+- The recommender's floor is a **flat 5 drives at every tier**, built
+  from Brian's "3." answer in §8 of the spec; the proposed 3/4/5 ladder
+  was not taken. Confirm before changing it.
+- Whether to relabel "Map & routes" and "Navigate with" so two settings
+  do not both read "Google". Offered, not decided.
