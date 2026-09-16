@@ -1555,3 +1555,42 @@ the disagreement (it is the one signal that `RouteMatcher` and the
 driver see the road differently, worth surfacing rather than burying);
 putting the road on the variant's own drive list (every row there is
 the same road).
+
+## D-068 — Two settings said "Google"; the section headers now say which (2026-09-16)
+
+Brian read his own Settings screen and could not tell two rows apart.
+"Map & routes" said Google and "Navigate with" said Google, three rows
+from each other, under one section header that said only "Map". One is
+the map and route provider **inside** the app; the other is the app Go
+**leaves for**. Nothing on screen carried that distinction, so the value
+was the only thing to read, and the value is the same word.
+
+The fix is structural rather than lexical. The Map section becomes two:
+**In Route Rebel** (the map and routes, automatic reroute, turn-by-turn,
+spoken directions) and **When you tap Go** (the hand-off, alone). Both
+row labels are unchanged — they were never wrong, only unqualified, and
+a header is read before the value it governs. The single footer, which
+had grown to four settings' worth of paragraph, splits with them, so
+D-062's explanation of why Google Maps is missing from the picker now
+sits under that picker instead of four settings further down.
+
+The footer text moved out of the view into `SettingsText`, because a
+string built inline in a `Section` is a string no test can see. The app
+target now asserts what the split is for: the in-app footer never
+explains the hand-off, and the Go footer never explains the map. That is
+the regression that would recreate the confusion, and it is now a
+failing test rather than a screenshot.
+
+**Rejected**: renaming the rows instead ("Map in Route Rebel", "Go
+opens") — it qualifies the labels but leaves both values reading
+"Google" in one list, which is what he was looking at; changing the
+first picker's values to "Apple's map" / "Google's map" (they come from
+`MapProvider.displayName` in the kit, which also produces "Google's
+plan", "vs. Google" and the trip-detail legend — a dozen call sites want
+the bare brand, so the picker would need a second app-side string free
+to drift from the kit's, to solve what two headers solve); merging the
+two settings into one (they are genuinely independent — the Google map
+with Route Rebel's own guidance is a real combination, and so is Apple's
+map with a Google Maps hand-off); leaving it and explaining it in the
+footer (the footer already explained it, at the bottom of four
+settings, which is where it was when it failed).
