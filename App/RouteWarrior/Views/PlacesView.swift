@@ -7,7 +7,7 @@ import SwiftUI
 struct PlacesView: View {
     @Environment(\.modelContext) private var context
     @Environment(StoreService.self) private var store
-    @Query(sort: \PlaceRecord.createdAt) private var places: [PlaceRecord]
+    @Query(sort: PlaceOrder.descriptors) private var places: [PlaceRecord]
     @State private var editingNew = false
     @State private var showPaywall = false
 
@@ -41,6 +41,22 @@ struct PlacesView: View {
                     }
                     try? context.save()
                 }
+                // D-074: the order is the driver's, and it decides which
+                // destinations fall inside the free tier's allowance, so
+                // it is written down rather than left to when each place
+                // happened to be saved.
+                .onMove { source, destination in
+                    let ordered = PlaceOrder.reordered(
+                        places.map(\.id), from: source, to: destination
+                    )
+                    let byID = Dictionary(
+                        places.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first }
+                    )
+                    for (index, id) in ordered.enumerated() {
+                        byID[id]?.sortIndex = index
+                    }
+                    try? context.save()
+                }
             }
             .overlay {
                 if places.isEmpty {
@@ -53,10 +69,19 @@ struct PlacesView: View {
             }
             .navigationTitle("Places")
             .toolbar {
-                Button {
-                    editingNew = true
-                } label: {
-                    Label("Add place", systemImage: "plus")
+                // Reordering rides iOS's own edit mode rather than a
+                // long-press drag: tapping a row opens a destination's
+                // analytics, and a list that reorders on long-press would
+                // fight that tap on every row.
+                ToolbarItem(placement: .topBarLeading) {
+                    if !places.isEmpty { EditButton() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        editingNew = true
+                    } label: {
+                        Label("Add place", systemImage: "plus")
+                    }
                 }
             }
             .sheet(isPresented: $editingNew) {
@@ -238,7 +263,12 @@ struct PlaceEditView: View {
             kind: kind,
             address: match?.address ?? ""
         )
-        context.insert(PlaceRecord(place))
+        let record = PlaceRecord(place)
+        // Last, so saving a place never reshuffles the arrangement the
+        // driver dragged into place (D-074).
+        let existing = (try? context.fetch(FetchDescriptor<PlaceRecord>()))?.map(\.sortIndex) ?? []
+        record.sortIndex = PlaceOrder.nextIndex(after: existing)
+        context.insert(record)
         try? context.save()
         dismiss()
     }

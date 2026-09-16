@@ -286,6 +286,12 @@ bank account holder and IRS records. Apple cross-checks them.
   see at all: check that answering it from the lock screen works, and
   that a destination-pick notification still works afterwards — both
   prompts now share one delegate.
+- **D-074, dragging places**: tap Edit on the Places tab and drag a place
+  to the top. It should stay there after a relaunch, the Plan tab's saved
+  places should show the same order, and — on the free tier — the lock
+  icons should move with the rows, because the allowance counts positions.
+  The half CI cannot see is CloudKit: arrange the list on one phone and
+  check the second one follows.
 - **D-071, the ladder**: CI proves the rungs behave as written; only
   Brian's own history says whether they are the right rungs. The number
   to watch is how often a recommendation actually lands at tier 1
