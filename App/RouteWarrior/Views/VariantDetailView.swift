@@ -25,12 +25,19 @@ struct VariantDetailView: View {
         Polyline.decode(variant.polylineEncoded)
     }
 
+    /// Read off the record (D-077). Building the variant to reach its
+    /// name decodes the route's shape, and this title is recomputed on
+    /// every keystroke in the field below it.
     private var title: String {
-        (try? variant.variant())?.displayName ?? "Route"
+        RouteVariant.displayName(customName: variant.customName, autoName: variant.autoName)
     }
 
     var body: some View {
-        List {
+        // Decoded once per pass (D-077). Typing in the name field
+        // re-renders this screen on every keystroke, and both sections
+        // below used to parse every drive's track again each time.
+        let drives = trips
+        return List {
             nameSection
             if let polyline {
                 Section {
@@ -43,8 +50,8 @@ struct VariantDetailView: View {
                     .listRowInsets(EdgeInsets())
                 }
             }
-            statsSection
-            intersectionsSection
+            statsSection(drives)
+            intersectionsSection(drives)
             tripsSection
         }
         .navigationTitle(title)
@@ -68,7 +75,7 @@ struct VariantDetailView: View {
         }
     }
 
-    private var statsSection: some View {
+    private func statsSection(_ trips: [Trip]) -> some View {
         Section("This route") {
             if let stats = StatsEngine.durationStats(for: trips) {
                 LabeledContent("Drives", value: "\(stats.count)")
@@ -84,13 +91,13 @@ struct VariantDetailView: View {
 
     /// The typical turns over this route's drives, from their own tracks
     /// (D-043). Nil until a drive with a shape has been recorded.
-    private var turns: TurnCount? {
+    private func typicalTurns(_ trips: [Trip]) -> TurnCount? {
         TurnCounter.typical(for: trips)
     }
 
-    private var intersectionsSection: some View {
+    private func intersectionsSection(_ trips: [Trip]) -> some View {
         Section {
-            if let turns {
+            if let turns = typicalTurns(trips) {
                 LabeledContent("Left turns") {
                     Label("\(turns.left)", systemImage: "arrow.turn.up.left")
                         .foregroundStyle(Theme.google)

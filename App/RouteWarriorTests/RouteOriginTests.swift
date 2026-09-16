@@ -39,6 +39,27 @@ final class RouteOriginTests: XCTestCase {
         XCTAssertNil(RouteOrigin.caption(of: nil, in: []))
     }
 
+    /// D-077: the Trips list reads a route's name off the record rather
+    /// than building the whole variant, which decodes its polyline. The
+    /// two must answer identically or the same route gets two names.
+    func testNamingFromColumnsMatchesNamingFromAVariant() {
+        let line = Polyline(coordinates: [
+            Coordinate(latitude: 0, longitude: 0), Coordinate(latitude: 0, longitude: 0.01),
+        ])
+        for (custom, auto) in [("the back way", "Route A"), ("", "Route A"), ("", "")] {
+            let variant = RouteVariant(
+                originPlaceID: UUID(), destinationPlaceID: UUID(),
+                representativePolyline: line, autoName: auto, customName: custom
+            )
+            XCTAssertEqual(
+                RouteVariant.displayName(customName: custom, autoName: auto),
+                variant.displayName,
+                "custom: \(custom), auto: \(auto)"
+            )
+        }
+        XCTAssertEqual(RouteVariant.displayName(customName: "", autoName: ""), "Route")
+    }
+
     /// An unnamed place is not a name. Better to say nothing than "from ".
     func testAnEmptyNameIsNotAName() {
         let blank = place("")

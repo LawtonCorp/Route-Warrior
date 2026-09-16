@@ -2046,3 +2046,79 @@ belongs to the route, so the other starting points' routes would sit
 without signal counts until the driver happened to switch to them);
 naming the control "Origin" (it is the app's word, not a driver's —
 "Drives from" says what the screen is about to count).
+## D-077 — A screen reads columns; only what it shows gets decoded (2026-09-16)
+
+Field report, after pulling D-076: "there is now a great deal of latency
+for places and some trip functions — selecting a destination from the
+place list, filtering by departure, changing the route name."
+
+Two causes, one of them mine.
+
+**The Destination screen decoded every drive, repeatedly.** A trip's
+track lives in `pointsBlob`, an `@Attribute(.externalStorage)` column:
+building a `Trip` from a `TripRecord` is file I/O plus a parse. D-076
+added `allTripsHere` — every drive that ended here, decoded — and then
+built *both* the starting-point picker and the scoped drive list on top
+of it. Reading `trips` therefore decoded the whole history twice, and
+`trips` was read by the verdict (once per provider, twice over), the
+stats, the race, the recommendation, the heatmap and the trend: a dozen
+full decodes of every drive to this place, on every pass of `body`. On a
+phone with real history that is the stall Brian saw.
+
+The fix is two rules, applied in that order:
+
+1. **Answer from the stored columns when the columns can answer.** Which
+   starting points exist, how many drives each has, whether a drive is in
+   scope, how many are left out — all of that is `originPlaceID`, a
+   `UUID?` on the row. `DestinationScope.origins(countingOriginsOf:)` and
+   `admits(originPlaceID:in:)` take the column; `origins(for:)` and
+   `trips(_:in:)` now call straight through to them, so the cheap path
+   and the readable one are the same rule and cannot drift.
+2. **Narrow before decoding, then decode once.** The screen filters the
+   records by destination and by scope, and only then builds kit values —
+   a drive outside the scope never has its track read at all. `body`
+   decodes that scoped set once and hands it to each section, so what was
+   a dozen passes over the history is one.
+
+**The rename screen decoded every drive on the route, per keystroke.**
+`VariantDetailView` holds the name field, and the field's draft is
+`@State`: every character re-renders the screen. Its stats section and
+its turn counts each read `trips`, which decoded every drive matched to
+this route — twice per keystroke — and its navigation title built the
+whole variant, decoding the route's polyline, to read a name that is two
+string columns. Same two rules: the title reads the columns, and `body`
+decodes the drives once and hands them to both sections.
+
+**The Trips list decoded a polyline to print a name.** This one predates
+D-076 — it shipped with D-067. `routeName(_:)` found the variant by a
+linear scan, then called `record.variant()`, which decodes the stored
+polyline, to read `displayName` — which is `customName` else `autoName`,
+two plain string columns. Per row, per render, and the list re-renders
+every row on every filter and sort change, which is exactly "filtering by
+departure". Now `RouteVariant.displayName(customName:autoName:)` is the
+same rule as the instance property, callable without a variant, and the
+list builds a name-by-id dictionary once per pass instead of scanning per
+row. Place names got the same treatment.
+
+**What is machine-checked and what is not.** CI checks that the cheap
+paths answer identically to the ones they replace: counting starting
+points from columns equals counting them from drives, admitting from a
+column equals filtering decoded drives, and naming from columns equals
+naming from a whole variant. That is the correctness half. The *speed*
+half is unmeasured here — no benchmark runs on this hardware, and the
+claim "the screen decodes the history once instead of a dozen times" is
+read off the call graph, not timed. Whether the stall is gone is Brian's
+phone to say.
+
+**Rejected**: caching decoded trips in `@State` keyed by scope (it makes
+a screen hold a copy of the database and invites the stale-cache class of
+bug — a new drive not appearing — to fix a problem that goes away by
+simply not decoding what is not shown); giving `TripRecord` a lightweight
+"header" decode that skips the points (the points are the only reason to
+decode at all, so the honest version of that is not decoding, which is
+what this does); dropping the turn counts and the heatmap so nothing
+needs the track (a real speed-up, paid for by deleting features the
+screen exists for); leaving the Trips list alone because its defect is
+older than the complaint (it is one of the three things he named, and
+"pre-existing" is not a reason a list should read a route's shape off
+disk to print one word).

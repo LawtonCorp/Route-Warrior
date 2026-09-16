@@ -68,6 +68,13 @@ public struct RouteVariant: Sendable, Equatable, Codable, Identifiable {
     /// What to call this route on screen: the driver's name for it, then
     /// the generated one, then a plain fallback.
     public var displayName: String {
+        Self.displayName(customName: customName, autoName: autoName)
+    }
+
+    /// The same rule, for callers holding the two names without a whole
+    /// variant (D-077). A list that only needs a route's name should not
+    /// have to decode its polyline to read one.
+    public static func displayName(customName: String, autoName: String) -> String {
         for candidate in [customName, autoName] where !candidate.isEmpty {
             return candidate
         }

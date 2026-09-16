@@ -129,6 +129,39 @@ final class DestinationScopeTests: XCTestCase {
         XCTAssertTrue(fromWork.allSatisfy { $0.originPlaceID == work })
     }
 
+    // MARK: The cheap paths answer the same way (D-077)
+
+    /// The screen builds its picker from stored columns rather than
+    /// decoded drives. The two entry points must not drift: a starting
+    /// point counted from `originPlaceID` is the same starting point.
+    func testCountingFromColumnsMatchesCountingFromDrives() {
+        let work = UUID(), gym = UUID()
+        let places = [place("Work", id: work), place("The gym", id: gym)]
+        let trips = [trip(from: work), trip(from: gym), trip(from: work), trip(from: nil)]
+
+        let fromDrives = DestinationScope.origins(for: trips, places: places)
+        let fromColumns = DestinationScope.origins(
+            countingOriginsOf: trips.map(\.originPlaceID), places: places
+        )
+        XCTAssertEqual(fromDrives, fromColumns)
+        XCTAssertEqual(fromColumns.map(\.drives), [2, 1])
+    }
+
+    /// Narrowing before decoding must keep exactly the drives that
+    /// filtering after decoding would have kept.
+    func testAdmittingFromAColumnMatchesFilteringTheDrives() {
+        let work = UUID(), gym = UUID()
+        let trips = [trip(from: work), trip(from: gym), trip(from: nil)]
+
+        for selection in [DestinationScope.Selection.all, .origin(work), .origin(gym)] {
+            let byRule = DestinationScope.trips(trips, in: selection)
+            let byColumn = trips.filter {
+                DestinationScope.admits(originPlaceID: $0.originPlaceID, in: selection)
+            }
+            XCTAssertEqual(byRule.count, byColumn.count, "\(selection)")
+        }
+    }
+
     // MARK: The words
 
     func testTheFooterSaysWhatIsCountedAndWhatIsLeftOut() {
