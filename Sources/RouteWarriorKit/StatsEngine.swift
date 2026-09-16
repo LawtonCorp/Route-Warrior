@@ -10,6 +10,16 @@ public enum StatsEngine {
         public var median: TimeInterval
         public var best: TimeInterval
         public var worst: TimeInterval
+
+        /// Public so a screen's own tests can stage a race without a
+        /// history to compute it from (D-065).
+        public init(count: Int, mean: TimeInterval, median: TimeInterval, best: TimeInterval, worst: TimeInterval) {
+            self.count = count
+            self.mean = mean
+            self.median = median
+            self.best = best
+            self.worst = worst
+        }
     }
 
     /// (weekday 1...7 Sunday-first, 4-hour bucket 0...5) — the axis of the
@@ -55,9 +65,16 @@ public enum StatsEngine {
     }
 
     public static func cell(for trip: Trip) -> Cell {
+        cell(at: trip.startedAt, timezoneID: trip.timezoneID)
+    }
+
+    /// The cell a moment falls in, in a named time zone. `RouteRecommender`
+    /// buckets "now" with this so it lands in the same cell a trip
+    /// started at that moment would.
+    public static func cell(at date: Date, timezoneID: String) -> Cell {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: trip.timezoneID) ?? .init(secondsFromGMT: 0)!
-        let components = calendar.dateComponents([.weekday, .hour], from: trip.startedAt)
+        calendar.timeZone = TimeZone(identifier: timezoneID) ?? .init(secondsFromGMT: 0)!
+        let components = calendar.dateComponents([.weekday, .hour], from: date)
         return Cell(weekday: components.weekday ?? 1, bucket: (components.hour ?? 0) / 4)
     }
 

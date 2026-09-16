@@ -70,6 +70,12 @@ public enum RouteRaceEngine {
         public var routes: [Route]
         public var outcome: Outcome
 
+        /// Public so a screen's own tests can stage an outcome (D-065).
+        public init(routes: [Route], outcome: Outcome) {
+            self.routes = routes
+            self.outcome = outcome
+        }
+
         public var fastest: Route? { routes.first }
         public var runnerUp: Route? { routes.count > 1 ? routes[1] : nil }
     }
