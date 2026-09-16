@@ -1777,3 +1777,77 @@ single scalar plus per-tier offsets (the same four numbers with
 arithmetic in front of them); rewriting D-070 or D-065 (both record what
 was decided on the day — the spec carries a dated note pointing here,
 and D-070's "thing to watch" is precisely why this decision exists).
+
+## D-072 — A pause that goes quiet is asked about, then stopped (2026-09-16)
+
+D-069 gave a pause no end. A drive paused and forgotten stays open for
+days, holding the GPS on (D-069 keeps it on deliberately) and leaving a
+drive that will eventually be finalised by something else entirely.
+Brian asked for two things: a "Still there?" at twelve minutes, and a
+setting — *pauses become a stop after X minutes* — defaulting to twenty.
+
+**Chosen**: both, with the two thresholds tied to each other rather than
+hard-coded separately. `PauseWatch` (kit, pure) takes the driver's limit
+and answers `.waiting`, `.shouldAsk` or `.shouldStop` for a given number
+of paused seconds. The question is due at `min(12 minutes, 60% of the
+limit)`, which at the default limit is exactly the twelve Brian asked
+for — sixty per cent of twenty minutes — and which scales the question
+down with a shorter limit instead of asking after the drive has already
+stopped itself. A test walks every limit the picker offers and asserts
+the question never comes after the stop, because that is the one
+ordering that would make the feature nonsense.
+
+**Stopping is not losing.** D-069 already established that a pause the
+driver never resumed is trailing time, like the parking the recorder
+trims: the trip ends where the pause began. So the timeout finalises and
+*saves* the drive, ending at the pause, with nothing driven lost. The
+wording says so in both places, because "it stops itself" reads like a
+threat otherwise.
+
+**"Still here" buys a fresh lease, not a dismissal.** The countdown
+restarts from the answer, so the next question comes a full interval
+later and the stop moves with it. That countdown is kept on the pipeline
+and deliberately apart from the recorder's own paused total, which is
+the drive's *measurement* — a driver answering a question must not be
+able to change what the drive is judged against. Dismissing the box
+without answering renews nothing, so the drive still stops on time.
+
+**What runs the clock.** Paused samples still arrive, because D-069
+leaves the GPS on, and the recorder drops them — but they are the only
+clock that runs with the app off screen, so the deadline is read off
+them. On screen a parked phone can be still enough to produce no samples
+at all, so the root view also ticks every fifteen seconds. A `.task`
+loop rather than a `Timer` publisher: the publisher would be a stored
+property of a struct SwiftUI re-creates, so every re-render would
+resubscribe and restart the countdown, and the tick might never fire.
+
+**One notification delegate.** `UNUserNotificationCenter` has a single
+delegate slot, and `DestinationPromptService` already owned it. A second
+service setting it would have silently stolen the destination picks —
+invisible to CI, and exactly the class of defect CLAUDE.md warns about.
+So it became `PromptService`, the app's one notification surface, owning
+both prompts. `setNotificationCategories` replaces the whole set rather
+than adding to it, so every registration carries both categories and the
+service remembers the places last offered; posting the pause question
+cannot strip the actions off a destination notification already on the
+lock screen.
+
+The alert lives on `ContentView` rather than on the Plan tab and the
+drive view, which are both on screen at once when the drive view is up —
+two alerts for one question.
+
+**Rejected**: a fixed twelve minutes independent of the limit (a driver
+who sets five minutes would be asked seven minutes after the drive had
+already stopped); asking repeatedly while the pause runs (the answer
+renews the lease, so a second question inside it is the app not
+listening); a "Never" option on the limit (it is the one setting that
+would let a forgotten pause hold the GPS on indefinitely — the top rung
+is sixty minutes, which covers a meal, and the drive is saved rather
+than lost when it fires); auto-resuming instead of stopping when motion
+returns (D-069 rejected auto-resume, and the driver who is moving again
+can press play); putting the countdown on `TripRecorder` beside the
+paused total (the recorder's job is the drive's measurement, and a UI
+nag timer that shares state with it is one refactor away from a "Still
+here" tap changing a verdict); a second `UNUserNotificationCenterDelegate`
+(see above — it would have worked in every test and broken the feature
+on a phone).

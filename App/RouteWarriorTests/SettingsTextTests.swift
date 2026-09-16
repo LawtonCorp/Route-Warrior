@@ -59,6 +59,25 @@ final class SettingsTextTests: XCTestCase {
         XCTAssertFalse(present.contains("not on this phone"))
     }
 
+    /// D-072: the Recording footer names the driver's own limit, and
+    /// says the drive is saved rather than lost — "it stops itself"
+    /// reads like losing the drive when it is the opposite.
+    func testThePauseFooterNamesTheLimitAndSaysTheDriveIsKept() {
+        let twenty = PauseText.settingsFooter(limitMinutes: 20)
+        XCTAssertTrue(twenty.contains("20 minutes"))
+        XCTAssertTrue(twenty.contains("saved"))
+        XCTAssertTrue(twenty.contains("nothing you drove is lost"))
+        XCTAssertTrue(PauseText.settingsFooter(limitMinutes: 45).contains("45 minutes"))
+    }
+
+    func testTheQuestionNamesTheSameLimit() {
+        XCTAssertEqual(PauseText.title, "Still there?")
+        XCTAssertTrue(PauseText.body(limitMinutes: 30).contains("30 minutes"))
+        XCTAssertTrue(PauseText.body(limitMinutes: 30).contains("ending where you paused"))
+        XCTAssertEqual(PauseText.limitValue(20), "20 minutes")
+        XCTAssertEqual(PauseText.limitValue(1), "1 minute")
+    }
+
     func testTheHeadersSayWhereEachSettingActs() {
         XCTAssertEqual(SettingsText.inAppHeader, "In Route Rebel")
         XCTAssertEqual(SettingsText.goHeader, "When you tap Go")

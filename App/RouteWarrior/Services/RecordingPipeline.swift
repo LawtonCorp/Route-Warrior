@@ -64,6 +64,13 @@ final class RecordingPipeline {
     /// Whether to end a planned drive on arrival (D-038), read per sample
     /// so a Settings change applies to the drive in progress.
     private let arrivalStop: @MainActor () -> Bool
+    /// The driver's "pause becomes a stop after" setting (D-072).
+    private let pauseWatch: @MainActor () -> PauseWatch.Config
+    /// When the current pause's countdown began — the pause itself, or
+    /// the last "Still here". Deliberately apart from the recorder's own
+    /// paused total, which is the drive's measurement and must never be
+    /// reset by a driver answering a question.
+    private var pauseCountdownFrom: Date?
     private var arrivalDetector = ArrivalDetector()
     private var samplesThisSegment = 0
     /// D-045: a manual Record has no plan, so it predicts its destination
@@ -75,6 +82,13 @@ final class RecordingPipeline {
     /// the confidence bar. The app answers with a one-tap picker
     /// (notification); the pick calls `requestSnapshot(to:)`.
     var onDestinationUnknown: (@MainActor ([Place]) -> Void)?
+    /// Ask, out of the app, whether the drive is still going (D-072).
+    /// The Int is the limit in minutes, for the wording.
+    var onPauseStillThere: (@MainActor (Int) -> Void)?
+    /// The question is over — withdraw it wherever it was asked.
+    var onPauseAnswered: (@MainActor () -> Void)?
+    /// True while "Still there?" is waiting for an answer in the app.
+    private(set) var pauseNeedsAnswer = false
 
     init(
         context: ModelContext,
@@ -83,6 +97,7 @@ final class RecordingPipeline {
         providers: [PlanSnapshot.Provider: any RoutesProviding] = [:],
         preference: @escaping @MainActor () -> MapProvider = { MapProvider.default },
         arrivalStop: @escaping @MainActor () -> Bool = { false },
+        pauseWatch: @escaping @MainActor () -> PauseWatch.Config = { PauseWatch.Config() },
         tier: @escaping @MainActor () -> TierPolicy.Tier = { .pro },
         policy: TierPolicy = TierPolicy(),
         logStorage: UserDefaults? = nil
@@ -99,6 +114,7 @@ final class RecordingPipeline {
         self.providers = all
         self.preference = preference
         self.arrivalStop = arrivalStop
+        self.pauseWatch = pauseWatch
         self.logStorage = logStorage
         self.recorder = TripRecorder(timezoneID: timezoneID)
         self.log = Self.loadLog(from: logStorage)
@@ -167,6 +183,14 @@ final class RecordingPipeline {
             handle(recorder.stopRecording(at: point.timestamp))
             return
         }
+        if recorder.isPaused {
+            // Samples still arrive while paused (the GPS stays on,
+            // D-069) and the recorder drops them — but they are the only
+            // clock that runs with the app off screen, so the pause
+            // deadline is read off them (D-072).
+            checkPause(at: point.timestamp)
+            return
+        }
         handle(recorder.ingest(location: point))
         if predictOnFirstSample, recorder.state == .recording, let first = recorder.liveTrack.first {
             predictOnFirstSample = false
@@ -195,7 +219,7 @@ final class RecordingPipeline {
         if recorder.state == .paused {
             // Go on a paused drive continues it. Starting again would
             // throw away the track already driven (D-069).
-            resumeRecording()
+            resumeRecording(at: .now)
         } else if recorder.state != .recording {
             recorder.startManualRecording(at: .now)
             recorderState = recorder.state
@@ -234,28 +258,82 @@ final class RecordingPipeline {
         note("\(snapshots.count) plan(s) arrived after departure and became the baseline")
     }
 
-    func stopManualRecording() {
-        handle(recorder.stopRecording(at: .now))
+    func stopManualRecording(at date: Date = .now) {
+        endPauseWatch()
+        handle(recorder.stopRecording(at: date))
     }
 
     /// Pause button (D-069). The drive stays open and the clock stops;
     /// no sample is kept and nothing can end the drive until the driver
     /// says so.
-    func pauseRecording() {
-        guard recorder.pauseRecording(at: .now) else { return }
+    func pauseRecording(at date: Date = .now) {
+        guard recorder.pauseRecording(at: date) else { return }
         recorderState = recorder.state
+        pauseCountdownFrom = date
+        pauseNeedsAnswer = false
         lastOutcome = "Paused"
         note("Recording paused — the clock and the track stop until you resume")
     }
 
     /// Play button. The same drive continues; the paused seconds are
     /// excluded from it.
-    func resumeRecording() {
-        let excluded = recorder.pausedSeconds(at: .now)
-        guard recorder.resumeRecording(at: .now) else { return }
+    func resumeRecording(at date: Date = .now) {
+        let excluded = recorder.pausedSeconds(at: date)
+        guard recorder.resumeRecording(at: date) else { return }
         recorderState = recorder.state
+        endPauseWatch()
         lastOutcome = "Recording"
         note("Recording resumed — \(Format.duration(excluded)) excluded from this drive so far")
+    }
+
+    /// How long a paused drive may sit before it asks, and before it
+    /// stops itself (D-072). Called from every arriving sample — which is
+    /// what keeps it running with the screen off — and from a timer while
+    /// the app is on screen and the phone too still to produce one.
+    func checkPause(at date: Date = .now) {
+        guard isPaused, let from = pauseCountdownFrom else { return }
+        let config = pauseWatch()
+        switch PauseWatch.state(pausedFor: date.timeIntervalSince(from), config: config) {
+        case .waiting:
+            break
+        case .shouldAsk:
+            // Asked once per lease, not once per sample.
+            guard !pauseNeedsAnswer else { return }
+            pauseNeedsAnswer = true
+            note("Paused \(Format.duration(config.askAfter)) — asking whether the drive is still going")
+            onPauseStillThere?(Int((config.limit / 60).rounded()))
+        case .shouldStop:
+            // Nothing driven is lost: a pause that was never resumed is
+            // trailing time (D-069), so the trip ends where it paused.
+            note("Paused \(Format.duration(config.limit)) with no answer — the drive was stopped and saved, ending where you paused")
+            endPauseWatch()
+            handle(recorder.stopRecording(at: date))
+        }
+    }
+
+    /// "Still here" — the pause gets a fresh lease rather than ending.
+    /// The drive's own paused total keeps running; this only defers the
+    /// stop and the next question.
+    func keepPaused(at date: Date = .now) {
+        guard isPaused else { return }
+        pauseCountdownFrom = date
+        pauseNeedsAnswer = false
+        onPauseAnswered?()
+        note("Still there — the pause continues")
+    }
+
+    /// The question was dismissed without an answer. The lease is not
+    /// renewed, so the drive still stops itself on time.
+    func dismissPauseQuestion() {
+        pauseNeedsAnswer = false
+        onPauseAnswered?()
+    }
+
+    private func endPauseWatch() {
+        pauseCountdownFrom = nil
+        guard pauseNeedsAnswer else { return }
+        pauseNeedsAnswer = false
+        onPauseAnswered?()
     }
 
     // MARK: Plans on demand (FR-20 preview, FR-22 reroute)

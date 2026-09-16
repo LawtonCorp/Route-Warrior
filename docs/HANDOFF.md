@@ -277,6 +277,15 @@ bank account holder and IRS records. Apple cross-checks them.
 - **D-069, the screen**: "Paused" over the map on both surfaces, the play
   button where pause was, and Stop still reachable — on the Plan tab's
   recorder row and on the drive view.
+- **D-072, the pause timeout**: pause a drive and leave the phone alone.
+  At twelve minutes "Still there?" should arrive — as an alert if the app
+  is open, as a notification with "Still here" / "End the drive" if it is
+  not. Tap "Still here" and the drive should survive past twenty minutes;
+  ignore it and the drive should stop itself at twenty and be *saved*,
+  ending where you paused. The notification half is the part CI cannot
+  see at all: check that answering it from the lock screen works, and
+  that a destination-pick notification still works afterwards — both
+  prompts now share one delegate.
 - **D-071, the ladder**: CI proves the rungs behave as written; only
   Brian's own history says whether they are the right rungs. The number
   to watch is how often a recommendation actually lands at tier 1
