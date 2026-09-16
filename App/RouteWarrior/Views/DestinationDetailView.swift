@@ -25,14 +25,40 @@ struct DestinationDetailView: View {
     /// this is a lookup by id, not a list.
     @Query private var allPlaces: [PlaceRecord]
 
-    private var trips: [Trip] {
+    /// Which starting point the screen is answering for (D-076). Nil
+    /// until the driver picks, so the default follows the data rather
+    /// than being frozen at whatever it was when the screen opened.
+    @State private var picked: DestinationScope.Selection?
+
+    /// Every drive that ended here, before scoping — what the picker is
+    /// built from and what `.all` shows.
+    private var allTripsHere: [Trip] {
         allTrips
             .filter { $0.destinationPlaceID == place.id }
             .compactMap { try? $0.trip() }
     }
 
+    private var origins: [DestinationScope.Origin] {
+        DestinationScope.origins(for: allTripsHere, places: allPlaces)
+    }
+
+    private var scope: DestinationScope.Selection {
+        DestinationScope.resolved(
+            picked ?? DestinationScope.defaultSelection(for: origins), in: origins
+        )
+    }
+
+    /// Everything below reads these two, so scoping them scopes the
+    /// verdict, the stats, the race, the recommendation, the heatmap and
+    /// the trend in one place.
+    private var trips: [Trip] {
+        DestinationScope.trips(allTripsHere, in: scope)
+    }
+
     private var variants: [VariantRecord] {
-        allVariants.filter { $0.destinationPlaceID == place.id }
+        let here = allVariants.filter { $0.destinationPlaceID == place.id }
+        guard case let .origin(id) = scope else { return here }
+        return here.filter { $0.originPlaceID == id }
     }
 
     private var snapshotsByID: [UUID: PlanSnapshot] {
@@ -46,6 +72,7 @@ struct DestinationDetailView: View {
 
     var body: some View {
         List {
+            scopeSection
             verdictSection
             statsSection
             variantsSection
@@ -55,9 +82,52 @@ struct DestinationDetailView: View {
         .navigationTitle(place.name)
         .sheet(isPresented: $showPaywall) { PaywallView() }
         .task {
-            for variant in variants {
+            // Every route here, not just the scoped ones (D-076): the
+            // inventory belongs to the route, and scoping the fetch would
+            // leave the other starting points' routes without counts
+            // until the driver happened to switch to them.
+            for variant in allVariants where variant.destinationPlaceID == place.id {
                 await overpass.service.fetchInventoryIfMissing(for: variant, context: context)
             }
+        }
+    }
+
+    // MARK: Which starting point (D-076)
+
+    /// Only when there is a choice to make: most destinations are driven
+    /// to from one place, and a picker with one option is furniture.
+    @ViewBuilder
+    private var scopeSection: some View {
+        if DestinationScope.showsPicker(for: origins) {
+            Section {
+                Picker(selection: Binding(
+                    get: { scope },
+                    set: { picked = $0 }
+                )) {
+                    ForEach(origins) { origin in
+                        Text("\(origin.name) · \(origin.drives) drive\(origin.drives == 1 ? "" : "s")")
+                            .tag(DestinationScope.Selection.origin(origin.id))
+                    }
+                    Text(DestinationScope.allLabel).tag(DestinationScope.Selection.all)
+                } label: {
+                    settingsStyleLabel
+                }
+                .pickerStyle(.menu)
+            } footer: {
+                Text(DestinationScopeText.footer(
+                    scope: scope,
+                    destination: place.name,
+                    unscopedDrives: allTripsHere.count - trips.count
+                ))
+            }
+        }
+    }
+
+    private var settingsStyleLabel: some View {
+        Label {
+            Text("Drives from")
+        } icon: {
+            IconTile(symbol: "point.topleft.down.to.point.bottomright.curvepath.fill", color: Theme.route)
         }
     }
 
@@ -145,7 +215,7 @@ struct DestinationDetailView: View {
     // MARK: Overall stats
 
     private var statsSection: some View {
-        Section("All trips here") {
+        Section(scope.comparesRoutes ? "Trips from \(DestinationScope.label(for: scope, in: origins))" : "All trips here") {
             if let stats = StatsEngine.durationStats(for: trips) {
                 LabeledContent("Trips", value: "\(stats.count)")
                 LabeledContent("Median", value: Format.duration(stats.median))
@@ -168,7 +238,7 @@ struct DestinationDetailView: View {
     }
 
     /// "Which of my own ways here is faster?" — answered from this
-    /// destination's history (D-029).
+    /// destination's history (D-029), from one starting point (D-076).
     private var race: RouteRaceEngine.Race {
         RouteRaceEngine.race(variants: kitVariants, trips: trips)
     }
@@ -197,9 +267,18 @@ struct DestinationDetailView: View {
                 routesMap(race)
             }
             if !deepLocked {
-                headToHead(race)
-                if let line = RecommendationLine.text(for: recommendation) {
-                    Label(line, systemImage: "clock")
+                // Only within one starting point (D-076). Routes from
+                // different places are different journeys, so ranking
+                // them would produce a winner that means nothing.
+                if scope.comparesRoutes {
+                    headToHead(race)
+                    if let line = RecommendationLine.text(for: recommendation) {
+                        Label(line, systemImage: "clock")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if race.routes.count >= 2 {
+                    Label(DestinationScopeText.noRaceAcrossOrigins, systemImage: "arrow.triangle.branch")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -221,8 +300,7 @@ struct DestinationDetailView: View {
             Text("Your routes")
         } footer: {
             if race.routes.count >= 2, !deepLocked {
-                Text("Each route is coloured to match its line on the map. Tap one to name it and see its drives. "
-                    + "Every route here ends at \(place.name), but they do not all start in the same place — each says where it began.")
+                Text(DestinationScopeText.routesFooter(scope: scope, destination: place.name))
             }
         }
     }

@@ -1978,3 +1978,71 @@ rows, so burying it below the signals and stop signs is backwards);
 "Work → Home" as the whole title (the driver's own name for a route,
 when they give it one, is the title, and D-030's naming should not be
 crowded out by a journey description).
+
+## D-076 — The Destination screen answers for one starting point (2026-09-16)
+
+D-075 made the route rows say where they started. This fixes what the
+rows were a symptom of.
+
+Every number on that screen was computed from every drive that *ended*
+there, from anywhere. A drive home from the corner shop and a drive home
+from across town are different journeys, so:
+
+- the head-to-head ranked them by median and would have called the short
+  one the driver's fastest route home;
+- the "usually fastest right now" line would have said the same thing
+  more confidently;
+- the weekday × time heatmap averaged them together — Brian's screenshot
+  shows a 61-minute Saturday cell that is one long drive from far away
+  sitting beside six-minute hops;
+- "All trips here" reported a median across journeys of different
+  lengths.
+
+Only the three-drives-per-route floor kept a wrong verdict off the
+screen, and only because his history is still thin. It would have spoken
+as the drives accumulated.
+
+**Chosen: a scope control at the top, and everything below answers for
+it.** "Drives from: Work", defaulting to the starting point with the most
+drives — the journey the driver came to look at — with "All starting
+points" available. Scoping `trips` and `variants` in one place scopes the
+verdict, the stats, the race, the recommendation, the heatmap and the
+trend together, so no card can be left pooled by accident.
+
+**What `.all` may and may not claim.** It shows the rows, the totals and
+the heatmap, and it suppresses the head-to-head and the recommendation,
+replacing them with the reason: these routes start in different places,
+pick one to see which is faster. A mode that cannot compare should not
+compare, and it should say why rather than going quietly blank.
+
+**The picker only appears when there is a choice.** Most destinations are
+driven to from one place; there, the screen is exactly what it was, and
+`defaultSelection` is `.all` because a single starting point needs no
+scoping.
+
+Two details the tests pin. Drives that began somewhere not saved as a
+Place belong to no starting point: they are counted under `.all` and
+nowhere else, and the scoped footer says how many are being left out
+rather than quietly dropping them. And a scope the data can no longer
+honour — an origin whose place was deleted — falls back to `.all`
+instead of showing an empty screen, which is D-062's rule about stored
+choices, applied again.
+
+**The provider verdict was never broken and is scoped anyway.** Each
+comparison there is self-contained — this drive against the plan *for
+this drive* — so the median of those deltas meant something even pooled.
+Scoping it is an improvement rather than a fix: "your route beats
+Google's plan by 3:20 on the run home from work" is a sharper sentence
+than the same number across every journey home.
+
+**Rejected**: a section per starting point (everything visible at once,
+but the heatmap and the trend do not section — they would either stay
+pooled and keep lying, or be repeated per origin and make the screen
+enormous; the scope control fixes them for the price of a mode);
+defaulting to `.all` (it is the pooled view that caused this, so opening
+on it would leave the defect as the default and add only an escape
+hatch); scoping the OSM inventory fetch with the view (the inventory
+belongs to the route, so the other starting points' routes would sit
+without signal counts until the driver happened to switch to them);
+naming the control "Origin" (it is the app's word, not a driver's —
+"Drives from" says what the screen is about to count).
