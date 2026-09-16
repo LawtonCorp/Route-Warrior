@@ -119,9 +119,11 @@ final class PlanListTests: XCTestCase {
         Coordinate(latitude: 0, longitude: 0), Coordinate(latitude: 0, longitude: 0.02),
     ])
 
-    private func snapshot(alternates: [TimeInterval]) -> PlanSnapshot {
+    private func snapshot(
+        alternates: [TimeInterval], provider: PlanSnapshot.Provider = .googleRoutes
+    ) -> PlanSnapshot {
         var plan = PlanSnapshot(
-            provider: .googleRoutes, requestedAt: Date(timeIntervalSince1970: 1_700_000_000),
+            provider: provider, requestedAt: Date(timeIntervalSince1970: 1_700_000_000),
             polyline: line, distanceM: 2_224, staticDuration: 600, trafficDuration: 600
         )
         plan.alternates = alternates.map {
@@ -140,9 +142,16 @@ final class PlanListTests: XCTestCase {
     func testTheProviderRowsAreItsOrderWithItsOwnNumbers() {
         let rows = PlanList.rows(snapshot(alternates: [400, 800]))
         XCTAssertEqual(rows.map(\.id), [.route(0), .route(1), .route(2)])
-        XCTAssertEqual(rows.map(\.title), ["Google's plan", "Alternate 1", "Alternate 2"])
+        XCTAssertEqual(rows.map(\.title), ["Google's plan", "Google Alt 1", "Google Alt 2"])
         XCTAssertEqual(rows.map(\.eta), [600, 400, 800])
         XCTAssertTrue(rows.allSatisfy { !$0.isPersonal && $0.caption == nil })
+    }
+
+    /// D-073: an alternate is named for whoever proposed it, so the rows
+    /// cannot say Google on a screen whose plan row says Apple.
+    func testAlternatesAreNamedForTheProviderThatProposedThem() {
+        let apple = PlanList.rows(snapshot(alternates: [400], provider: .appleMaps))
+        XCTAssertEqual(apple.map(\.title), ["Apple's plan", "Apple Alt 1"])
     }
 
     func testAPlanWithNoAlternatesIsStillOneRow() {
