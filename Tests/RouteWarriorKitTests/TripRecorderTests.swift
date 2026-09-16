@@ -407,7 +407,11 @@ struct TripRecorderTests {
         #expect(trip.duration == 598)
         // 299 one-second hops at 15 m/s on each side of the pause.
         #expect(abs(trip.distanceM - 2 * 299 * 15) < 2 * 299 * 15 * 0.01)
-        #expect(abs(trip.movingTime - 598) < 1)
+        // Exactly one pair of samples is dropped — the one the pause sits
+        // in. Dropping the pair that *ends* where the pause begins as
+        // well would lose the last second driven before it, and 597 here
+        // is what that bug looks like.
+        #expect(trip.movingTime == 598)
     }
 
     /// The pause is longer than `gapSplitDuration`, which is what ends a
@@ -434,9 +438,10 @@ struct TripRecorderTests {
             return
         }
         // Two driven stretches only: the 2 km jump across the pause adds
-        // neither distance nor moving time.
+        // neither distance nor moving time — and nothing either side of
+        // it is lost with it.
         #expect(abs(trip.distanceM - 2 * 299 * 15) < 2 * 299 * 15 * 0.01)
-        #expect(abs(trip.movingTime - 598) < 1)
+        #expect(trip.movingTime == 598)
     }
 
     @Test func nothingReachesAPausedRecorder() {

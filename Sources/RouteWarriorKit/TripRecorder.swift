@@ -142,8 +142,15 @@ public struct TripRecorder: Sendable {
         /// True when this pause sits between two consecutive samples —
         /// the pair that must contribute no distance and no moving time,
         /// because whatever happened in it is not part of the drive.
+        ///
+        /// `to` is exclusive on purpose. A pause almost always begins at
+        /// the instant of the last sample before it, and an inclusive
+        /// upper bound matched *two* adjacent pairs: the one ending at
+        /// that sample as well as the one beginning there. That threw
+        /// away the last second and the last few metres the driver
+        /// genuinely drove before pausing.
         func spans(from: Date, to: Date) -> Bool {
-            startedAt >= from && startedAt <= to
+            startedAt >= from && startedAt < to
         }
     }
 
