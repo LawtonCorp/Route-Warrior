@@ -131,7 +131,7 @@ provider's, when there are any:
 ○ Your way — the back way      20:05   6.7 mi
     no clear winner on weekday mornings · 4 drives
 ○ Google's plan                19:36   7 mi
-○ Alternate 1                  19:19   6.7 mi
+○ Google Alt 1                 19:19   6.7 mi
 ```
 
 - The time on a personal row is the **median at the answering tier**,
