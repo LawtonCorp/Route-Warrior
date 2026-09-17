@@ -318,3 +318,14 @@ bank account holder and IRS records. Apple cross-checks them.
   timed. Renaming is the sharpest of the three to judge: it used to
   decode every drive on the route twice per keystroke, so if typing is
   still not smooth, the remaining cost is elsewhere and worth saying so.
+- **D-078, the launch that matters**: the test CI cannot run. Open the
+  app once (so iOS has a fresh launch), then leave it alone for several
+  hours — long enough that iOS reclaims it — and drive somewhere without
+  opening it first. The drive should record. Afterwards, Settings →
+  Recorder log should show "App launched (woken by a location change)"
+  rather than nothing at all, and "Location update while idle" lines
+  during the quiet stretch. If the log still goes silent for an hour
+  while the phone is moving, the background relaunch itself is not
+  happening — and the next suspect is whether the app was force-quit from
+  the app switcher, which stops iOS relaunching it until it is opened by
+  hand.

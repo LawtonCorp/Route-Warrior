@@ -19,6 +19,11 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     private(set) var alwaysRequested = UserDefaults.standard.bool(forKey: "alwaysLocationRequested")
     private static let alwaysRequestedKey = "alwaysLocationRequested"
     private var motionUpdatesActive = false
+    /// One "App launched" line per process, whichever caller gets here
+    /// first (D-078).
+    private var hasStarted = false
+    /// When an idle location update was last written to the log.
+    private var lastIdleWakeLoggedAt: Date?
     /// The most recent fix from any source — centres the New Place map at
     /// city scale instead of the whole country (D-021).
     private(set) var lastKnownCoordinate: Coordinate? {
@@ -46,8 +51,16 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         authorizationStatus = manager.authorizationStatus
     }
 
-    func start() {
-        pipeline.note("App launched — location: \(Self.label(authorizationStatus)); motion: \(Self.label(motionAuthorization))")
+    /// Begin listening. Called from the launch itself — including the
+    /// background relaunch iOS makes for a location event, which builds
+    /// no window (D-078) — and again when the UI first appears. Safe
+    /// either way: the starts below are idempotent and the log line is
+    /// written once.
+    func start(reason: LaunchReason = .foreground) {
+        if !hasStarted {
+            hasStarted = true
+            pipeline.note("App launched (\(reason.logLabel)) — location: \(Self.label(authorizationStatus)); motion: \(Self.label(motionAuthorization))")
+        }
         manager.startMonitoringSignificantLocationChanges()
         // FR-18: the Motion prompt waits for onboarding to explain it; the
         // onboarding flow calls `enableMotionDetection()` when it finishes.
@@ -86,9 +99,23 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     // MARK: Sample forwarding
 
     func forward(location point: TrackPoint) {
+        noteIdleWake(at: point.timestamp)
         pipeline.ingest(location: point)
         syncGhostRace()
         syncPowerMode()
+    }
+
+    /// A location update that arrives while nothing is recording writes
+    /// nothing else to the log, so an hour in which no drive was detected
+    /// and an hour in which the app was not running at all read the same:
+    /// silence (D-078). One line every ten minutes tells them apart, and
+    /// the forty the log keeps still cover a drive.
+    private func noteIdleWake(at time: Date) {
+        guard pipeline.recorderState == .idle,
+              WakeLog.shouldLog(at: time, lastLoggedAt: lastIdleWakeLoggedAt)
+        else { return }
+        lastIdleWakeLoggedAt = time
+        pipeline.note("Location update while idle — listening for a drive")
     }
 
     /// The ghost race rides the recording lifecycle: begin on the first
