@@ -7,6 +7,9 @@ import UIKit
 
 @main
 struct RouteWarriorApp: App {
+    /// The launch hook auto-recording depends on (D-078). A background
+    /// relaunch builds no window, so the root view's `.task` is not one.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     private let container: ModelContainer
     @State private var pipeline: RecordingPipeline
     @State private var locationService: LocationService
@@ -75,10 +78,8 @@ struct RouteWarriorApp: App {
             tierProvider: { store.tier }
         )
         _ghostRace = State(initialValue: ghostRace)
-        _locationService = State(initialValue: LocationService(
-            pipeline: pipeline,
-            ghostRace: ghostRace
-        ))
+        let locationService = LocationService(pipeline: pipeline, ghostRace: ghostRace)
+        _locationService = State(initialValue: locationService)
         let prompts = PromptService(
             onPick: { placeID in pipeline.requestSnapshot(to: placeID) },
             onStillHere: { pipeline.keepPaused() },
@@ -96,6 +97,13 @@ struct RouteWarriorApp: App {
                 prompts.promptStillThere(limitMinutes: limitMinutes)
             }
             pipeline.onPauseAnswered = { prompts.clearStillThere() }
+            // Start listening from the launch itself, however the launch
+            // came about (D-078) — this is the only path a background
+            // relaunch takes. Order-independent: the delegate may report
+            // the launch before or after this runs.
+            LaunchCoordinator.shared.onLaunch { reason in
+                locationService.start(reason: reason)
+            }
         }
     }
 
@@ -110,6 +118,8 @@ struct RouteWarriorApp: App {
                 .modelContainer(container)
                 .task {
                     if !Self.isTestHost {
+                        // `start()` is idempotent; on a foreground launch
+                        // the launch hook has already run it (D-078).
                         locationService.start()
                         store.start()
                     }

@@ -2122,3 +2122,82 @@ screen exists for); leaving the Trips list alone because its defect is
 older than the complaint (it is one of the three things he named, and
 "pre-existing" is not a reason a list should read a route's shape off
 disk to print one word).
+
+## D-078 — The launch hook is the launch, not the first window (2026-09-17)
+
+Field report: three drives to three destinations, none recorded. The
+recorder log settled it in one screenshot, and ruled out everything I had
+suspected from reading the code.
+
+What the log showed, newest last:
+
+```
+5:03:54  Arrived at the destination — recording stopped
+5:03:54  Trip saved: 5:29, 1.6 mi, vs. Google and Apple
+5:03:55  Armed: driving motion detected, GPS warming up
+5:06:46  Disarmed: pedestrian motion before the car moved
+5:06:46  GPS off (idle)
+         … nothing, for an hour, across three drives …
+6:05:16  App launched — location: Always; motion: Allowed
+```
+
+No "Armed". So this was not a trip discarded for being too short, not a
+failed save, and not the paused-recorder theory I had been building (that
+would have written "Recording paused"). The recorder was never armed at
+all, and the permissions were right the whole time. The app simply was
+not listening.
+
+**The defect.** Arming needs a CoreMotion `automotive` sample, and motion
+updates are registered in exactly one place: `LocationService.start()`.
+That was called from a `.task` on the root view. iOS relaunches a
+location app in the background when a significant location change
+arrives — that is the mechanism by which a drive taken hours after you
+last opened the app gets recorded — and a background relaunch builds no
+window, so the root view is never created and its `.task` never runs.
+Motion updates are then never registered for that process, the recorder
+can never leave `idle`, and nothing is written to the log. The silence in
+that hour is the bug's own signature.
+
+This is old — the `.task` has been the only launch path since M8 (#23).
+It is not a regression from this week's work, which is why reading the
+recent diffs adversarially found nothing: the defect was in what the code
+*did not* do, on a path no test exercised.
+
+**The fix, two parts.** An `AppDelegate` with
+`didFinishLaunchingWithOptions`, wired by `@UIApplicationDelegateAdaptor`,
+starts location and motion for *every* launch including the background
+one, and reads `UIApplication.LaunchOptionsKey.location` to say in the
+log which kind it was. The root view's `.task` stays as the foreground
+path; `start()` is idempotent and writes its line once.
+
+`LaunchCoordinator` carries the launch between the delegate, which learns
+why the process started, and the `App`, which owns the services. It is
+deliberately order-independent: whether SwiftUI builds the `App` before
+UIKit reports the launch is undocumented and has changed between
+releases, and a hook that works in only one order is precisely the wiring
+that passes its test and does nothing on a phone — Letterama's inert
+`onChange`, again. Both orders are tested.
+
+Second part: a location update arriving while nothing is recording now
+writes one line every ten minutes. Today an idle wake writes nothing, so
+"no drive was detected" and "the app was not running at all" are the same
+hour of silence — the question this log could not answer. Ten minutes
+keeps the forty lines the log holds covering a drive.
+
+**What is proved and what is not.** CI proves the launch reason mapping,
+that the handoff runs exactly once in either order, and the throttle,
+including a sample arriving out of order. CI cannot prove that iOS
+relaunches this app in the background, or that the delegate's callback
+fires there — no simulator test in this project drives that path. That
+is a phone-in-hand claim, and the next drive after the app has been left
+alone for hours is the test.
+
+**Rejected**: calling `start()` from `scenePhase` changes (the same hole
+— a background relaunch has no scene phase to change); registering
+motion updates inside `LocationService.init` (init would then carry a
+permission prompt and a side effect, and the test host constructs this
+object); a background task or a timer to keep the process alive (fighting
+iOS for process lifetime to paper over a missing launch hook, and it
+would cost battery for every driver to fix a wiring mistake); logging
+every idle location update (the log holds forty lines and significant
+changes arrive often enough to push a whole drive out of it).
