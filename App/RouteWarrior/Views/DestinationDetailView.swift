@@ -169,7 +169,7 @@ struct DestinationDetailView: View {
                     symbol: "hourglass",
                     color: .gray,
                     title: "No plans to compare yet",
-                    detail: "Plans arrive with drives that start from the Plan screen, or when a destination is predicted at departure."
+                    detail: "Plans arrive with drives that start from the \(RootTab.route.title) screen, or when a destination is predicted at departure."
                 )
             }
             ForEach(providers, id: \.self) { provider in

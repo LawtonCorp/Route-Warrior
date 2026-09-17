@@ -17,13 +17,13 @@ struct ContentView: View {
         case .app:
             TabView {
                 HomeView()
-                    .tabItem { Label("Plan", systemImage: "car.fill") }
+                    .tabItem { Label(RootTab.route.title, systemImage: RootTab.route.symbol) }
                 TripsView()
-                    .tabItem { Label("Trips", systemImage: "map") }
+                    .tabItem { Label(RootTab.trips.title, systemImage: RootTab.trips.symbol) }
                 PlacesView()
-                    .tabItem { Label("Places", systemImage: "mappin.and.ellipse") }
+                    .tabItem { Label(RootTab.places.title, systemImage: RootTab.places.symbol) }
                 SettingsView()
-                    .tabItem { Label("Settings", systemImage: "gearshape") }
+                    .tabItem { Label(RootTab.settings.title, systemImage: RootTab.settings.symbol) }
             }
             // While the app is on screen a paused phone can sit still
             // enough to produce no location samples at all, and samples
@@ -40,7 +40,7 @@ struct ContentView: View {
                 }
             }
             // On the root, so the question is asked once wherever the
-            // driver is — the drive view is presented over the Plan tab,
+            // driver is — the drive view is presented over the Route tab,
             // and an alert on each would be two alerts.
             .alert(PauseText.title, isPresented: Binding(
                 get: { pipeline.pauseNeedsAnswer },
