@@ -308,16 +308,15 @@ bank account holder and IRS records. Apple cross-checks them.
   drives in one weekday-and-slot cell is a lot to ask, and if it never
   happens the sharpest sentence the feature can say is one it never
   says.
-- **D-077, the latency**: this is the one CI is least able to speak to.
-  The three screens Brian named are the test: open a destination from the
-  Places tab, filter the Trips list by departure, and rename a route from
-  its detail screen. Each should feel immediate on a phone with real
-  history. What is proved here is only that the cheap paths answer the
-  same as the ones they replaced; that the screen now decodes the history
-  once per pass instead of a dozen times is read off the call graph, not
-  timed. Renaming is the sharpest of the three to judge: it used to
-  decode every drive on the route twice per keystroke, so if typing is
-  still not smooth, the remaining cost is elsewhere and worth saying so.
+- ~~**D-077, the latency**~~ — **confirmed on the phone 2026-09-17**, all
+  three screens Brian named: renaming a route ("smooth now"), opening a
+  destination from Places, and filtering the Trips list by departure
+  ("both feel fine now"). Worth keeping the shape of the finding: CI only
+  ever proved that the cheap paths answer the same as the ones they
+  replaced. That the screens got *faster* was read off the call graph and
+  is now confirmed by a driver, not by a benchmark — nothing here is
+  timed, and if the history grows by an order of magnitude this is the
+  first place to look again.
 - **D-078, the launch that matters**: the test CI cannot run. Open the
   app once (so iOS has a fresh launch), then leave it alone for several
   hours — long enough that iOS reclaims it — and drive somewhere without
@@ -329,10 +328,10 @@ bank account holder and IRS records. Apple cross-checks them.
   happening — and the next suspect is whether the app was force-quit from
   the app switcher, which stops iOS relaunching it until it is opened by
   hand.
-- **D-080, deleting a drive**: open a drive from the Trips list and tap
-  Delete trip. The screen should close and the drive should be gone from
-  the list, with no crash — that is the whole test, and it is the half CI
-  cannot run, because the trap needed a mounted SwiftUI view reading an
-  invalidated model. Check too that the route it belonged to still shows
-  the right drive count (one fewer), and that deleting the *last* drive
-  on a route removes the route from the destination screen.
+- ~~**D-080, deleting a drive**~~ — **confirmed on the phone 2026-09-17**:
+  deleting a drive from its own screen closes cleanly and no longer
+  crashes. Two parts of that test have *not* been reported back and are
+  still worth a glance next time a drive is deleted: that the route it
+  belonged to shows one fewer drive, and that deleting a route's last
+  drive removes the route from the destination screen. CI covers both
+  against an in-memory store; neither has been seen on a phone.
