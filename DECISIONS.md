@@ -2201,3 +2201,30 @@ iOS for process lifetime to paper over a missing launch hook, and it
 would cost battery for every driver to fix a wiring mistake); logging
 every idle location update (the log holds forty lines and significant
 changes arrive often enough to push a whole drive out of it).
+
+## D-079 — The first tab is Route, not Plan (2026-09-17)
+
+Brian asked for it, and the word was carrying two jobs. "Plan" is what
+the *providers* hand over — Google's plan, Apple's plan, the snapshot
+every verdict is measured against — and it was also the name of the tab
+where a drive is chosen and started. The tab is about the route; the
+plans are what it compares. Renaming it costs nothing and stops the app
+using one word for two things.
+
+The names moved into `RootTab` rather than staying inline. The app's own
+copy points at tabs by name — the Destination screen's "drives that start
+from the Route screen" — and a name in two files drifts the first time
+one changes. That is D-068's lesson about a settings label and its
+footer, applied to the tab bar.
+
+Settings keeps its own "Plan" row: that one is the subscription, Free or
+Pro, and it is the right word there.
+
+**Rejected**: renaming the tab inline and leaving the sentence on the
+Destination screen pointing at a "Plan screen" that no longer exists (the
+defect this repo has shipped twice now — copy that describes a previous
+version of the UI); "Drive" (it is where a drive is *planned*; the drive
+view is a different screen and is already called that); changing the
+stored `NavigationHandoff` raw values or anything else that happens to
+contain the word (they are storage, not words on screen — D-057's rule
+that a rename changes the name and not the value).
