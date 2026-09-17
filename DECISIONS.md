@@ -2228,3 +2228,55 @@ view is a different screen and is already called that); changing the
 stored `NavigationHandoff` raw values or anything else that happens to
 contain the word (they are storage, not words on screen — D-057's rule
 that a rename changes the name and not the value).
+
+## D-080 — A screen cannot outlive the record it is built from (2026-09-17)
+
+Field report: tapping "Delete trip" on a drive's own screen crashed the
+app.
+
+The screen deleted the record and *then* dismissed:
+
+```swift
+TripDeletion.delete(record, in: context)
+dismiss()
+```
+
+Dismissal is not instant. Between those two lines the screen is still
+mounted and still built out of `record` — its navigation title reads
+`record.label` and `record.startedAt` — and the save has just invalidated
+that object. Reading a deleted SwiftData `@Model` is not a `nil` and not
+a thrown error; it traps, and the app is gone.
+
+The Trips list's swipe delete does not crash for the same reason it looks
+identical: the row is removed by the list's own diff before anything
+reads the record again. Nothing about that path made this one safe, and
+the comment in the detail view saying it performed "the same deletion"
+was true about *what* is deleted and quietly wrong about *when*.
+
+**The order is the rule.** The screen leaves first and the deletion
+happens on the way out, in `onDisappear`, when nothing is left to read
+the record. `TripScreenExit` names the two ways out so the exit is a
+decision CI can check rather than a line ordering that looks fine in a
+diff: the ordinary exit commits the driver's label (D-060 — leaving is as
+much a commit as tapping Done), and a deleting exit does not, because
+writing a label to a record on its way out of the store is the same
+invalid access by another route.
+
+**What is proved.** CI checks that a deleting exit never commits a label,
+and that the deletion still takes what D-058 says it takes — the trip,
+the departure snapshots no remaining trip refers to, and its route's last
+drive count — through a real in-memory store. It cannot prove the crash
+is gone: the trap needed a mounted SwiftUI view reading an invalidated
+model, and no test here mounts one. That one is a tap on a phone.
+
+**Rejected**: deleting on a `DispatchQueue.main.async` after `dismiss()`
+(the same race, moved one runloop turn away and harder to reason about —
+it works until a dismissal takes two turns); a confirmation dialog on
+delete (it would have hidden this crash behind an extra tap rather than
+fixing it, and Brian did not ask for one — the swipe in the list has no
+confirmation either); having the Trips list own every deletion and pass a
+closure down (a bigger change that moves the same ordering problem into a
+callback, where it is less visible); making `TripDetailView` hold the
+record's id and re-fetch it on every body pass (defensive against this
+one crash, and it makes every screen slower and more complicated to
+protect against a mistake that is really about ordering).

@@ -329,3 +329,10 @@ bank account holder and IRS records. Apple cross-checks them.
   happening — and the next suspect is whether the app was force-quit from
   the app switcher, which stops iOS relaunching it until it is opened by
   hand.
+- **D-080, deleting a drive**: open a drive from the Trips list and tap
+  Delete trip. The screen should close and the drive should be gone from
+  the list, with no crash — that is the whole test, and it is the half CI
+  cannot run, because the trap needed a mounted SwiftUI view reading an
+  invalidated model. Check too that the route it belonged to still shows
+  the right drive count (one fewer), and that deleting the *last* drive
+  on a route removes the route from the destination screen.
