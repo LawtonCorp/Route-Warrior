@@ -17,6 +17,10 @@ struct TripDetailView: View {
     @Query(sort: PlaceOrder.descriptors) private var places: [PlaceRecord]
     @State private var showPaywall = false
     @State private var draftLabel = ""
+    /// Set by Delete, read on the way out (D-080). The deletion happens
+    /// once this screen is gone, because a screen cannot outlive the
+    /// record it is built from.
+    @State private var isDeleting = false
 
     private var trip: Trip? { try? record.trip() }
 
@@ -101,8 +105,17 @@ struct TripDetailView: View {
             PaywallView()
         }
         .onAppear { draftLabel = record.label }
-        // Leaving the screen is as much a commit as tapping Done.
-        .onDisappear { commitLabel() }
+        // Leaving the screen is as much a commit as tapping Done — unless
+        // the drive is being deleted, in which case this is where the
+        // deletion happens, with the screen already gone (D-080).
+        .onDisappear {
+            switch TripScreenExit.onDisappear(deleting: isDeleting) {
+            case .delete:
+                TripDeletion.delete(record, in: context)
+            case .commitLabel:
+                commitLabel()
+            }
+        }
     }
 
     // MARK: What the driver calls this drive
@@ -333,10 +346,13 @@ struct TripDetailView: View {
         Section {
             Toggle("Exclude from stats", isOn: excludedBinding)
             Button("Delete trip", role: .destructive) {
-                // The same deletion the Trips list's swipe performs
-                // (D-058): the trip, its departure snapshots, and its
-                // route's drive count.
-                TripDeletion.delete(record, in: context)
+                // Leave first, delete on the way out (D-080). The same
+                // deletion the Trips list's swipe performs (D-058) — the
+                // trip, its departure snapshots, and its route's drive
+                // count — but the swipe deletes a row that is already
+                // gone from the list, while this screen is built out of
+                // the record it is deleting.
+                isDeleting = true
                 dismiss()
             }
         } footer: {
