@@ -342,3 +342,14 @@ bank account holder and IRS records. Apple cross-checks them.
   belonged to shows one fewer drive, and that deleting a route's last
   drive removes the route from the destination screen. CI covers both
   against an in-memory store; neither has been seen on a phone.
+- **D-082, tapping the departure notification**: start a drive somewhere
+  the app cannot predict, and when the notification arrives **tap it**
+  rather than pulling it down. The app should open on the destination
+  picker with every saved place; picking one should name the drive the
+  same way a notification action does, and the sheet should close. Then
+  the awkward cases: tap it, hit "Not now", and the drive should carry on
+  unnamed; tap it after the drive has already finished, and nothing
+  should open (Settings → Recorder log will say the notification was
+  tapped after the drive ended). Worth trying once from the lock screen
+  and once with the app already open — those are different paths through
+  iOS and only the phone runs either.

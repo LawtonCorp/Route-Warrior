@@ -2354,3 +2354,58 @@ answered at the start); recording the pick only when a plan came back
 exactly when the answer matters); inferring the destination from the
 nearest place at *any* distance (with few saved places that labels every
 drive as going home).
+
+## D-082 — Tapping the question asks it again, on a screen (2026-09-18)
+
+D-081 made the driver's answer name the drive. This is about there being
+a way to answer.
+
+The departure notification carries up to four saved places as
+notification actions. Actions live behind a long press or a pull-down,
+which a driver at a junction does not find, and **tapping the
+notification did nothing at all**. Not "opened the app and waited" —
+nothing. The handler ended in:
+
+```swift
+} else if let placeID = UUID(uuidString: action) {
+    onPick(placeID)
+}
+```
+
+A tap sends `UNNotificationDefaultActionIdentifier`, which is not a
+UUID, so it fell off the end of the `if` and vanished: no picker, no log
+line, nothing to tell it apart from a tap that worked. A response
+dropped by omission, which is the same shape of defect as D-072's stolen
+delegate and D-078's launch hook that never ran — nothing is wrong on
+the line you are reading; the case simply is not there.
+
+**Every response is named now.** `PromptResponse.route(category:action:)`
+is a pure function over the two strings iOS hands back, returning one of
+`pick`, `openPicker`, `stillHere`, `endDrive`, `ignore`. A new case
+cannot be dropped silently, because the switch that consumes it is
+exhaustive and CI checks the mapping — including the two that used to be
+invisible: the tap, and the swipe-away.
+
+**The tap opens the picker**, a sheet on the root with every saved place
+rather than the four that fit on a notification. On the root for the
+same reason the "Still there?" alert is (D-072): the drive view is
+presented over the Route tab, and a sheet on each would be two sheets.
+It is offered only while a drive is in progress — paused counts, since a
+driver reading the notification at the kerb is exactly who it is for.
+After the drive, the trip is already stored and the question has no
+subject, so the tap writes a log line instead of opening a screen that
+could not do anything.
+
+The notification's wording changed with it: "Pull down to pick, or tap
+to choose in the app" says both ways exist. The old text asked a
+question and described only the way most drivers were missing.
+
+**Rejected**: a text-input notification action (it is one line with no
+list, so the driver has to type a place name exactly as they saved it,
+at the wheel); opening the Route tab instead of a sheet (that screen
+plans a *new* drive — its Go button starts one, which is the opposite of
+naming the drive already running); making the notification actions more
+discoverable instead (iOS decides how actions are revealed, not the app);
+letting the tap name the drive with the app's best guess (a silent guess
+attached to a drive the driver was asked about is worse than the silence
+it replaces).

@@ -51,6 +51,16 @@ struct ContentView: View {
             } message: {
                 Text(PauseText.body(limitMinutes: mapSettings.pauseLimitMinutes))
             }
+            // Tapping the departure notification asks the same question
+            // on a screen (D-082). On the root for the same reason the
+            // alert above is: the drive view is presented over the Route
+            // tab, and a sheet on each would be two sheets.
+            .sheet(isPresented: Binding(
+                get: { pipeline.destinationPickerRequested },
+                set: { if !$0 { pipeline.dismissDestinationPicker() } }
+            )) {
+                DestinationPickerView()
+            }
         }
     }
 }
