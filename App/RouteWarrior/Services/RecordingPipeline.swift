@@ -61,6 +61,12 @@ final class RecordingPipeline {
     /// (FR-25, D-066): drawn by the drive view, watched for off-route,
     /// and written to the trip as the pick — never as the baseline.
     private var pendingChosenRoute: ChosenRoute?
+    /// Where the driver said this drive is going (D-081): the place
+    /// tapped on the departure notification, or the destination a
+    /// planned drive set off for. Used to name the trip's destination
+    /// when the track cannot — it used to buy a plan and nothing else,
+    /// so a drive the driver had named still finished nameless.
+    private var statedDestinationID: UUID?
     /// Whether to end a planned drive on arrival (D-038), read per sample
     /// so a Settings change applies to the drive in progress.
     private let arrivalStop: @MainActor () -> Bool
@@ -230,6 +236,7 @@ final class RecordingPipeline {
         supersedePendingFetch()
         pendingSnapshots = snapshots
         pendingChosenRoute = chosen
+        statedDestinationID = snapshots.compactMap(\.destinationPlaceID).first
         predictOnFirstSample = false
         arrivalDetector.reset()
         lastOutcome = "Recording (planned)"
@@ -551,13 +558,22 @@ final class RecordingPipeline {
         }
     }
 
-    /// The one-tap pick (FR-6): fetch every provider's plan for a
-    /// destination the user named, from wherever the drive currently is.
+    /// The one-tap pick (FR-6): name this drive's destination, and fetch
+    /// every provider's plan for it from wherever the drive currently is.
     /// The named destination replaces any guess (D-055): plans for other
     /// places are dropped, and a plan already held for this place is
-    /// kept rather than fetched again from a later point. No-op when
-    /// idle or with no provider.
+    /// kept rather than fetched again from a later point.
     func requestSnapshot(to placeID: UUID) {
+        // The pick names the drive, not just the plan (D-081), and it is
+        // recorded first — before the conditions the *fetch* needs. A
+        // paused drive, a build with no provider key, or a plan that
+        // never arrives all used to throw the name away with the fetch,
+        // and the drive finished nameless despite the driver saying
+        // where it was going.
+        guard isDriveInProgress else { return }
+        statedDestinationID = placeID
+        note("Destination named by the driver")
+
         guard recorderState == .recording, !snapshotProviders.isEmpty,
               let position = recorder.liveTrack.last
         else { return }
@@ -582,6 +598,7 @@ final class RecordingPipeline {
     private func clearPendingSnapshots() {
         pendingSnapshots.removeAll()
         pendingChosenRoute = nil
+        statedDestinationID = nil
         // A plan still in flight for a drive that has ended belongs to
         // no drive (D-055).
         supersedePendingFetch()
@@ -630,7 +647,8 @@ final class RecordingPipeline {
 
             let result = RouteMatcher.assign(
                 trip: enriched, places: places, variants: variants,
-                snapshot: primary, altSnapshot: alt
+                snapshot: primary, altSnapshot: alt,
+                statedDestinationID: statedDestinationID
             )
             if let newVariant = result.newVariant {
                 context.insert(VariantRecord(newVariant))

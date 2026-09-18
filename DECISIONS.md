@@ -2280,3 +2280,77 @@ callback, where it is less visible); making `TripDetailView` hold the
 record's id and re-fetch it on every body pass (defensive against this
 one crash, and it makes every screen slower and more complicated to
 protect against a mistake that is really about ordering).
+
+## D-081 — The driver's answer names the drive (2026-09-18)
+
+Field report: "when I start driving it gives me a message: enter your
+destination. When that occurs, I noticed it doesn't actually add the
+destination."
+
+He is right, and it was by construction. `requestSnapshot(to:)` — the
+handler for tapping a place on the departure notification (FR-6) — used
+the pick to *fetch plans* and nothing else. The trip's own
+`destinationPlaceID` was set somewhere else entirely, by
+`RouteMatcher.assign`, from whether the last track point fell inside a
+saved place's geofence. The driver's answer never reached it. Answering
+the question changed what the app compared against and not what the
+drive was called.
+
+Worse, the answer was thrown away in three ordinary cases before it could
+do even that: the function returned early unless the recorder was
+actively recording (so an answer given at the kerb, while paused, was
+dropped), unless a provider was configured, and unless a live position
+was available. All three are conditions the *fetch* needs. None of them
+has anything to do with whether the driver said where they were going.
+
+**The geofence was also too strict at exactly the wrong moment.** A place
+is 75 m across by default, and a drive's last kept point is its last
+*moving* point — everything slower than 1 m/s is trimmed as parking
+(D-019). Crawling into a car park, a garage that eats the signal, the far
+end of a lot: all of them end the stored drive outside the fence of the
+place it plainly reached. The same is true of the first point, which is
+why drives were turning up with no origin either — and a drive missing
+either endpoint founds no route, joins no variant, and appears nowhere on
+the Destination screen. Two of Brian's three symptoms were one cause.
+
+**Three tiers, most certain first.** Inside a geofence is certainty and
+still wins. Otherwise the nearest saved place within 200 m claims the
+endpoint — applied to both ends, which is the "track the start of the
+trip" half. Only if both of those come up empty does the destination the
+driver named apply, and only if the drive ended within 500 m of it.
+
+The thresholds are judgement, and worth saying so plainly: 200 m is about
+as far as a car park or a slow crawl to a door can move the last moving
+point, and 500 m is "the driver said so, and the drive ended in the
+neighbourhood". Neither is measured. The stated tolerance is wider
+because a statement is evidence rather than a guess; it is not unlimited
+because saying "home" and then driving to the coast makes the *statement*
+wrong, not the drive.
+
+**Where the drive ended always outranks what was said about it.** The
+answer fills a gap; it never overwrites the track. A drive that says
+"school" and ends at the shop is a drive to the shop.
+
+**What is proved.** Kit tests cover each tier and its edges: inside the
+fence still wins, just-outside is claimed, well-away is not, the
+*nearest* place wins rather than the first in the list, a stated
+destination is honoured only within its tolerance, a stated place that no
+longer exists names nothing, and arriving elsewhere beats the statement.
+App-target tests cover the wiring that was actually broken: a pick names
+the stored trip, a pick given while paused still counts, no pick still
+means no destination, and a name does not leak into the next drive. What
+is *not* proved is that the numbers are right for real car parks — that
+is a phone and a month of drives.
+
+**Rejected**: letting the stated destination win outright (it turns a
+plan into a claim, and the first diverted drive files itself under the
+wrong place — the whole product rests on the history being true);
+widening the default place radius instead (it would change arrival
+detection and the departure trigger too, and a 200 m fence around home
+would start drives in the driveway); asking the driver to confirm on
+arrival (a prompt at the end of every drive to fix a problem they already
+answered at the start); recording the pick only when a plan came back
+(the plan is the thing most likely to fail — no signal in a garage is
+exactly when the answer matters); inferring the destination from the
+nearest place at *any* distance (with few saved places that labels every
+drive as going home).

@@ -317,17 +317,24 @@ bank account holder and IRS records. Apple cross-checks them.
   is now confirmed by a driver, not by a benchmark — nothing here is
   timed, and if the history grows by an order of magnitude this is the
   first place to look again.
-- **D-078, the launch that matters**: the test CI cannot run. Open the
-  app once (so iOS has a fresh launch), then leave it alone for several
-  hours — long enough that iOS reclaims it — and drive somewhere without
-  opening it first. The drive should record. Afterwards, Settings →
-  Recorder log should show "App launched (woken by a location change)"
-  rather than nothing at all, and "Location update while idle" lines
-  during the quiet stretch. If the log still goes silent for an hour
-  while the phone is moving, the background relaunch itself is not
-  happening — and the next suspect is whether the app was force-quit from
-  the app switcher, which stops iOS relaunching it until it is opened by
-  hand.
+- ~~**D-078, the launch that matters**~~ — **confirmed on the phone
+  2026-09-18**: "the app is, in fact, starting whenever I drive (even
+  when it's closed)". This is the one that cost three drives, and the one
+  CI could say nothing about — no test here mounts a background relaunch.
+  If drives ever go missing again, the recorder log now distinguishes the
+  two cases it could not before: "App launched (woken by a location
+  change)" means iOS woke us, and silence through a moving hour means it
+  did not.
+- **D-081, the destination the driver names**: drive somewhere the
+  predictor cannot call, and when the notification asks, pull it down and
+  tap one of the places. The stored drive should carry that destination —
+  it should appear on the Destination screen and count toward that
+  place's history, not just fetch a plan. Two more worth watching now
+  that endpoints are forgiving to 200 m: drives that used to finish with
+  no origin (parked outside the fence) should start naming where they
+  began, and no drive should be filed under a place it merely parked
+  near. The tolerances (200 m, 500 m) are judgement, not measurement — a
+  drive filed under the wrong place is the signal they are too wide.
 - ~~**D-080, deleting a drive**~~ — **confirmed on the phone 2026-09-17**:
   deleting a drive from its own screen closes cleanly and no longer
   crashes. Two parts of that test have *not* been reported back and are
