@@ -12,6 +12,19 @@ public enum RouteMatcher {
         public var followedPlanThresholdM: Double = 100
         /// Resampling density for shape comparison.
         public var samples: Int = 64
+        /// How far outside its own geofence a place may still claim an
+        /// endpoint (D-081). A place's fence is 75 m by default and a
+        /// drive's last kept point is its last *moving* one, so crawling
+        /// into a car park, a garage that eats the signal, or a space at
+        /// the far end of a lot all end a drive outside the fence of the
+        /// place it plainly reached.
+        public var endpointToleranceM: Double = 200
+        /// How far from the destination the driver named a drive may end
+        /// and still be counted as having arrived there. Wider than the
+        /// tolerance above because it is not a guess: the driver said so.
+        /// Not unlimited — saying "home" and then driving to the coast
+        /// makes the statement wrong, not the drive.
+        public var statedDestinationToleranceM: Double = 500
 
         public init() {}
     }
@@ -30,19 +43,75 @@ public enum RouteMatcher {
         places.first { $0.contains(coordinate) }
     }
 
+    /// The place an endpoint belongs to (D-081): inside a geofence
+    /// first, then the nearest place within `tolerance` of it.
+    ///
+    /// Strictly inside is certainty and is tried first, so a place never
+    /// loses an endpoint that is genuinely in it. The fallback exists
+    /// because the endpoints are where the geofence is least reliable —
+    /// a drive ends at its last moving point, which can be a hundred
+    /// metres short of the door.
+    static func place(
+        at coordinate: Coordinate, in places: [Place], tolerance: Double
+    ) -> Place? {
+        if let inside = place(containing: coordinate, in: places) { return inside }
+        return nearest(to: coordinate, in: places, within: tolerance)
+    }
+
+    /// The nearest place within `within` metres, or nil. Ties cannot
+    /// happen in practice and resolve by list order if they do.
+    static func nearest(
+        to coordinate: Coordinate, in places: [Place], within: Double
+    ) -> Place? {
+        places
+            .map { ($0, Geo.distanceMeters(from: $0.coordinate, to: coordinate)) }
+            .filter { $0.1 <= within }
+            .min { $0.1 < $1.1 }?
+            .0
+    }
+
+    /// The destination the driver named for this drive, honoured when
+    /// the track itself cannot name one (D-081). A stated destination is
+    /// evidence — the driver typed it or tapped it — but the drive has
+    /// to have ended somewhere near it, or the statement describes an
+    /// intention that the drive did not carry out.
+    static func statedDestination(
+        _ statedID: UUID?, endingAt end: Coordinate?, in places: [Place], tolerance: Double
+    ) -> Place? {
+        guard let statedID, let end,
+              let place = places.first(where: { $0.id == statedID }),
+              Geo.distanceMeters(from: place.coordinate, to: end) <= tolerance
+        else { return nil }
+        return place
+    }
+
+    /// - Parameter statedDestinationID: the place the driver named for
+    ///   this drive — picked from the departure notification, or the
+    ///   destination a planned drive set off for (D-081). Used only when
+    ///   the track cannot name a destination itself.
     public static func assign(
         trip: Trip,
         places: [Place],
         variants: [RouteVariant],
         snapshot: PlanSnapshot? = nil,
         altSnapshot: PlanSnapshot? = nil,
+        statedDestinationID: UUID? = nil,
         config: Config = Config()
     ) -> Result {
         var updated = trip
         let track = Polyline(coordinates: trip.points.map(\.coordinate))
 
-        let origin = trip.points.first.flatMap { place(containing: $0.coordinate, in: places) }
-        let destination = trip.points.last.flatMap { place(containing: $0.coordinate, in: places) }
+        let start = trip.points.first?.coordinate
+        let end = trip.points.last?.coordinate
+        let origin = start.flatMap {
+            place(at: $0, in: places, tolerance: config.endpointToleranceM)
+        }
+        let destination = end.flatMap {
+            place(at: $0, in: places, tolerance: config.endpointToleranceM)
+        } ?? statedDestination(
+            statedDestinationID, endingAt: end, in: places,
+            tolerance: config.statedDestinationToleranceM
+        )
         updated.originPlaceID = origin?.id
         updated.destinationPlaceID = destination?.id
 
