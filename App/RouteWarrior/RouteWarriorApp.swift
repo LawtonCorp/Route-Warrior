@@ -82,6 +82,7 @@ struct RouteWarriorApp: App {
         _locationService = State(initialValue: locationService)
         let prompts = PromptService(
             onPick: { placeID in pipeline.requestSnapshot(to: placeID) },
+            onOpenPicker: { pipeline.requestDestinationPicker() },
             onStillHere: { pipeline.keepPaused() },
             onEndDrive: { pipeline.stopManualRecording() }
         )

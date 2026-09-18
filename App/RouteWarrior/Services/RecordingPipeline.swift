@@ -95,6 +95,11 @@ final class RecordingPipeline {
     var onPauseAnswered: (@MainActor () -> Void)?
     /// True while "Still there?" is waiting for an answer in the app.
     private(set) var pauseNeedsAnswer = false
+    /// True when the driver tapped the departure notification instead of
+    /// pulling it down for the place buttons (D-082) — they mean to
+    /// answer, they just did not find the buttons. The app owes them the
+    /// same question on a screen.
+    private(set) var destinationPickerRequested = false
 
     init(
         context: ModelContext,
@@ -316,6 +321,22 @@ final class RecordingPipeline {
             endPauseWatch()
             handle(recorder.stopRecording(at: date))
         }
+    }
+
+    /// The driver tapped the departure notification (D-082). Only worth
+    /// a screen while there is a drive to name: by the time a finished
+    /// drive's notification is tapped, the trip is already stored and
+    /// the question has no subject.
+    func requestDestinationPicker() {
+        guard isDriveInProgress else {
+            note("Destination notification tapped after the drive ended")
+            return
+        }
+        destinationPickerRequested = true
+    }
+
+    func dismissDestinationPicker() {
+        destinationPickerRequested = false
     }
 
     /// "Still here" — the pause gets a fresh lease rather than ending.
@@ -572,6 +593,7 @@ final class RecordingPipeline {
         // where it was going.
         guard isDriveInProgress else { return }
         statedDestinationID = placeID
+        destinationPickerRequested = false
         note("Destination named by the driver")
 
         guard recorderState == .recording, !snapshotProviders.isEmpty,
@@ -599,6 +621,7 @@ final class RecordingPipeline {
         pendingSnapshots.removeAll()
         pendingChosenRoute = nil
         statedDestinationID = nil
+        destinationPickerRequested = false
         // A plan still in flight for a drive that has ended belongs to
         // no drive (D-055).
         supersedePendingFetch()

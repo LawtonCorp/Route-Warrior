@@ -21,6 +21,7 @@ final class PromptService: NSObject, UNUserNotificationCenterDelegate {
     nonisolated static let pauseRequestID = "pause-still-there"
 
     private let onPick: @MainActor (UUID) -> Void
+    private let onOpenPicker: @MainActor () -> Void
     private let onStillHere: @MainActor () -> Void
     private let onEndDrive: @MainActor () -> Void
     /// The places last offered. `setNotificationCategories` replaces the
@@ -32,10 +33,12 @@ final class PromptService: NSObject, UNUserNotificationCenterDelegate {
 
     init(
         onPick: @escaping @MainActor (UUID) -> Void,
+        onOpenPicker: @escaping @MainActor () -> Void = {},
         onStillHere: @escaping @MainActor () -> Void,
         onEndDrive: @escaping @MainActor () -> Void
     ) {
         self.onPick = onPick
+        self.onOpenPicker = onOpenPicker
         self.onStillHere = onStillHere
         self.onEndDrive = onEndDrive
         super.init()
@@ -52,7 +55,7 @@ final class PromptService: NSObject, UNUserNotificationCenterDelegate {
         Task.detached {
             await Self.post(
                 title: "Recording your drive",
-                body: "Where are you headed? Pick a destination to get the Google comparison.",
+                body: "Where are you headed? Pull down to pick, or tap to choose in the app.",
                 categoryID: Self.destinationCategoryID,
                 identifier: Self.destinationRequestID,
                 places: top
@@ -140,14 +143,12 @@ final class PromptService: NSObject, UNUserNotificationCenterDelegate {
         completionHandler()
         Task { @MainActor [weak self] in
             guard let self else { return }
-            if category == Self.pauseCategoryID {
-                switch action {
-                case Self.stillHereAction: onStillHere()
-                case Self.endDriveAction: onEndDrive()
-                default: break   // the notification was tapped, not answered
-                }
-            } else if let placeID = UUID(uuidString: action) {
-                onPick(placeID)
+            switch PromptResponse.route(category: category, action: action) {
+            case .pick(let placeID): onPick(placeID)
+            case .openPicker: onOpenPicker()
+            case .stillHere: onStillHere()
+            case .endDrive: onEndDrive()
+            case .ignore: break
             }
         }
     }

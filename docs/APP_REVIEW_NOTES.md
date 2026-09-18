@@ -123,9 +123,11 @@ nothing else.
   itself and saves at 5.
 - Two kinds of local notification exist, both scheduled on the device:
   the "Still there?" question above, and a one-tap destination picker
-  offered when a drive starts somewhere the app cannot predict. Declining
-  notification permission costs neither feature anything that blocks
-  recording.
+  offered when a drive starts somewhere the app cannot predict. The
+  destination one carries the saved places as notification actions, and
+  tapping the notification itself opens the same list inside the app.
+  Declining notification permission costs neither feature anything that
+  blocks recording.
 - Terms of Use and Privacy Policy are readable inside the app
   (Settings → About) and linked on the paywall, in onboarding and on the
   web at https://routerebel.app/terms and /privacy.
