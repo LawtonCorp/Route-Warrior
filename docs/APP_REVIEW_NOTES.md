@@ -10,7 +10,7 @@ moment of departure, and shows whether the driver's own routes beat
 Google's — including stop-sign/signal counts and time-of-day analytics. A
 Live Activity shows a live "ghost race" against the driver's personal best
 on repeat routes. Once a driver has repeated a journey a few times, their
-own routes are offered on the Plan tab alongside the providers' plans,
+own routes are offered on the Route tab alongside the providers' plans,
 with a recommendation for the current day and time.
 
 ## Why Always location (the core of this review)
@@ -54,7 +54,7 @@ account that has months of real driving history. Everything else in the
 video is a fresh install.
 
 The feature is part of the Route Rebel Pro subscription. On the free
-tier the Plan tab shows a single locked row naming how many of the
+tier the Route tab shows a single locked row naming how many of the
 driver's own routes were found, which opens the paywall.
 
 ## Pausing a drive, and the "Still there?" notification
@@ -98,7 +98,7 @@ nothing else.
 5. Pause during a drive: the "Paused" badge over the map, the play button
    where pause was, and the trip afterwards showing the paused time
    listed separately and excluded from the duration.
-6. Personal routes on the Plan tab — **filmed on a developer account with
+6. Personal routes on the Route tab — **filmed on a developer account with
    real driving history**, for the reason given above: the driver's own
    roads listed above the providers' plans, each with its usual duration
    and the number of drives behind it, and the top one carrying its
@@ -116,7 +116,7 @@ nothing else.
   turn-by-turn and reroute; recording itself is never gated. Sandbox
   purchase, restore and cancellation work normally; both products carry
   a 7-day free trial.
-- Pause and resume are on the recorder row of the Plan tab and on the
+- Pause and resume are on the recorder row of the Route tab and on the
   drive view. To see the "Still there?" notification without waiting,
   set Settings → Recording → "Pause becomes a stop after" to 5 minutes:
   the question then arrives 3 minutes into a pause, and the drive stops
