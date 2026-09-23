@@ -19,6 +19,12 @@ Work top to bottom — later items depend on earlier ones.
 
 ## 2. Google Cloud — Routes API key (M3's comparison feature)
 
+**Status 2026-09-23: done**, except API restrictions (step 3's second
+half), which is deliberately parked; the actual configuration — 1,000
+requests a day rather than the 2,000 below, the matrix method closed —
+is in the 2026-09-16 → 23 session log. The steps below are kept as the
+record of how the key was set up.
+
 1. Create a Google Cloud project (e.g. `route-warrior-prod`) with billing.
 2. Enable **Routes API**.
 3. Create an API key; under *Application restrictions* choose **iOS apps**
@@ -258,7 +264,179 @@ bank account holder and IRS records. Apple cross-checks them.
   2026-09-16 as **D-068**: the two settings keep their labels and move
   into separate sections, "In Route Rebel" and "When you tap Go".
 
-### Field tests this session's work still needs (phone in hand)
+## Session log — 2026-09-16 → 2026-09-23
+
+Eighteen PRs, all squash-merged to main green. Two went red in CI first
+and were fixed before merge (see "Lessons" below).
+
+| PR | Decision | SHA | What |
+|---|---|---|---|
+| #73 | — | `4f91be9` | Listing: the app sells the routes it learned (docs) |
+| #74 | D-068 | `cf0f0dd` | Two settings said "Google"; the headers now say which |
+| #75 | D-069 | `39d19f0` | Pause stops the clock |
+| #76 | D-070 | `940edb6` | The recommender's floor is four, still flat |
+| #77 | D-071 | `2c62b66` | The floor is the 3/4/5 ladder after all |
+| #78 | D-072 | `aa11a5c` | A pause that goes quiet is asked about, then stopped |
+| #79 | — | `8ce4d95` | Review notes: personal routes and pause (docs) |
+| #80 | D-073 | `a650a11` | An alternate is named for whoever proposed it |
+| #81 | D-074 | `851678e` | The driver arranges their own places |
+| #82 | D-075 | `29f1b92` | A route says where it started |
+| #83 | D-076 | `048b923` | The Destination screen answers for one starting point |
+| #84 | D-077 | `ece7236` | A screen reads columns; only what it shows gets decoded |
+| #85 | D-078 | `06e9a9d` | Start listening at launch, not at the first window |
+| #86 | D-079 | `edb1996` | The first tab is Route, not Plan |
+| #87 | D-080 | `5dc4c48` | Leave the screen, then delete the drive |
+| #88 | — | `eb365a2` | Field tests: D-077 and D-080 confirmed (docs) |
+| #89 | D-081 | `8656600` | The driver's answer names the drive |
+| #90 | D-082 | `d166683` | Tapping the question asks it again, on a screen |
+
+### What changed, grouped by what the driver sees
+
+- **Recording.** A pause button beside Stop, with a play button and a
+  "Paused" map overlay while paused; paused time is excluded from the
+  drive's duration and from every comparison (D-069). A paused drive asks
+  "Still there?" at twelve minutes and stops itself — saved, ending where
+  it paused — at a limit set in Settings, default twenty (D-072).
+- **The bug that lost three drives (D-078).** Motion detection was only
+  ever started from a `.task` on the root view. A background relaunch —
+  how iOS records a drive when the app is not open — builds no window,
+  so that task never ran and nothing armed. An `AppDelegate` now starts
+  listening at launch, however the launch happened. Old defect (since
+  M8), found now only because Brian stopped opening the app before
+  driving. **Confirmed on the phone.**
+- **Naming drives (D-081, D-082).** The departure notification's answer
+  used to buy a plan and nothing else; now it names the stored drive.
+  Endpoints are forgiving: inside a place's fence wins, else the nearest
+  place within 200 m, else the destination the driver named if the drive
+  ended within 500 m of it — where the drive ended always outranks what
+  was said. Tapping the notification (rather than pulling it down) now
+  opens a picker with every saved place; it used to do nothing at all.
+- **Routes and places.** The recommender's floor is a ladder — five
+  drives at the narrowest tier, four, then three (D-070 → D-071).
+  Alternates are named "Google Alt 1" rather than "Alternate 1" (D-073).
+  Places reorder by drag, and the order is what the free tier's
+  allowance counts (D-074). Route rows say where they started (D-075),
+  and a destination driven to from several places is scoped to one
+  starting point at a time, because pooling them produced a fastest
+  route that meant nothing (D-076).
+- **Speed and stability.** D-076 made the Destination screen decode
+  every drive's track a dozen times per render; D-077 answers from stored
+  columns and decodes once, and fixed the same shape of waste in the
+  Trips list and the rename screen. **Confirmed on the phone.** Deleting
+  a drive from its own screen crashed, because the screen read the record
+  it had just deleted; it now leaves first and deletes on the way out
+  (D-080). **Confirmed on the phone.**
+- **Words.** Settings sections "In Route Rebel" and "When you tap Go"
+  separate the two Googles (D-068). The first tab is **Route**, not Plan
+  (D-079) — and the store docs followed in the PR that wrote this log.
+
+### Brian's product calls this session
+
+- Recommender floor: the 3/4/5 ladder (after one hour of a flat four).
+- Pause: "Still there?" at twelve minutes; pauses become a stop after a
+  Settings value, default twenty minutes.
+- "Alternate 1/2" → "Google Alt 1/2".
+- "Plan" tab → "Route".
+- **Go with a specific route picked: leave as is.** Tapping Go hands off
+  to Google Maps, which re-plans and offers its own three routes again.
+  No maps app accepts "drive alternate 2" — the parameter does not exist
+  — so the only way to drive the route picked in Route Rebel is Route
+  Rebel's own guidance. Offered (guide any specific pick in-app; hand off
+  only when the pick matches Google's own choice; ask at Go) and
+  declined. The pick still sets the drive's baseline (D-063).
+- Tapping the departure notification opens the destination picker.
+
+### Lessons worth keeping
+
+- **The recurring defect this session was a missing case**, not a wrong
+  line: D-072's second notification delegate would have silently stolen
+  the first's replies, D-078's launch hook never ran for the launch that
+  mattered, and D-082's tap fell off the end of an `if`. Nothing was
+  wrong on the line being read. Each fix made the cases explicit and
+  tested — one delegate, an order-independent launch coordinator, an
+  exhaustive `PromptResponse` switch.
+- **Two red CI runs.** #83 committed conflict markers after a two-file
+  merge conflict was resolved in one file: after any merge, grep the
+  whole tree for conflict markers and re-read the merge diff. #84 used
+  `RouteVariant` in a file that did not import the kit: check the import
+  list of every file that names a new type.
+- **Fetch before branching.** #81 branched from a stale `origin/main` and
+  conflicted in `DECISIONS.md`.
+- **"It used to work" was true and misleading at once.** The background
+  launch path had never worked; it only stopped mattering when the app
+  happened to be warm. The recorder log settled it in one screenshot —
+  an hour of silence with no "Armed" line — and ruled out three theories
+  that reading the code had produced.
+
+### Confirmed facts worth not re-deriving
+
+- **No maps app can be told which of its routes to drive.** Google's Maps
+  URL contract carries destination, travel mode and `dir_action=navigate`;
+  there is no alternate-route parameter. Apple has none either.
+- **The app calls exactly one Google endpoint**: Routes API
+  `computeRoutes`. It never calls `computeRouteMatrix`. Maps SDK for iOS
+  map loads are free and unlimited.
+- **The Routes client sends `X-Ios-Bundle-Identifier`**, which is what
+  lets an iOS-apps key restriction work for a web-service API. Without
+  it every Google plan would 403 once the key was restricted.
+- **A background relaunch has no window.** Anything that must run on
+  every launch belongs in the app delegate, not a view's `.task`. A
+  force-quit from the app switcher stops iOS relaunching the app at all
+  until it is opened by hand.
+- **Idle location updates now log** at most once per ten minutes, so a
+  silent hour in the recorder log means the app was not running.
+- **Deleting a SwiftData model under a mounted view traps** — it is not a
+  nil and not a thrown error. Leave the screen, then delete.
+- **Unverified, worth noticing once:** tapping Go with *no* specific row
+  picked should start Google's turn-by-turn immediately
+  (`dir_action=navigate`, no origin). If it shows a route preview
+  instead, that is a real bug on our side — the likely fix is passing the
+  current position as the origin.
+
+### Google Cloud key (checklist 0.4), as it stands
+
+| | Status |
+|---|---|
+| Application restriction: iOS apps, both bundle ids | Done |
+| API restrictions (Routes + Maps SDK for iOS) | **Parked.** The console's key page did not offer the section; not worth fighting given the caps below. The CLI route (`gcloud services api-keys update … --allowed-bundle-ids … --api-target …`, both flags in one call) remains available. |
+| `computeRoutes` per-day quota | Done — 1,000/day; email alert at 80%, auto-close one day |
+| `computeRouteMatrix` per-day quota | Done — lowered from Unlimited to its minimum; the app never calls it |
+| Billing budget | Done |
+| Phone check afterwards | Done 2026-09-23 — Google's plan still appears |
+
+### App Store checklist, step 0, as of 2026-09-23
+
+| | Status |
+|---|---|
+| 0.1 Lawyer review | Done; one line back from the lawyer confirming the Lawton, LLC rename is still wanted. |
+| 0.2 Privacy Policy date | Done. |
+| 0.3 Website /terms /privacy /support | Done — confirm live before pressing Release. |
+| 0.4 Google Cloud key | Done, API restrictions parked (above). |
+| 0.5 Paid Apps → tax → banking | **Open, and the next thing to start.** Account Holder only; each unlocks the next; bank verification takes days. The Pro subscriptions cannot be created until Paid Apps reads **Active**. |
+| 0.5a Small Business Program | Open. Needs 0.5 first. Not retroactive — enrol before there are subscribers. |
+| 0.6 Version numbers | Set: `1.0` / build `1`, both targets. |
+
+### The path to the store from here, in order
+
+1. **0.5** — the agreement chain. Longest lead time; start first.
+2. **0.5a** — Small Business Program, as soon as Paid Apps is Active.
+3. **0.1** — the lawyer's one line on the renamed party.
+4. **§1–3** — the app record, App Information, Pricing and Availability.
+5. **§6** — `./scripts/archive.sh --upload`; then **§4**, the privacy
+   questionnaire, answered from the archive's privacy report.
+6. **§7** — the two Pro subscriptions (blocked on 0.5).
+7. **§5 and §8** — seven screenshots and the review demo video. Both
+   need the phone, Pro forced on for the screenshots, and someone else
+   driving for the lock-screen ghost race and the drive footage.
+8. **§9** — TestFlight: internal, then external, two weeks of driving.
+9. **§10** — submit; **§11** — release manually after approval.
+
+Before external TestFlight, the open field tests below should be seen at
+least once — especially **D-081/D-082**, the two notification paths, and
+**D-072**'s "Still there?" answered from the lock screen, since those are
+the flows a tester meets without being told.
+
+### Field tests — confirmed, and still open (phone in hand)
 
 - **D-068**: read the two new section headers on the Settings screen and
   say whether "In Route Rebel" / "When you tap Go" actually separates the
@@ -275,7 +453,7 @@ bank account holder and IRS records. Apple cross-checks them.
   should be what it would have been without the stop. The recorder log
   says how long was excluded.
 - **D-069, the screen**: "Paused" over the map on both surfaces, the play
-  button where pause was, and Stop still reachable — on the Plan tab's
+  button where pause was, and Stop still reachable — on the Route tab's
   recorder row and on the drive view.
 - **D-072, the pause timeout**: pause a drive and leave the phone alone.
   At twelve minutes "Still there?" should arrive — as an alert if the app
@@ -296,7 +474,7 @@ bank account holder and IRS records. Apple cross-checks them.
   (Brian's 61-minute Saturday) should look right once scoped, because it
   was one long drive from far away pooled with short ones.
 - **D-074, dragging places**: tap Edit on the Places tab and drag a place
-  to the top. It should stay there after a relaunch, the Plan tab's saved
+  to the top. It should stay there after a relaunch, the Route tab's saved
   places should show the same order, and — on the free tier — the lock
   icons should move with the rows, because the allowance counts positions.
   The half CI cannot see is CloudKit: arrange the list on one phone and

@@ -66,9 +66,9 @@ commute,drive,route,tracker,traffic,eta,navigation,shortcut,driving,log,stop sig
 
 ## Screenshots (shot list)
 
-1. Plan tab — "Where to?" filled, both plans drawn, ETA / distance /
+1. Route tab — "Where to?" filled, both plans drawn, ETA / distance /
    turn counts under the map, Go under the plans.
-2. Plan tab with your own routes — the driver's roads above the provider's,
+2. Route tab with your own routes — the driver's roads above the provider's,
    the top one carrying its claim and its drive count ("usually fastest on
    weekday mornings · 9 drives"). Needs an account with history: Brian's
    phone is the only one that has any (SPEC_PERSONAL_ROUTES §9).
