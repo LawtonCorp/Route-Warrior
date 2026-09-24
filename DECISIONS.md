@@ -2409,3 +2409,38 @@ discoverable instead (iOS decides how actions are revealed, not the app);
 letting the tap name the drive with the app's best guess (a silent guess
 attached to a drive the driver was asked about is worse than the silence
 it replaces).
+
+## D-083 — The paused row says "Paused", and Drive view is its icon (2026-09-24)
+
+Brian's screenshot of the Route tab with a drive paused: the recorder
+row read "Paused — nothing is…", cut off at two lines, and the Drive
+view button's title had been squeezed to "Dri / ve / vie / w", one
+letter pair per line. The row holds a caption and three buttons. While
+recording that fits, because the caption is "Rec". Paused, the caption
+was the longest one the row ever shows, and SwiftUI gave the space it
+lacked by squeezing the titled button hardest.
+
+**Paused, the caption is one word: "Paused"**, the same word as the
+badge over the map (D-069). **The Drive view button keeps its map icon
+and drops its title** while paused. VoiceOver still reads "Drive view".
+While recording, nothing changes.
+
+"Nothing is being recorded" was worth saying once, when pause was new,
+and it is still said in the places that need it: the "Still there?"
+alert and notification (`PauseText.body`), the Settings footer, and the
+review notes. On a row with a play button where pause was, "Paused" says
+the rest.
+
+Brian suggested "Pause". The row uses **"Paused"** because it names a
+state, and "Pause" beside a play button reads like an instruction to
+press something. It also matches the map badge.
+
+**Rejected**: a shorter sentence ("Paused — not recording" still
+wrapped, and it competes with the buttons for width on every phone
+narrower than the one in the screenshot); letting the caption shrink its
+font to fit (unreadable at the wheel, and the button would still be
+squeezed); dropping the Drive view button while paused (the driver may
+want the map during a stop, and the button moving in and out of the row
+as pause is toggled would put Stop under the thumb where play was);
+making the button icon-only in every state (recording has room for the
+title, and the title is what tells a new driver what the icon opens).

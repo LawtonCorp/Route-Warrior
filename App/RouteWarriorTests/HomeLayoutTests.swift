@@ -24,11 +24,20 @@ final class HomeLayoutTests: XCTestCase {
         XCTAssertEqual(HomeLayout.recorderSlot(state: .paused, showsGo: true), .ownCard)
     }
 
-    func testThePausedCaptionSaysNothingIsBeingRecorded() {
+    /// D-083: the paused row shares its width with three buttons; the
+    /// caption is one word so it is never cut off, and it matches the
+    /// "Paused" badge over the map.
+    func testThePausedCaptionIsOneWord() {
         let caption = HomeLayout.recorderCaption(.paused)
-        XCTAssertTrue(caption.hasPrefix("Paused"))
-        XCTAssertTrue(caption.contains("nothing is being recorded"))
+        XCTAssertEqual(caption, "Paused")
         XCTAssertNotEqual(caption, HomeLayout.recorderCaption(.recording))
+    }
+
+    /// D-083: paused, the Drive view button drops its title and keeps its
+    /// icon; recording, where there is room, it keeps both.
+    func testTheDriveViewButtonDropsItsTitleOnlyWhilePaused() {
+        XCTAssertFalse(HomeLayout.driveViewShowsTitle(.paused))
+        XCTAssertTrue(HomeLayout.driveViewShowsTitle(.recording))
     }
 
     func testRecordShowsOnlyWhenNothingElseWouldStartADrive() {

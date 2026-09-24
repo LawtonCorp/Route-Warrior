@@ -494,10 +494,15 @@ struct HomeView: View {
                         showPaywall = true
                     }
                 } label: {
-                    Label("Drive view", systemImage: "map.fill")
+                    if HomeLayout.driveViewShowsTitle(pipeline.recorderState) {
+                        Label("Drive view", systemImage: "map.fill")
+                    } else {
+                        Image(systemName: "map.fill")
+                    }
                 }
                 .buttonStyle(.bordered)
                 .tint(tint)
+                .accessibilityLabel("Drive view")
                 // Pause and Stop are different questions — "not now" and
                 // "done" — so they are different buttons (D-069).
                 Button {

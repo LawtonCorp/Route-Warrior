@@ -503,6 +503,12 @@ the flows a tester meets without being told.
   two cases it could not before: "App launched (woken by a location
   change)" means iOS woke us, and silence through a moving hour means it
   did not.
+- **D-083, the paused row**: pause a drive and look at the Route tab's
+  recorder row. It should read "Paused" on one line, with a map-icon
+  button (no title), play and Stop, and nothing wrapped or cut off.
+  Resume, and the button should say "Drive view" again. CI proves the
+  words and which state drops the title. Whether it all fits on the
+  phone needs someone to look.
 - **D-081, the destination the driver names**: drive somewhere the
   predictor cannot call, and when the notification asks, pull it down and
   tap one of the places. The stored drive should carry that destination —
