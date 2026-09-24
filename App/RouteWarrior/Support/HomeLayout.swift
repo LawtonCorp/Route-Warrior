@@ -59,9 +59,17 @@ enum HomeLayout {
     static func recorderCaption(_ state: TripRecorder.State) -> String {
         switch state {
         case .recording: "Rec"
-        case .paused: "Paused — nothing is being recorded"
+        case .paused: "Paused"
         default: "Drive detected — recording starts on its own"
         }
+    }
+
+    /// Whether the Drive view button carries its title or only its map
+    /// icon (D-083). Paused, the row holds a play button where pause was
+    /// and a wider caption than "Rec", and the titled button was squeezed
+    /// until its title broke one letter pair per line.
+    static func driveViewShowsTitle(_ state: TripRecorder.State) -> Bool {
+        state != .paused
     }
 
     /// The tappable line under Go (D-061). A detected drive says so in
