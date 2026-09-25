@@ -8,8 +8,8 @@ import StoreKit
 @MainActor
 @Observable
 final class StoreService {
-    static let monthlyID = "com.lawtoncorp.routewarrior.pro.monthly"
-    static let annualID = "com.lawtoncorp.routewarrior.pro.annual"
+    static let monthlyID = "com.lawtoncorp.routerebel.pro.monthly"
+    static let annualID = "com.lawtoncorp.routerebel.pro.annual"
 
     /// Owner-build Pro override (D-017). scripts/device-build.sh can inject
     /// `RouteWarriorForcePro` into Info.plist exactly the way it injects the

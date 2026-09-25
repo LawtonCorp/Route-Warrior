@@ -33,7 +33,7 @@
               "locale": "en_US"
             }
           ],
-          "productID": "com.lawtoncorp.routewarrior.pro.monthly",
+          "productID": "com.lawtoncorp.routerebel.pro.monthly",
           "recurringSubscriptionPeriod": "P1M",
           "referenceName": "Pro Monthly",
           "subscriptionGroupID": "5D0E8F72-6B4C-4A1D-9E2F-3C4B5A6D7E8F",
@@ -58,7 +58,7 @@
               "locale": "en_US"
             }
           ],
-          "productID": "com.lawtoncorp.routewarrior.pro.annual",
+          "productID": "com.lawtoncorp.routerebel.pro.annual",
           "recurringSubscriptionPeriod": "P1Y",
           "referenceName": "Pro Annual",
           "subscriptionGroupID": "5D0E8F72-6B4C-4A1D-9E2F-3C4B5A6D7E8F",

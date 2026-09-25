@@ -11,8 +11,8 @@ Work top to bottom — later items depend on earlier ones.
 2. In Xcode → Settings → Accounts, sign in; note the Team ID.
 3. `echo 'ROUTEWARRIOR_TEAM=YOURTEAMID' > scripts/signing.local` (gitignored).
 4. First device build: `./scripts/device-build.sh` — `-allowProvisioningUpdates`
-   registers the bundle IDs (`com.lawtoncorp.routewarrior`,
-   `.routewarrior.widgets`), the App Group
+   registers the bundle IDs (`com.lawtoncorp.routerebel`,
+   `.routerebel.widgets`), the App Group
    (`group.com.lawtoncorp.routerebel`), and the iCloud container
    (`iCloud.com.lawtoncorp.routewarrior`) automatically.
    **M0 exit criterion: the app icon appears on your phone.**
@@ -69,8 +69,8 @@ record of how the key was set up.
 1. In App Store Connect create the subscription group "Route Rebel Pro"
    and two auto-renewable products matching
    `App/RouteWarrior/RouteWarrior.storekit` exactly:
-   `com.lawtoncorp.routewarrior.pro.monthly` at **$3.99/month** and
-   `com.lawtoncorp.routewarrior.pro.annual` at **$24.99/year** (D-050).
+   `com.lawtoncorp.routerebel.pro.monthly` at **$3.99/month** and
+   `com.lawtoncorp.routerebel.pro.annual` at **$24.99/year** (D-050).
    On each product add an **Introductory Offer**: type *Free*, duration
    *1 week*, all countries, no end date. The paywall reads the offer from
    StoreKit and writes "7 days free, then $24.99 per year" by itself;
@@ -131,7 +131,7 @@ banner. Putting them on the car screen needs an entitlement Apple grants
 by application, and nothing in the app can be enabled until it arrives.
 
 1. Go to **developer.apple.com/contact/carplay/**.
-2. Choose the app (Route Rebel, bundle id `com.lawtoncorp.routewarrior`).
+2. Choose the app (Route Rebel, bundle id `com.lawtoncorp.routerebel`).
 3. For the app type, choose **Driving task** — *not* Navigation. Driving
    task is for apps that do one focused thing while driving, which is
    what a live scoreboard is; Navigation is for turn-by-turn apps and
