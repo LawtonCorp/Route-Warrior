@@ -17,7 +17,7 @@ behavior are phone-in-hand field tests.
 `Package.swift`, `Sources/`, `Tests/`, `App/`, scripts, CI workflow,
 prose). Add the `RouteWarriorStore` package target and the
 `RouteWarriorWidgets` extension stub to `project.yml`, declaring the App
-Group (`group.com.lawtoncorp.routewarrior`) and iCloud/CloudKit
+Group (`group.com.lawtoncorp.routerebel`) and iCloud/CloudKit
 entitlements for **both** app and widget targets.
 
 **Exit**: CI green; app installs on Brian's phone via

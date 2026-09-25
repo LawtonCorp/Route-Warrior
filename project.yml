@@ -66,7 +66,7 @@ targets:
       path: App/RouteWarrior/RouteWarrior.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.lawtoncorp.routewarrior
+          - group.com.lawtoncorp.routerebel
         com.apple.developer.icloud-services:
           - CloudKit
         com.apple.developer.icloud-container-identifiers:
@@ -129,7 +129,7 @@ targets:
       path: App/RouteWarriorWidgets/RouteWarriorWidgets.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.lawtoncorp.routewarrior
+          - group.com.lawtoncorp.routerebel
         com.apple.developer.icloud-services:
           - CloudKit
         com.apple.developer.icloud-container-identifiers:

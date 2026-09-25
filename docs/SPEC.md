@@ -21,7 +21,7 @@ App/RouteWarriorTests/          wiring tests (one per kit/app boundary feature)
   framework and builds on macOS 14, so `swift test` still works). It maps
   kit value types ↔ persisted models. CloudKit constraints honored: all
   properties optional or defaulted, no `#Unique`, relationships optional.
-- Widget extension + app share `group.com.lawtoncorp.routewarrior`; the App
+- Widget extension + app share `group.com.lawtoncorp.routerebel`; the App
   Group and iCloud/CloudKit entitlements are declared **in `project.yml`
   for both targets** (CLAUDE.md rule — Xcode-UI-set capabilities die on the
   next regeneration, and a missing group fails silently).

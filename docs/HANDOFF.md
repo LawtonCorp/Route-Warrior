@@ -13,7 +13,7 @@ Work top to bottom — later items depend on earlier ones.
 4. First device build: `./scripts/device-build.sh` — `-allowProvisioningUpdates`
    registers the bundle IDs (`com.lawtoncorp.routewarrior`,
    `.routewarrior.widgets`), the App Group
-   (`group.com.lawtoncorp.routewarrior`), and the iCloud container
+   (`group.com.lawtoncorp.routerebel`), and the iCloud container
    (`iCloud.com.lawtoncorp.routewarrior`) automatically.
    **M0 exit criterion: the app icon appears on your phone.**
 
