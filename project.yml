@@ -111,7 +111,7 @@ targets:
         RouteWarriorForcePro: $(ROUTEWARRIOR_FORCE_PRO)
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.lawtoncorp.routewarrior
+        PRODUCT_BUNDLE_IDENTIFIER: com.lawtoncorp.routerebel
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
@@ -142,7 +142,7 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.lawtoncorp.routewarrior.widgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.lawtoncorp.routerebel.widgets
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"

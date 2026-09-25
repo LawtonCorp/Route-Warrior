@@ -2479,3 +2479,57 @@ re-registering everything the device builds set up); deferring the
 group until the widget needs it (removing the entitlement changes what
 D-011 guaranteed, and the rename costs the same now as later, minus
 the data it would strand).
+
+## D-085 — The bundle id is `com.lawtoncorp.routerebel` (2026-09-25)
+
+The app has shipped to Brian's phone as `com.lawtoncorp.routewarrior`
+since M0. D-030 kept that id when the app was renamed Route Rebel,
+because a bundle-id change orphans the App Store record, the
+provisioning and every user's CloudKit data. At the time all three
+were expected to exist soon.
+
+On 2026-09-25, registering identifiers in the Lawton LLC team, Brian
+found **none of them exist there**: no App IDs, and no App Store
+record. The reason for keeping the old id had lapsed without anyone
+noticing. This was the last moment the id could change for free. From
+the first upload on, the App Store record holds it for good. Brian
+chose to rename.
+
+**Changed**
+- The app is `com.lawtoncorp.routerebel` and the lock-screen extension
+  (the ghost race Live Activity) is `com.lawtoncorp.routerebel.widgets`.
+- The Pro products are `com.lawtoncorp.routerebel.pro.monthly` and
+  `.pro.annual`, in `StoreService` and in `RouteWarrior.storekit`
+  together. Nothing is registered for them yet either.
+
+An app-target test pins both: the host app's bundle id, and that the
+product ids sit under it.
+
+**Unchanged, on purpose**
+- The CloudKit container, `iCloud.com.lawtoncorp.routewarrior`. It
+  holds Brian's drives, and a container can be used by any app in the
+  team that lists it, whatever its bundle id. Renaming the container
+  would start sync from empty.
+- The repo, the Swift modules and the `RouteWarrior*` type names. None
+  of them ship anywhere a user or Apple reads.
+
+**What it costs on the phone**: iOS treats a new bundle id as a new
+app. The next device build installs Route Rebel **beside** the old
+one. Its local store starts empty and fills from iCloud, if the
+container is reachable from the Lawton LLC team; that is not confirmed
+yet. The old app keeps its own copy until it is deleted, so nothing is
+lost by trying.
+
+**What it costs in Google Cloud**: the Routes client sends
+`X-Ios-Bundle-Identifier` from the running bundle, and the key is
+restricted to iOS apps by bundle id. Until the restriction lists the
+new ids, every Google plan and the Google map return 403.
+
+**Rejected**: keeping `routewarrior` (it costs nothing today, but every
+identifier Brian reads in Apple's and Google's consoles would carry a
+name the product dropped months ago, for the life of the app);
+renaming the container too (it holds the only real history, and the
+screenshots and demo need that history); keeping the old product ids
+under a new bundle id (they would work, but a product id outlives any
+rename, so it should carry the final name from the start). D-030 and
+D-084 are left as written.
