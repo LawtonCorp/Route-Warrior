@@ -2444,3 +2444,38 @@ want the map during a stop, and the button moving in and out of the row
 as pause is toggled would put Stop under the thumb where play was);
 making the button icon-only in every state (recording has room for the
 title, and the title is what tells a new driver what the icon opens).
+
+## D-084 — The App Group is `group.com.lawtoncorp.routerebel` (2026-09-25)
+
+D-011 declared the App Group `group.com.lawtoncorp.routewarrior` for the
+app and the widget. Brian found, while checking the developer portal
+before submission, that it was never registered, and wants the group
+named for the product: **`group.com.lawtoncorp.routerebel`**.
+
+The rename is safe now and at no other time. No code reads the group
+yet: there is no `UserDefaults(suiteName:)` and no shared container.
+The entitlement is declared in `project.yml`, for both targets, so it
+is ready when the widget starts sharing data. Nothing stored on any
+phone lives there, so nothing is lost by moving it. Once something
+does live there, renaming the group would leave that data behind on
+every install.
+
+Both targets change together, in `project.yml`, per CLAUDE.md. A group
+missing from one target fails silently: the extension reads empty
+defaults instead of erroring.
+
+**Unchanged, on purpose**: the bundle ids (`com.lawtoncorp.routewarrior`,
+`.widgets`) and the CloudKit container
+(`iCloud.com.lawtoncorp.routewarrior`). The bundle id is what App Store
+Connect ties the app record to, and the container already holds
+Brian's drives. Neither is ever shown to a user. D-011 is left as
+written; this entry supersedes its group name only.
+
+**Rejected**: keeping the old name and registering it as is (Brian's
+call: the product is Route Rebel, and this is the last free moment to
+say so); renaming the bundle id and container too (the container holds
+real data, and a new container starts empty; the bundle id would mean
+re-registering everything the device builds set up); deferring the
+group until the widget needs it (removing the entitlement changes what
+D-011 guaranteed, and the rename costs the same now as later, minus
+the data it would strand).
