@@ -6,7 +6,7 @@ Route Rebel
 
 ## Subtitle (30 chars max)
 
-Beat the nav. Prove it.
+Out Route the Nav
 
 ## Promotional text (170 chars)
 

@@ -2605,3 +2605,14 @@ and it would move again the day the lawyer replies); an app-target
 test for the title (the string is written directly in the view and
 crosses no kit/app boundary; a test that repeats a literal proves
 only that it was typed twice).
+
+## D-088 — The App Store subtitle is "Out Route the Nav" too (2026-09-26)
+
+D-087 changed the welcome page's title and left the App Store subtitle
+alone until Brian said otherwise. He has: the subtitle is now **"Out
+Route the Nav"** (17 of 30 characters), so the store page and the first
+screen say the same thing. The listing and the submission guide carry
+it. Nothing in the app changes.
+
+**Rejected**: keeping "Beat the nav. Prove it." on the store only (two
+slogans for one product, and the store's is the one people read first).
