@@ -2533,3 +2533,44 @@ screenshots and demo need that history); keeping the old product ids
 under a new bundle id (they would work, but a product id outlives any
 rename, so it should carry the final name from the start). D-030 and
 D-084 are left as written.
+
+## D-086 — The CloudKit container is `iCloud.com.lawtoncorp.routerebel` (2026-09-26)
+
+D-085 kept the container `iCloud.com.lawtoncorp.routewarrior` on the
+grounds that it held Brian's drives. That was wrong. When Brian
+assigned a container to the new App IDs, the Lawton LLC team offered
+only PulseWatch's and CollageApp's: **the container was never
+registered in this team.** The old App IDs were not there either, so
+earlier device builds were signed under another team, or the app ran
+on its local-only fallback. That fallback is silent by design (NFR-5).
+Either way, no drive history is reachable from this team.
+
+That removed the only reason to keep the old name, so the container
+follows the bundle ids: `iCloud.com.lawtoncorp.routerebel`, in
+`StoreFactory` and in `project.yml` for both targets.
+
+**The consequence D-085 understated**: the new app starts with no
+history at all, not "refilled from iCloud". Brian's drives stay in the
+old app on his phone, which keeps them while it is installed. The
+screenshots and the personal-routes demo wait on the new app
+collecting drives of its own.
+
+**A mismatch is now a CI failure, not a silent fallback.** If the
+container the store opens differs from the entitlement, the app does
+not crash; it quietly saves locally and nothing syncs. The release
+gate now fails when `StoreFactory`'s container and every container in
+`project.yml` disagree. An app-target test pins the id the store opens.
+
+**New step before TestFlight** (APP_STORE_SUBMISSION §8a): deploy the
+CloudKit schema from Development to Production. Debug builds create it
+in Development; TestFlight and App Store builds read Production, which
+is empty until deployed. Missing that step fails the same silent way.
+
+**Rejected**: registering `iCloud.com.lawtoncorp.routewarrior` in this
+team (container ids are global and permanent; if the other team owns
+it, Apple refuses, and if not, it would freeze the dropped name on the
+one identifier that can never be renamed); migrating the old app's
+history (the old app is a different bundle in an unregistered group,
+so the new app cannot read its files, and building an export and
+import to rescue one tester's history is more than it is worth before
+launch). D-085 is left as written; this entry corrects it.

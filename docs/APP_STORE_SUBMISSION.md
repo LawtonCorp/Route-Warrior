@@ -229,6 +229,23 @@ file, under 500 MB, two to four minutes, in this order:
 Attach it under App Review Information. The notes in
 `docs/APP_REVIEW_NOTES.md` refer to it by these six steps.
 
+## 8a. Deploy the CloudKit schema to Production
+
+Debug builds from `device-build.sh` sync through the container's
+**Development** environment, and SwiftData creates the record types
+there on first run. TestFlight and App Store builds use **Production**,
+which starts empty and is never written to automatically. Until the
+schema is deployed, a tester's drives stay on their phone and never
+sync — silently.
+
+1. Run a device build and record one drive, so every record type
+   exists in Development.
+2. icloud.developer.apple.com → **CloudKit Console** → **Databases** →
+   pick `iCloud.com.lawtoncorp.routerebel`.
+3. **Deploy Schema Changes…** (bottom of the left column, or the
+   environment menu) → review → **Deploy**.
+4. Do it again after any release that adds a model or a field.
+
 ## 9. TestFlight first
 
 Before submitting for review, TestFlight the same build.
