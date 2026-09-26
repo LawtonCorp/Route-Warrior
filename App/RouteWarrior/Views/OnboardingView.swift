@@ -67,7 +67,7 @@ struct OnboardingView: View {
         pageLayout(
             icon: "flag.checkered",
             color: Theme.route,
-            title: "Beat the nav. Prove it.",
+            title: "Out Route the Nav",
             body: "Route Rebel records the routes you actually drive and compares them against Google's plan — every trip, hands-free. Find out when your shortcut really is faster."
         ) {
             VStack(spacing: 10) {

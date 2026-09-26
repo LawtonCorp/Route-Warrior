@@ -2574,3 +2574,34 @@ history (the old app is a different bundle in an unregistered group,
 so the new app cannot read its files, and building an export and
 import to rescue one tester's history is more than it is worth before
 launch). D-085 is left as written; this entry corrects it.
+
+## D-087 — The welcome says "Out Route the Nav"; the entity is "Lawton LLC" (2026-09-26)
+
+Two corrections from Brian, taken together because both change words
+and nothing else.
+
+**The first onboarding page's title is "Out Route the Nav"**, replacing
+"Beat the nav. Prove it." That was Brian's call on seeing the new
+Route Rebel build's first screen. The body text under it is unchanged.
+The App Store subtitle is a separate field and still reads "Beat the
+nav. Prove it."; it changes only if Brian says so.
+
+**The contracting party is "Lawton LLC", with no comma.** That is the
+name Apple shows for the team, and the one Brian filed with the IRS and
+the bank. D-064 wrote "Lawton, LLC". The Terms of Use, the Privacy
+Policy, the copyright line and the current-state docs now match.
+Historical entries (D-064, the merged-PR tables) are left as written.
+
+The Terms' effective date and `Legal.termsVersion` did **not** move.
+The party is the same legal entity, and a new version would ask every
+install to accept again for a punctuation mark. The lawyer's one
+outstanding confirmation (step 0.1) should cover the name as it now
+reads. The website copies at routerebel.app/terms and /privacy need the
+same edit by hand; nothing in this repository publishes them.
+
+**Rejected**: bumping the Terms version for the comma (costs nothing
+before launch, but it teaches that the version moves on cosmetic edits,
+and it would move again the day the lawyer replies); an app-target
+test for the title (the string is written directly in the view and
+crosses no kit/app boundary; a test that repeats a literal proves
+only that it was typed twice).
