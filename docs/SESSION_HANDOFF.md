@@ -10,11 +10,13 @@ exists, why, and what the previous sessions learned the hard way. Read
 
 ## Where things stand
 
-**The app is called Route Rebel** (display name only, D-030). The repo,
-modules and CloudKit container `iCloud.com.lawtoncorp.routewarrior`
-keep the old name on purpose. The bundle ids became
-`com.lawtoncorp.routerebel` (and `.widgets`) before any App Store record
-existed (D-085); from the first upload on they can never change again.
+**The app is called Route Rebel** (D-030). The repo and Swift modules
+keep the old name on purpose; nothing that ships does. Before any App
+Store record existed, the bundle ids became `com.lawtoncorp.routerebel`
+(and `.widgets`, D-085) and the CloudKit container
+`iCloud.com.lawtoncorp.routerebel` (D-086). From the first upload on,
+the bundle ids can never change; a container can never be deleted or
+renamed once registered.
 
 **Fifty PRs have landed; `main` is green at #50; there are no open PRs,
 no unpushed work and no scheduled check-ins.** Brian is preparing the

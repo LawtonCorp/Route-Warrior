@@ -29,5 +29,16 @@ else
     echo "  ok: RouteWarriorStore imports no UI framework"
 fi
 
+echo "Identity gate: every iCloud container in project.yml is the one the store opens (D-086)"
+STORE_CONTAINER=$(grep -o 'iCloud\.[A-Za-z0-9.]*' Sources/RouteWarriorStore/StoreFactory.swift | head -1)
+YML_CONTAINERS=$(grep -o 'iCloud\.[A-Za-z0-9]*\.[A-Za-z0-9.]*' project.yml | sort -u)
+if [ -z "$STORE_CONTAINER" ] || [ "$YML_CONTAINERS" != "$STORE_CONTAINER" ]; then
+    echo "FAIL: StoreFactory opens '$STORE_CONTAINER' but project.yml declares:"
+    echo "$YML_CONTAINERS"
+    STATUS=1
+else
+    echo "  ok: $STORE_CONTAINER in both"
+fi
+
 if [ "$STATUS" -eq 0 ]; then echo "PURITY PASS"; else echo "PURITY FAIL"; fi
 exit "$STATUS"

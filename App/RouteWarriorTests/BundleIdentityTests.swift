@@ -1,3 +1,4 @@
+import RouteWarriorStore
 import XCTest
 
 @testable import RouteWarrior
@@ -16,5 +17,13 @@ final class BundleIdentityTests: XCTestCase {
         let prefix = "com.lawtoncorp.routerebel.pro."
         XCTAssertEqual(StoreService.monthlyID, prefix + "monthly")
         XCTAssertEqual(StoreService.annualID, prefix + "annual")
+    }
+
+    /// D-086: the container the store opens is the one registered in the
+    /// Lawton LLC team. A mismatch with the entitlement in project.yml
+    /// would not crash; the app would quietly fall back to local-only
+    /// storage, and no drive would sync.
+    func testTheStoreOpensTheRouteRebelContainer() {
+        XCTAssertEqual(RouteWarriorStoreFactory.cloudKitContainerID, "iCloud.com.lawtoncorp.routerebel")
     }
 }

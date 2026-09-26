@@ -70,7 +70,7 @@ targets:
         com.apple.developer.icloud-services:
           - CloudKit
         com.apple.developer.icloud-container-identifiers:
-          - iCloud.com.lawtoncorp.routewarrior
+          - iCloud.com.lawtoncorp.routerebel
     info:
       path: App/RouteWarrior/Info.plist
       properties:
@@ -133,7 +133,7 @@ targets:
         com.apple.developer.icloud-services:
           - CloudKit
         com.apple.developer.icloud-container-identifiers:
-          - iCloud.com.lawtoncorp.routewarrior
+          - iCloud.com.lawtoncorp.routerebel
     info:
       path: App/RouteWarriorWidgets/Info.plist
       properties:

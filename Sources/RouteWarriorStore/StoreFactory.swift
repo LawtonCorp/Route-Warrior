@@ -7,7 +7,7 @@ import SwiftData
 /// unavailable (NFR-5 — sync resumes when the account comes back).
 public enum RouteWarriorStoreFactory {
     /// Must match project.yml's iCloud container for app and widget targets.
-    public static let cloudKitContainerID = "iCloud.com.lawtoncorp.routewarrior"
+    public static let cloudKitContainerID = "iCloud.com.lawtoncorp.routerebel"
 
     public static var schema: Schema {
         Schema([TripRecord.self, PlaceRecord.self, VariantRecord.self, SnapshotRecord.self])

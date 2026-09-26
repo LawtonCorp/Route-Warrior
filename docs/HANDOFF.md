@@ -14,7 +14,7 @@ Work top to bottom — later items depend on earlier ones.
    registers the bundle IDs (`com.lawtoncorp.routerebel`,
    `.routerebel.widgets`), the App Group
    (`group.com.lawtoncorp.routerebel`), and the iCloud container
-   (`iCloud.com.lawtoncorp.routewarrior`) automatically.
+   (`iCloud.com.lawtoncorp.routerebel`) automatically.
    **M0 exit criterion: the app icon appears on your phone.**
 
 ## 2. Google Cloud — Routes API key (M3's comparison feature)
