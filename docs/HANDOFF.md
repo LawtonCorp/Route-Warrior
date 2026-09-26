@@ -7,7 +7,7 @@ Work top to bottom — later items depend on earlier ones.
 
 ## 1. Apple Developer / App Store Connect (needed before any device work)
 
-1. Ensure the Lawton, LLC Apple Developer Program membership is active.
+1. Ensure the Lawton LLC Apple Developer Program membership is active.
 2. In Xcode → Settings → Accounts, sign in; note the Team ID.
 3. `echo 'ROUTEWARRIOR_TEAM=YOURTEAMID' > scripts/signing.local` (gitignored).
 4. First device build: `./scripts/device-build.sh` — `-allowProvisioningUpdates`
@@ -16,6 +16,17 @@ Work top to bottom — later items depend on earlier ones.
    (`group.com.lawtoncorp.routerebel`), and the iCloud container
    (`iCloud.com.lawtoncorp.routerebel`) automatically.
    **M0 exit criterion: the app icon appears on your phone.**
+5. **Signing, as of 2026-09-26**: builds sign under **Lawton LLC**
+   (`ROUTEWARRIOR_TEAM=Z3BQ6FA76Q` in `scripts/signing.local`), where
+   the App IDs, the App Group and the iCloud container are registered
+   (D-084 to D-086) and Brian's iPhone is registered by hand. Every
+   build before that date signed under **Diet Track, LLC**
+   (MDK786DA5P), another of Brian's accounts. The old Route Warrior app
+   on his phone, and its drive history, belong to that team. Diet
+   Track is an **Associated Developer Account** for the Small Business
+   Program (step 0.5a) and must be listed there. A new phone needs
+   registering in Lawton LLC (developer.apple.com → Devices) before
+   `device-build.sh` can install on it.
 
 ## 2. Google Cloud — Routes API key (M3's comparison feature)
 
@@ -110,7 +121,7 @@ record of how the key was set up.
    the bundled SDKs declare. Answer the App Store Connect questionnaire
    from that PDF, mark each Google type as "not linked to the user" and
    "not used for tracking" unless the report says otherwise, and attach
-   nothing for Lawton, LLC itself — we still collect nothing.
+   nothing for Lawton LLC itself — we still collect nothing.
 3. Record the App Review demo video (see docs/APP_REVIEW_NOTES.md) showing
    the always-location education flow and the recording feature.
 4. Screenshots (6.7" and 6.1"): Home recording state, Trip detail with
@@ -249,7 +260,7 @@ into.
 | 0.5 Paid Apps → tax → banking | Open. Account Holder only; each step unlocks the next; done when Paid Apps reads **Active**. |
 | 0.5a Small Business Program | Open. Needs 0.5 signed first. 15% not retroactive — starts 15 days after the fiscal month-end of approval, so enrol before there are subscribers. |
 
-**Lawton, LLC** must match character for character across the W-9, the
+**Lawton LLC** must match character for character across the W-9, the
 bank account holder and IRS records. Apple cross-checks them.
 
 ### Open questions carried forward
@@ -408,7 +419,7 @@ and were fixed before merge (see "Lessons" below).
 
 | | Status |
 |---|---|
-| 0.1 Lawyer review | Done; one line back from the lawyer confirming the Lawton, LLC rename is still wanted. |
+| 0.1 Lawyer review | Done; one line back from the lawyer confirming the Lawton LLC rename is still wanted. |
 | 0.2 Privacy Policy date | Done. |
 | 0.3 Website /terms /privacy /support | Done — confirm live before pressing Release. |
 | 0.4 Google Cloud key | Done, API restrictions parked (above). |

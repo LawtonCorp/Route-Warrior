@@ -9,10 +9,16 @@ install to accept again.
 A lawyer reviewed this text and approved it as written, the limitation
 of liability in §9 included (recorded 2026-09-15). One thing changed
 after that approval, the same day: the contracting party was corrected
-from "LawtonCorp" to the registered entity, Lawton, LLC. Nothing else
+from "LawtonCorp" to the registered entity, Lawton LLC. Nothing else
 moved. The effective date and `Legal.termsVersion` were bumped to match,
 which asks every install to accept once — done before launch, so it
 costs one prompt on the developer's own phone.
+
+2026-09-26: the entity's registered name has no comma, "Lawton LLC",
+as Apple, the IRS and the bank hold it; every "Lawton, LLC" became
+"Lawton LLC" (D-087). The effective date was not moved: the party is
+the same entity, and one comma does not warrant asking every install to
+accept again.
 
 Any later edit needs a fresh review, a new effective date here, and the
 same date in `Legal.termsVersion`, in yyyy-MM-dd (LegalTests checks). -->
@@ -146,7 +152,7 @@ those places, they apply only to the extent the law permits.
 
 ## 10. Indemnity
 
-You agree to defend, indemnify and hold harmless Lawton, LLC and its
+You agree to defend, indemnify and hold harmless Lawton LLC and its
 owners, officers, employees and contractors from any claim, demand,
 loss, liability, damage, fine or expense (including reasonable legal
 fees) arising out of or related to your driving, your violation of any
@@ -175,12 +181,12 @@ be brought in the state or federal courts located in Denver, Colorado,
 and you consent to their jurisdiction, except that either party may
 bring a qualifying claim in small-claims court.
 <!-- Colorado and Denver were approved with the rest of the Terms
-(2026-09-15). Change both, with a fresh review, if Lawton, LLC is ever
+(2026-09-15). Change both, with a fresh review, if Lawton LLC is ever
 organised elsewhere. -->
 
 ## 14. Apple
 
-These Terms are between you and Lawton, LLC only, not Apple. Apple is not
+These Terms are between you and Lawton LLC only, not Apple. Apple is not
 responsible for the App or its content. Apple has no obligation to
 provide maintenance or support for the App. If the App fails to conform
 to any applicable warranty, you may notify Apple and Apple will refund
@@ -190,7 +196,7 @@ responsible for addressing any claim by you or any third party relating
 to the App, including product-liability claims, claims that the App
 fails to conform to a legal or regulatory requirement, or claims under
 consumer-protection or similar law. If a third party claims the App
-infringes its intellectual-property rights, Lawton, LLC, not Apple, is
+infringes its intellectual-property rights, Lawton LLC, not Apple, is
 responsible for the investigation, defence, settlement and discharge of
 that claim. You represent that you are not located in a country subject
 to a US Government embargo or designated as a "terrorist supporting"
@@ -207,4 +213,4 @@ Privacy Policy are the entire agreement between you and us about the App.
 
 ## Contact
 
-Lawton, LLC — brian@lawtoncorp.com
+Lawton LLC — brian@lawtoncorp.com
