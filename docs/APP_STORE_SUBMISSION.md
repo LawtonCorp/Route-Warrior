@@ -37,7 +37,7 @@ App Store Connect → My Apps → **+** → New App.
 | Field | Answer |
 |---|---|
 | Name | Route Rebel |
-| Subtitle | Beat the nav. Prove it. |
+| Subtitle | Out Route the Nav |
 | Primary category | Navigation |
 | Secondary category | Utilities |
 | Content rights | **Yes**, the app displays third-party content (Apple and Google map data, OpenStreetMap intersection data), and you have the rights — each is used through its owner's SDK or API under its own terms. |
